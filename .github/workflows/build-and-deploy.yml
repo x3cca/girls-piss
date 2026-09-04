@@ -2,8 +2,7 @@ name: "Build HTML5 & Deploy to itch.io (Staging)"
 
 on:
   push:
-    branches: [main, master]
-  workflow_dispatch:
+    branches: [main]
 
 concurrency:
   group: deploy-staging
