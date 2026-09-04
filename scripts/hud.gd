@@ -8,17 +8,64 @@ var stream: LiquidStream
 var target_nodes: Array[WettableTarget] = []
 var show_touch_controls := false
 var safe_margin := 28.0
+@onready var carrot_aim_control: CarrotAimControl = $CarrotAimControl
+@onready var pressure_fader: PressureFader = $PressureFader
+var _wired_input_controller: InputController
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_process(true)
+	_layout_controls()
 
 
 func _process(_delta: float) -> void:
 	if input_controller:
 		show_touch_controls = input_controller.touch_controls_visible
+	_wire_input_controller()
+	_layout_controls()
+	carrot_aim_control.visible = true
+	pressure_fader.visible = show_touch_controls
+	if pressure_model:
+		pressure_fader.set_pressure(pressure_model.requested_pressure)
 	queue_redraw()
+
+
+func _wire_input_controller() -> void:
+	if input_controller == _wired_input_controller:
+		return
+	if is_instance_valid(_wired_input_controller):
+		if _wired_input_controller.aim_angle_changed.is_connected(carrot_aim_control.set_aim_angle):
+			_wired_input_controller.aim_angle_changed.disconnect(carrot_aim_control.set_aim_angle)
+		if carrot_aim_control.swayed_aim_angle_changed.is_connected(_wired_input_controller.set_swayed_aim_angle):
+			carrot_aim_control.swayed_aim_angle_changed.disconnect(_wired_input_controller.set_swayed_aim_angle)
+	_wired_input_controller = input_controller
+	if not is_instance_valid(_wired_input_controller):
+		return
+	if not carrot_aim_control.aim_angle_changed.is_connected(_wired_input_controller.set_aim_angle):
+		carrot_aim_control.aim_angle_changed.connect(_wired_input_controller.set_aim_angle)
+	if not _wired_input_controller.aim_angle_changed.is_connected(carrot_aim_control.set_aim_angle):
+		_wired_input_controller.aim_angle_changed.connect(carrot_aim_control.set_aim_angle)
+	if not carrot_aim_control.swayed_aim_angle_changed.is_connected(_wired_input_controller.set_swayed_aim_angle):
+		carrot_aim_control.swayed_aim_angle_changed.connect(_wired_input_controller.set_swayed_aim_angle)
+	carrot_aim_control.set_aim_angle(_wired_input_controller.get_aim_angle())
+
+
+func _layout_controls() -> void:
+	var viewport := get_viewport_rect()
+	var safe := viewport.grow(-minf(safe_margin, minf(viewport.size.x, viewport.size.y) * 0.04))
+	if is_instance_valid(carrot_aim_control):
+		# The control fills the safe rectangle invisibly so touch/mouse X is the
+		# input. The authored carrot sprite itself stays centered on the screen.
+		carrot_aim_control.position = safe.position
+		carrot_aim_control.size = safe.size
+		carrot_aim_control.track_y = safe.size.y - 32.0
+		carrot_aim_control.carrot_base_y = safe.size.y - 32.0
+		carrot_aim_control.set_aim_angle(carrot_aim_control.get_aim_angle())
+	if is_instance_valid(pressure_fader):
+		pressure_fader.position = safe.position
+		pressure_fader.size = safe.size
+		pressure_fader.set_track_bounds(178.0, safe.size.y - 188.0, 72.0)
 
 
 func _draw() -> void:
@@ -97,9 +144,6 @@ func _draw() -> void:
 				Color("#d5c77f"),
 			)
 
-	if show_touch_controls:
-		_draw_touch_controls(safe)
-
 
 func _draw_meter(rect: Rect2, value: float, color: Color, title: String) -> void:
 	var font := ThemeDB.fallback_font
@@ -117,46 +161,6 @@ func _draw_meter(rect: Rect2, value: float, color: Color, title: String) -> void
 	fill.size.x *= clampf(value, 0.0, 1.0)
 	if fill.size.x > 0:
 		draw_style_box(_box(color, 5), fill)
-
-
-func _draw_touch_controls(safe: Rect2) -> void:
-	var joystick_center := Vector2(safe.end.x - 112.0, safe.end.y - 156.0)
-	var fader_x := safe.position.x + 72.0
-	var fader_top := safe.position.y + 178.0
-	var fader_bottom := safe.end.y - 188.0
-	draw_line(
-		Vector2(fader_x, fader_top),
-		Vector2(fader_x, fader_bottom),
-		Color(0.5, 0.65, 0.86, 0.28),
-		18.0,
-	)
-	draw_line(Vector2(fader_x, fader_top), Vector2(fader_x, fader_bottom), Color("#f1d34f"), 4.0)
-	var pressure := pressure_model.requested_pressure if pressure_model else 0.55
-	var knob_y := lerpf(fader_bottom, fader_top, inverse_lerp(0.15, 1.0, pressure))
-	draw_circle(Vector2(fader_x, knob_y), 17.0, Color("#fff3a0"))
-	draw_circle(Vector2(fader_x, knob_y), 11.0, Color("#d0b52f"))
-	draw_string(
-		ThemeDB.fallback_font,
-		Vector2(fader_x - 35.0, fader_top - 22.0),
-		"PRESSURE",
-		HORIZONTAL_ALIGNMENT_LEFT,
-		-1,
-		13,
-		Color("#d5c77f"),
-	)
-	draw_circle(joystick_center, 86.0, Color(0.08, 0.12, 0.25, 0.74))
-	draw_arc(joystick_center, 86.0, 0.0, TAU, 64, Color(0.46, 0.61, 0.9, 0.55), 3.0)
-	var aim := input_controller.aim_direction if input_controller else Vector2.UP
-	draw_circle(joystick_center + aim * 47.0, 23.0, Color("#f1d34f"))
-	draw_string(
-		ThemeDB.fallback_font,
-		joystick_center + Vector2(-41.0, 112.0),
-		"AIM",
-		HORIZONTAL_ALIGNMENT_LEFT,
-		-1,
-		13,
-		Color("#d5c77f"),
-	)
 
 
 func _box(color: Color, radius: int) -> StyleBoxFlat:

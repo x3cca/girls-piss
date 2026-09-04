@@ -83,3 +83,14 @@ func test_perspective_arc_is_zero_centered_and_subtle_off_center() -> void:
 	assert_almost_eq(old_path_after_aim_change[1].x, 0.0, 0.001)
 	assert_true(off_center[1].x > 0.0)
 	assert_true(off_center[1].x <= stream.perspective_arc_strength)
+
+
+func test_jitter_strength_increases_with_effective_pressure_in_all_modes() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+	var sample_time := 0.73
+	var low_pressure := absf(stream.get_jitter_angle(0.15, sample_time))
+	var high_pressure := absf(stream.get_jitter_angle(1.0, sample_time))
+
+	assert_true(high_pressure > low_pressure)
+	assert_true(high_pressure < deg_to_rad(1.4))
