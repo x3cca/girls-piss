@@ -117,7 +117,9 @@ func _finish() -> void:
 func _update_opacity() -> void:
 	var alpha := opacity
 	if opacity_sine_enabled:
-		var wave := (sin(_opacity_time * TAU * opacity_sine_frequency + opacity_sine_phase) + 1.0) * 0.5
+		var wave := (
+				sin(_opacity_time * TAU * opacity_sine_frequency + opacity_sine_phase) + 1.0
+		) * 0.5
 		alpha = lerpf(opacity_sine_min, opacity_sine_max, wave) * opacity
 	self_modulate = Color(1.0, 1.0, 1.0, clampf(alpha, 0.0, 1.0))
 
