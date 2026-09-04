@@ -110,10 +110,10 @@ func set_parcel_chain(parcels: Array[Dictionary]) -> void:
 
 
 func emit_parcels(
-	direction: Vector2,
-	pressure: float,
-	delta: float,
-	sputter_intensity := 0.0,
+		direction: Vector2,
+		pressure: float,
+		delta: float,
+		sputter_intensity := 0.0,
 ) -> void:
 	var speed := lerpf(launch_speed_min, launch_speed_max, clampf(pressure, 0.0, 1.0))
 	var emission_rate := lerpf(
@@ -149,8 +149,8 @@ func emit_parcels(
 	)
 	var lifetime := minf(parcel_lifetime, stream_age)
 	while (
-		not _parcels.is_empty()
-		and (float(_parcels.back()["age"]) > lifetime or _parcels.size() > max_parcels)
+			not _parcels.is_empty()
+			and (float(_parcels.back()["age"]) > lifetime or _parcels.size() > max_parcels)
 	):
 		_parcels.pop_back()
 
@@ -168,19 +168,19 @@ func get_sputter_profile(intensity: float, is_exhausted: bool) -> Dictionary:
 		"burst_velocity_max": lerpf(48.0, 156.0, sputter),
 		"burst_interval": lerpf(sputter_burst_max_interval, sputter_burst_min_interval, sputter),
 		"emission_rate": (
-			0.0
-			if is_exhausted
-			else lerpf(normal_emission_rate, sputtering_emission_rate, sputter)
+				0.0
+				if is_exhausted
+				else lerpf(normal_emission_rate, sputtering_emission_rate, sputter)
 		),
 		"ribbon_alpha": 0.0 if is_exhausted else 1.0 - fade * 0.62,
 	}
 
 
 func _update_sputter_effects(
-	delta: float,
-	direction: Vector2,
-	intensity: float,
-	is_exhausted: bool,
+		delta: float,
+		direction: Vector2,
+		intensity: float,
+		is_exhausted: bool,
 ) -> void:
 	var profile := get_sputter_profile(intensity, is_exhausted)
 	_droplets.position = source_position
@@ -289,10 +289,10 @@ func _emit_floor_impact(position: Vector2) -> void:
 
 
 func update_ribbon_meshes(
-	points: PackedVector2Array,
-	depth_length: float,
-	ribbon_alpha: float,
-	hit_target: bool,
+		points: PackedVector2Array,
+		depth_length: float,
+		ribbon_alpha: float,
+		hit_target: bool,
 ) -> void:
 	_set_ribbon_mesh(_edge_mesh_resource, points, 36.0, 0.0, depth_length, ribbon_alpha, hit_target)
 	_set_ribbon_mesh(_body_mesh_resource, points, 32.0, 0.0, depth_length, ribbon_alpha, hit_target)
@@ -308,13 +308,13 @@ func update_ribbon_meshes(
 
 
 func _set_ribbon_mesh(
-	mesh: ArrayMesh,
-	points: PackedVector2Array,
-	base_width: float,
-	center_offset: float,
-	depth_length: float,
-	ribbon_alpha: float,
-	hit_target: bool,
+		mesh: ArrayMesh,
+		points: PackedVector2Array,
+		base_width: float,
+		center_offset: float,
+		depth_length: float,
+		ribbon_alpha: float,
+		hit_target: bool,
 ) -> void:
 	mesh.clear_surfaces()
 	if points.size() < 2:

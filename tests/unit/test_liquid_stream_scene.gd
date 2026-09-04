@@ -1,6 +1,5 @@
 extends GutTest
 
-
 func test_liquid_stream_scene_builds_playable_nodes() -> void:
 	var scene := load("res://scenes/smoke_test.tscn") as PackedScene
 	assert_not_null(scene, "The portrait prototype scene should be loadable.")
