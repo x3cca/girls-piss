@@ -1,7 +1,8 @@
 {
   "mcpServers": {
     "godot-mcp": {
-      "url": "http://localhost:9080/mcp"
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://127.0.0.1:9080/mcp"]
     }
   }
 }

@@ -10,7 +10,7 @@ the game code intentionally empty so a jam project can start cleanly.
 
 - Godot MCP editor bridge in addons/godot_mcp/.
 - .codex/config.toml so Codex CLI discovers the local MCP server per project.
-- .mcp.json for other MCP clients that support the local HTTP/SSE server.
+- .mcp.json for other MCP clients using the same local MCP adapter.
 - Web export preset targeting build/web/index.html.
 - GitHub Actions for Godot checks and HTML5/Butler deployment.
 - A minimal smoke-test scene to confirm the project opens.
@@ -21,13 +21,21 @@ actual game begins.
 
 ## Local MCP
 
-Enable the Godot MCP plugin in the Godot editor, then start its local server
-from the plugin panel. The MCP client configuration points to:
+Enable the Godot MCP plugin in the Godot editor. Its local server listens at:
 
-http://localhost:9080/mcp
+http://127.0.0.1:9080/mcp
 
-See skills/godot-mcp-cli.md for the short command/tool reference. Codex CLI
-only loads the project-scoped file after the project is trusted.
+Date-or-Mate-2's addon is pure GDScript. Codex CLI uses the Node.js
+mcp-remote package declared in .codex/config.toml to adapt the addon's
+legacy SSE/HTTP transport to stdio. Install Node.js 20+; no npm project
+install is required. Codex CLI only loads the project-scoped file after the
+project is trusted.
+
+After opening Godot and enabling the plugin, restart Codex or run:
+
+    codex mcp list
+
+See skills/godot-mcp-cli.md for the short command/tool reference.
 
 ## itch.io deployment
 
