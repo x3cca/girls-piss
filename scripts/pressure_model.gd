@@ -1,4 +1,5 @@
 extends Node
+
 class_name PressureModel
 
 signal exhaustion_changed(exhausted: bool)

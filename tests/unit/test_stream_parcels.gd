@@ -1,6 +1,5 @@
 extends GutTest
 
-
 func test_new_aim_only_changes_newly_emitted_parcel() -> void:
 	var stream_scene := load("res://scenes/liquid_stream.tscn") as PackedScene
 	var stream := stream_scene.instantiate() as LiquidStream

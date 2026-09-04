@@ -1,6 +1,5 @@
 extends GutTest
 
-
 func test_overdrive_drains_reserve_at_configured_rate() -> void:
 	var model := PressureModel.new()
 	add_child_autofree(model)

@@ -1,4 +1,5 @@
 extends Control
+
 class_name StreamHUD
 
 var input_controller: InputController

@@ -1,6 +1,5 @@
 @tool
 extends SceneTree
-
 ## Offline alpha-silhouette normal baker.
 ## Run with: godot --headless --script res://tools/bake_normal_maps.gd
 ## Generated files are intentionally excluded from the input walk, making a
