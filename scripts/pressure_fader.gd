@@ -2,8 +2,8 @@ extends Control
 
 class_name PressureFader
 
-## Scene-authored pressure visual. InputController continues to own the left
-## touch index and pressure mapping so two-finger touch behavior stays intact.
+## Scene-authored pressure visual. InputController owns the single touch and
+## pressure mapping; this node only mirrors the smoothed value.
 
 @export_range(0.15, 1.0, 0.01) var minimum_pressure := 0.15
 @export_range(0.15, 1.0, 0.01) var maximum_pressure := 1.0

@@ -14,7 +14,6 @@ func test_stream_renderables_use_the_shared_boil_material() -> void:
 		"BodyRibbon",
 		"HighlightRibbon",
 		"Droplets",
-		"SputterBurst",
 		"ImpactBurst",
 	]:
 		var canvas_item := stream.get_node(node_path) as CanvasItem

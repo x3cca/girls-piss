@@ -3,15 +3,16 @@ extends Node2D
 class_name LiquidStream
 
 signal wet_target_hit(target: WettableTarget, amount: float, position: Vector2, normal: Vector2)
+signal drawing_point_updated(position: Vector2, active: bool)
 
 @export var source_position := Vector2(360.0, 1320.0)
 @export_range(150.0, 800.0, 1.0) var minimum_length := 150.0
-@export_range(150.0, 1200.0, 1.0) var maximum_length := 620.0
+@export_range(150.0, 2400.0, 1.0) var maximum_length := 620.0
 @export_range(24, 32, 1) var ribbon_points := 28
 @export var launch_speed_min := 560.0
 @export var launch_speed_max := 1120.0
 @export var gravity := Vector2(0.0, 360.0)
-@export var parcel_lifetime := 1.35
+@export var parcel_lifetime := 2.25
 @export_range(32, 128, 1) var max_parcels := 96
 @export var collision_mask := 1
 @export var liquid_color := Color("#f1d34f")
@@ -22,9 +23,6 @@ signal wet_target_hit(target: WettableTarget, amount: float, position: Vector2, 
 @export_range(0.1, 1.0, 0.01) var distal_end_alpha := 0.5
 @export var perspective_arc_strength := 34.0
 @export var normal_emission_rate := 60.0
-@export var sputtering_emission_rate := 10.0
-@export var sputter_burst_min_interval := 0.16
-@export var sputter_burst_max_interval := 1.35
 @export var jitter_max_degrees := 1.4
 
 var input_controller: InputController
@@ -35,15 +33,14 @@ var pressure_model: PressureModel
 @onready var _highlight_mesh: MeshInstance2D = $HighlightRibbon
 @onready var _droplets: CPUParticles2D = $Droplets
 @onready var _impact: CPUParticles2D = $ImpactBurst
-@onready var _sputter_burst: CPUParticles2D = $SputterBurst
 var _edge_mesh_resource := ArrayMesh.new()
 var _body_mesh_resource := ArrayMesh.new()
 var _highlight_mesh_resource := ArrayMesh.new()
 var _parcels: Array[Dictionary] = []
 var _emission_accumulator := 0.0
-var _sputter_accumulator := 0.0
 var _current_points := PackedVector2Array()
 var _jitter_time := 0.0
+var _live_enabled := true
 
 
 func _ready() -> void:
@@ -53,46 +50,95 @@ func _ready() -> void:
 	_edge_mesh.modulate = Color("#493719")
 	_body_mesh.modulate = liquid_color
 	_highlight_mesh.modulate = Color("#fff3a0")
+	_set_live_visuals(true)
 	queue_redraw()
 
 
 func _process(delta: float) -> void:
 	if input_controller == null or pressure_model == null:
 		return
+	if not _live_enabled:
+		# Replay owns the only visible path after tracing completes. Keep the
+		# physics chain untouched until the level is reset, but do not advance or
+		# render it while the replay is on screen.
+		drawing_point_updated.emit(Vector2.ZERO, false)
+		return
 	var pressure := pressure_model.effective_pressure
+	var is_pissing := input_controller.is_pissing()
 	_jitter_time += delta
 	var direction := input_controller.aim_direction.normalized()
 	if direction == Vector2.ZERO:
 		direction = Vector2.UP
 	direction = direction.rotated(get_jitter_angle(pressure)).normalized()
-	update_parcels(delta)
-	var sputter_intensity := pressure_model.sputter_intensity
-	if pressure_model.exhausted:
-		_emission_accumulator = 0.0
+	if is_pissing:
+		update_parcels(delta)
+		emit_parcels(direction, pressure, delta)
 	else:
-		emit_parcels(direction, pressure, delta, sputter_intensity)
+		# Releasing Space/a finger closes the stream immediately. A later press
+		# starts a fresh visible jet while the pressure model eases independently.
+		_parcels.clear()
+		_emission_accumulator = 0.0
 	_current_points = build_parcel_centerline(direction, pressure)
 	var hit := _truncate_at_target(_current_points)
 	var hit_target := not hit.is_empty()
 	_impact.emitting = false
-	if not hit.is_empty():
+	if is_pissing and not hit.is_empty():
 		_current_points = hit.points
 		_emit_hit(hit, pressure * delta * 0.50)
-	elif _current_points.size() >= 2:
+	elif is_pissing and _current_points.size() >= 2:
 		_emit_floor_impact(_current_points[_current_points.size() - 1])
 
-	var profile := get_sputter_profile(sputter_intensity, pressure_model.exhausted)
+	var profile := get_stream_profile()
 	update_ribbon_meshes(
 		_current_points,
 		lerpf(minimum_length, maximum_length, clampf(pressure, 0.0, 1.0)),
-		float(profile["ribbon_alpha"]),
+		float(profile["ribbon_alpha"]) if is_pissing else 0.0,
 		hit_target,
 	)
 	var droplet_index := mini(8, _current_points.size() - 2)
 	_droplets.position = _current_points[droplet_index] if droplet_index >= 0 else source_position
 	_droplets.direction = _tangent_at(droplet_index, direction)
-	_update_sputter_effects(delta, direction, sputter_intensity, pressure_model.exhausted)
+	_update_stream_effects(direction, is_pissing)
+	var endpoint_active := is_pissing and _current_points.size() >= 2
+	if endpoint_active:
+		drawing_point_updated.emit(_current_points[_current_points.size() - 1], true)
+	else:
+		drawing_point_updated.emit(Vector2.ZERO, false)
 	queue_redraw()
+
+
+func set_live_enabled(enabled: bool) -> void:
+	_live_enabled = enabled
+	_set_live_visuals(enabled)
+	if not enabled:
+		drawing_point_updated.emit(Vector2.ZERO, false)
+
+
+func is_live_enabled() -> bool:
+	return _live_enabled
+
+
+func reset_stream() -> void:
+	_parcels.clear()
+	_emission_accumulator = 0.0
+	_current_points = PackedVector2Array()
+	_impact.emitting = false
+	_droplets.emitting = false
+	queue_redraw()
+
+
+func _set_live_visuals(enabled: bool) -> void:
+	_edge_mesh.visible = enabled
+	_body_mesh.visible = enabled
+	_highlight_mesh.visible = enabled
+	_droplets.visible = enabled
+	_impact.visible = enabled
+	if not enabled:
+		_droplets.emitting = false
+		_impact.emitting = false
+	else:
+		# The stream only starts when Space/a finger is held.
+		_droplets.emitting = false
 
 
 func get_jitter_angle(pressure: float, at_time := -1.0) -> float:
@@ -132,16 +178,11 @@ func emit_parcels(
 		direction: Vector2,
 		pressure: float,
 		delta: float,
-		sputter_intensity := 0.0,
+		_unused_legacy_profile := 0.0,
 ) -> void:
 	var speed := lerpf(launch_speed_min, launch_speed_max, clampf(pressure, 0.0, 1.0))
-	var emission_rate := lerpf(
-		normal_emission_rate,
-		sputtering_emission_rate,
-		clampf(sputter_intensity, 0.0, 1.0),
-	)
 	_emission_accumulator += delta
-	var interval := 1.0 / maxf(emission_rate, 1.0)
+	var interval := 1.0 / maxf(normal_emission_rate, 1.0)
 	var emitted := 0
 	var launch_velocity := direction * speed
 	while _emission_accumulator >= interval and emitted < 4:
@@ -174,34 +215,31 @@ func emit_parcels(
 		_parcels.pop_back()
 
 
-func get_sputter_profile(intensity: float, is_exhausted: bool) -> Dictionary:
-	var sputter := clampf(intensity, 0.0, 1.0)
-	var fade := clampf((sputter - 0.68) / 0.32, 0.0, 1.0)
+func get_stream_profile() -> Dictionary:
+	## Every active stream has the same continuous output; pressure changes only
+	## its launch speed and length.
 	return {
-		"ambient_amount": roundi(lerpf(7.0, 14.0, sputter)),
-		"ambient_lifetime": lerpf(0.42, 0.28, sputter),
-		"ambient_velocity_min": lerpf(28.0, 52.0, sputter),
-		"ambient_velocity_max": lerpf(64.0, 112.0, sputter),
-		"burst_amount": roundi(lerpf(3.0, 28.0, sputter)),
-		"burst_velocity_min": lerpf(20.0, 78.0, sputter),
-		"burst_velocity_max": lerpf(48.0, 156.0, sputter),
-		"burst_interval": lerpf(sputter_burst_max_interval, sputter_burst_min_interval, sputter),
-		"emission_rate": (
-				0.0
-				if is_exhausted
-				else lerpf(normal_emission_rate, sputtering_emission_rate, sputter)
-		),
-		"ribbon_alpha": 0.0 if is_exhausted else 1.0 - fade * 0.62,
+		"ambient_amount": 7,
+		"ambient_lifetime": 0.42,
+		"ambient_velocity_min": 28.0,
+		"ambient_velocity_max": 64.0,
+		"burst_amount": 0,
+		"burst_velocity_min": 20.0,
+		"burst_velocity_max": 48.0,
+		"burst_interval": 1.0,
+		"emission_rate": normal_emission_rate,
+		"ribbon_alpha": 1.0,
 	}
 
 
-func _update_sputter_effects(
-		delta: float,
-		direction: Vector2,
-		intensity: float,
-		is_exhausted: bool,
-) -> void:
-	var profile := get_sputter_profile(intensity, is_exhausted)
+func _update_stream_effects(direction: Vector2, is_pissing: bool) -> void:
+	var profile := get_stream_profile()
+	if not is_pissing:
+		_droplets.emitting = false
+		_edge_mesh.modulate.a = 1.0
+		_body_mesh.modulate.a = 1.0
+		_highlight_mesh.modulate.a = 1.0
+		return
 	_droplets.position = source_position
 	_droplets.direction = direction
 	_droplets.amount = int(profile["ambient_amount"])
@@ -209,24 +247,10 @@ func _update_sputter_effects(
 	_droplets.initial_velocity_min = float(profile["ambient_velocity_min"])
 	_droplets.initial_velocity_max = float(profile["ambient_velocity_max"])
 	_droplets.emitting = true
-	_sputter_burst.position = source_position
-	_sputter_burst.direction = direction
-	_sputter_burst.amount = int(profile["burst_amount"])
-	_sputter_burst.initial_velocity_min = float(profile["burst_velocity_min"])
-	_sputter_burst.initial_velocity_max = float(profile["burst_velocity_max"])
-	_sputter_accumulator += delta
-	var burst_interval := float(profile["burst_interval"])
-	if intensity < 0.05:
-		_sputter_accumulator = 0.0
-	elif _sputter_accumulator >= burst_interval:
-		_sputter_accumulator = fmod(_sputter_accumulator, burst_interval)
-		_sputter_burst.restart()
 	var ribbon_alpha := float(profile["ribbon_alpha"])
 	_edge_mesh.modulate.a = ribbon_alpha
 	_body_mesh.modulate.a = ribbon_alpha
 	_highlight_mesh.modulate.a = ribbon_alpha
-
-
 func build_parcel_centerline(_direction: Vector2, _pressure: float) -> PackedVector2Array:
 	# Render a capped sample of the moving parcel chain. The visible ribbon is an
 	# interpolation of locked-in parcels, not a fresh curve from the current aim.

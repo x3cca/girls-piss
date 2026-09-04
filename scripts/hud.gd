@@ -10,7 +10,10 @@ var show_touch_controls := false
 var safe_margin := 28.0
 @onready var carrot_aim_control: CarrotAimControl = $CarrotAimControl
 @onready var pressure_fader: PressureFader = $PressureFader
+@onready var touch_reticle: TouchReticle = $TouchReticle
+@onready var completion_card: CompletionCard = $CompletionCard
 var _wired_input_controller: InputController
+var gameplay_controls_visible := true
 
 
 func _ready() -> void:
@@ -28,11 +31,29 @@ func process_frame(_delta: float) -> void:
 		show_touch_controls = input_controller.touch_controls_visible
 	_wire_input_controller()
 	_layout_controls()
-	carrot_aim_control.visible = true
-	pressure_fader.visible = show_touch_controls
+	carrot_aim_control.visible = gameplay_controls_visible
+	pressure_fader.visible = gameplay_controls_visible and show_touch_controls
 	if pressure_model:
 		pressure_fader.set_pressure(pressure_model.requested_pressure)
 	queue_redraw()
+
+
+func set_gameplay_controls_visible(enabled: bool) -> void:
+	gameplay_controls_visible = enabled
+	carrot_aim_control.visible = enabled
+	pressure_fader.visible = enabled and show_touch_controls
+	if not enabled:
+		touch_reticle.set_touch_target(Vector2.ZERO, false)
+	queue_redraw()
+
+
+func show_completion_card() -> void:
+	set_gameplay_controls_visible(false)
+	completion_card.show_card()
+
+
+func hide_completion_card() -> void:
+	completion_card.hide_card()
 
 
 func _wire_input_controller() -> void:
@@ -47,20 +68,37 @@ func _wire_input_controller() -> void:
 			carrot_aim_control.swayed_aim_angle_changed.disconnect(
 				_wired_input_controller.set_swayed_aim_angle,
 			)
+		if _wired_input_controller.touch_target_changed.is_connected(
+			_on_touch_target_changed,
+		):
+			_wired_input_controller.touch_target_changed.disconnect(
+				_on_touch_target_changed,
+			)
 	_wired_input_controller = input_controller
 	if not is_instance_valid(_wired_input_controller):
 		return
-	if not carrot_aim_control.aim_angle_changed.is_connected(_wired_input_controller.set_aim_angle):
-		carrot_aim_control.aim_angle_changed.connect(_wired_input_controller.set_aim_angle)
+	if not carrot_aim_control.aim_angle_changed.is_connected(
+		_wired_input_controller.set_aim_target_angle,
+	):
+		carrot_aim_control.aim_angle_changed.connect(_wired_input_controller.set_aim_target_angle)
 	if not _wired_input_controller.aim_angle_changed.is_connected(carrot_aim_control.set_aim_angle):
 		_wired_input_controller.aim_angle_changed.connect(carrot_aim_control.set_aim_angle)
-		if not carrot_aim_control.swayed_aim_angle_changed.is_connected(
+	if not carrot_aim_control.swayed_aim_angle_changed.is_connected(
+		_wired_input_controller.set_swayed_aim_angle,
+	):
+		carrot_aim_control.swayed_aim_angle_changed.connect(
 			_wired_input_controller.set_swayed_aim_angle,
-		):
-			carrot_aim_control.swayed_aim_angle_changed.connect(
-				_wired_input_controller.set_swayed_aim_angle,
-			)
+		)
+	if not _wired_input_controller.touch_target_changed.is_connected(
+		_on_touch_target_changed,
+	):
+		_wired_input_controller.touch_target_changed.connect(_on_touch_target_changed)
 	carrot_aim_control.set_aim_angle(_wired_input_controller.get_aim_angle())
+
+
+func _on_touch_target_changed(position: Vector2, active: bool) -> void:
+	if gameplay_controls_visible:
+		touch_reticle.set_touch_target(position, active)
 
 
 func _layout_controls() -> void:
@@ -81,6 +119,8 @@ func _layout_controls() -> void:
 
 
 func _draw() -> void:
+	if not gameplay_controls_visible:
+		return
 	var viewport := get_viewport_rect()
 	var safe := viewport.grow(-minf(safe_margin, minf(viewport.size.x, viewport.size.y) * 0.04))
 	var font := ThemeDB.fallback_font
@@ -99,7 +139,7 @@ func _draw() -> void:
 	draw_string(
 		font,
 		safe.position + Vector2(0, 48),
-		"aim • squeeze • soak",
+		"aim • squeeze • trace",
 		HORIZONTAL_ALIGNMENT_LEFT,
 		-1,
 		small,
@@ -111,51 +151,15 @@ func _draw() -> void:
 		Color("#f1d34f"),
 		"PRESSURE",
 	)
-	_draw_meter(
-		Rect2(safe.position + Vector2(218, 72), Vector2(196, 18)),
-		pressure_model.reserve if pressure_model else 0.0,
-		Color("#c3b57a"),
-		"RESERVE",
+	draw_string(
+		font,
+		safe.position + Vector2(0, 120),
+		"W / S  pressure     A / D  aim     SPACE  piss",
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		small,
+		Color("#b2a77a"),
 	)
-	if pressure_model and pressure_model.exhausted:
-		draw_string(
-			font,
-			safe.position + Vector2(0, 120),
-			"RECOVERING",
-			HORIZONTAL_ALIGNMENT_LEFT,
-			-1,
-			small,
-			Color("#ffbf7a"),
-		)
-	else:
-		draw_string(
-			font,
-			safe.position + Vector2(0, 120),
-			"W / S  pressure     A / D  aim",
-			HORIZONTAL_ALIGNMENT_LEFT,
-			-1,
-			small,
-			Color("#b2a77a"),
-		)
-
-	# Small target progress tags remain readable on wide and tall portrait ratios.
-	for index in target_nodes.size():
-		var target := target_nodes[index]
-		if is_instance_valid(target):
-			var label_position := target.position + Vector2(
-				-target.target_size.x * 0.5,
-				-target.target_size.y * 0.5 - 16.0,
-			)
-			draw_string(
-				font,
-				label_position,
-				"TARGET %02d  %d%%" % [index + 1, roundi(target.wetness * 100.0)],
-				HORIZONTAL_ALIGNMENT_LEFT,
-				-1,
-				13,
-				Color("#d5c77f"),
-			)
-
 
 func _draw_meter(rect: Rect2, value: float, color: Color, title: String) -> void:
 	var font := ThemeDB.fallback_font

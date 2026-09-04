@@ -16,9 +16,14 @@ particle sprite later.
 
 `stream_particle_placeholder.png` is the current particle sprite: a white
 circle with a black outline and transparent corners. It is shared by the
-ambient droplets, sputter burst, and continuous floor/target impact effect.
+ambient droplets and the continuous floor impact effect.
 
-`carrot_aim_placeholder.png` is the temporary black-border blockout for the
-scene-authored aim indicator. It rotates around its base as the player drags
-across the indicator's transparent horizontal input span; replace it with final carrot art
-without changing the control scene or signal interface.
+`carrot_aim_placeholder.png` is the temporary black-border rectangular player
+marker. It rotates around its base as the player changes the stream aim.
+Replace it with final player art without changing the control scene or signal
+interface.
+
+`aimer_placeholder.png` is a temporary transparent black-and-white circular
+aimer/trace-target sprite. During touch play it follows the raw finger position;
+it is also used by trace targets. Replace it with authored 2D target art; these
+sprites receive the shared boil shader at runtime.

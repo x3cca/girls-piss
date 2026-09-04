@@ -94,3 +94,17 @@ error-free, format and lint them, then fix any remaining errors and warnings.
 
 Third-party code in `addons/` includes both `addons/godot_mcp/` and
 `addons/gut/`; do not reformat or lint either directory.
+
+## Visual implementation note
+
+This project uses procedural drawing and other computer-generated blockout
+elements for quick gameplay prototyping. They are temporary scaffolding: the
+finished features should be represented by authored 2D art and sprites.
+
+When a sprite is authored for the game, apply the shared boil shader where it
+fits the visual treatment. Keep the gameplay-facing scene/script interfaces
+stable so placeholder art can be replaced without rewriting the mechanic.
+
+The current aimer and trace-target PNGs are placeholders. Replace them with
+final art as those features are illustrated, while preserving transparency,
+the relevant pivot/scale behavior, and the existing input or hit signals.

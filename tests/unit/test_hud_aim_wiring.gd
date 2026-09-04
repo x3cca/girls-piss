@@ -15,6 +15,8 @@ func test_carrot_signal_updates_input_controller_without_reset_on_release() -> v
 	var track := carrot.get_track_rect()
 	carrot.begin_drag(Vector2(track.end.x, track.position.y))
 	carrot.end_drag()
+	controller.set_process(false)
+	controller.process_frame(0.2)
 
 	assert_almost_eq(controller.get_aim_angle(), PI / 3.0, 0.001)
 	assert_almost_eq(carrot.get_aim_angle(), PI / 3.0, 0.001)
@@ -57,6 +59,30 @@ func test_physical_keyboard_aim_survives_hud_wiring() -> void:
 	assert_almost_eq(controller.get_aim_angle(), 0.235, 0.001)
 	assert_almost_eq(carrot_angle(hud), 0.235, 0.001)
 	assert_almost_eq(Vector2.UP.angle_to(controller.aim_direction), 0.235, 0.001)
+
+
+func test_touch_reticle_stays_at_the_raw_finger_position() -> void:
+	var hud := HUD_SCENE.instantiate() as StreamHUD
+	add_child_autofree(hud)
+	var controller := InputController.new()
+	add_child_autofree(controller)
+	hud.input_controller = controller
+	hud.process_frame(0.0)
+
+	var touch_down := InputEventScreenTouch.new()
+	touch_down.index = 1
+	touch_down.position = Vector2(180.0, 420.0)
+	touch_down.pressed = true
+	controller.handle_input_event(touch_down)
+
+	assert_true(hud.touch_reticle.visible)
+	assert_eq(hud.touch_reticle.position, touch_down.position)
+
+	var touch_up := InputEventScreenTouch.new()
+	touch_up.index = 1
+	touch_up.pressed = false
+	controller.handle_input_event(touch_up)
+	assert_false(hud.touch_reticle.visible)
 
 
 func carrot_angle(hud: StreamHUD) -> float:

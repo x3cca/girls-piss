@@ -1,6 +1,6 @@
-[gd_resource type="ShaderMaterial" format=3]
+[gd_resource type="ShaderMaterial" format=3 uid="uid://cm0278crn0uyq"]
 
-[ext_resource type="Shader" path="res://shaders/boil_effect.gdshader" id="1_boil_shader"]
+[ext_resource type="Shader" uid="uid://cyf6qei6lk1w0" path="res://shaders/boil_effect.gdshader" id="1_boil_shader"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_boil"]
 
