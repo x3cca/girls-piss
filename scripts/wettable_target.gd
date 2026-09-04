@@ -11,19 +11,12 @@ signal soaked
 
 var wetness := 0.0
 var _soaked_emitted := false
+@onready var _collision_shape: CollisionShape2D = $CollisionBody/CollisionShape2D
 
 
 func _ready() -> void:
-	var body := StaticBody2D.new()
-	body.collision_layer = 1
-	body.collision_mask = 0
-	body.set_meta("wet_target", self)
-	var shape_node := CollisionShape2D.new()
-	var shape := RectangleShape2D.new()
-	shape.size = target_size
-	shape_node.shape = shape
-	body.add_child(shape_node)
-	add_child(body)
+	_collision_shape.shape.size = target_size
+	_collision_shape.get_parent().set_meta("wet_target", self)
 	queue_redraw()
 
 

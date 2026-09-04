@@ -18,11 +18,11 @@ signal wet_target_hit(target: WettableTarget, amount: float, position: Vector2, 
 var input_controller: InputController
 var pressure_model: PressureModel
 
-var _edge_line: Line2D
-var _body_line: Line2D
-var _highlight_line: Line2D
-var _droplets: CPUParticles2D
-var _impact: CPUParticles2D
+@onready var _edge_line: Line2D = $EdgeRibbon
+@onready var _body_line: Line2D = $BodyRibbon
+@onready var _highlight_line: Line2D = $HighlightRibbon
+@onready var _droplets: CPUParticles2D = $Droplets
+@onready var _impact: CPUParticles2D = $ImpactBurst
 var _parcels: Array[Dictionary] = []
 var _emission_accumulator := 0.0
 var _last_hit_target: Object
@@ -31,46 +31,10 @@ var _current_points := PackedVector2Array()
 
 
 func _ready() -> void:
-	_edge_line = _make_line(14.0, Color("#493719"))
-	_body_line = _make_line(9.0, liquid_color)
-	_highlight_line = _make_line(2.5, Color("#fff3a0"))
-	add_child(_edge_line)
-	add_child(_body_line)
-	add_child(_highlight_line)
-
-	_droplets = CPUParticles2D.new()
-	_droplets.amount = 7
-	_droplets.lifetime = 0.42
-	_droplets.randomness = 0.55
-	_droplets.emission_shape = CPUParticles2D.EMISSION_SHAPE_POINT
-	_droplets.direction = Vector2.UP
-	_droplets.spread = 38.0
-	_droplets.initial_velocity_min = 28.0
-	_droplets.initial_velocity_max = 64.0
-	_droplets.gravity = Vector2(0.0, 38.0)
-	_droplets.scale_amount_min = 0.45
-	_droplets.scale_amount_max = 0.9
-	_droplets.color = Color("#f7e479")
-	_droplets.texture = _particle_texture()
-	_droplets.emitting = true
-	add_child(_droplets)
-
-	_impact = CPUParticles2D.new()
-	_impact.amount = 18
-	_impact.lifetime = 0.33
-	_impact.one_shot = true
-	_impact.explosiveness = 0.92
-	_impact.emission_shape = CPUParticles2D.EMISSION_SHAPE_POINT
-	_impact.direction = Vector2.DOWN
-	_impact.spread = 100.0
-	_impact.initial_velocity_min = 24.0
-	_impact.initial_velocity_max = 75.0
-	_impact.gravity = Vector2(0.0, 120.0)
-	_impact.scale_amount_min = 0.4
-	_impact.scale_amount_max = 1.1
-	_impact.color = Color("#fff0a0")
-	_impact.texture = _particle_texture()
-	add_child(_impact)
+	var width_curve := _width_curve()
+	_edge_line.width_curve = width_curve
+	_body_line.width_curve = width_curve
+	_highlight_line.width_curve = width_curve
 	queue_redraw()
 
 
@@ -223,31 +187,11 @@ func _tangent_at(index: int, fallback: Vector2) -> Vector2:
 	return tangent.normalized() if tangent.length_squared() > 0.001 else fallback
 
 
-func _make_line(width: float, color: Color) -> Line2D:
-	var line := Line2D.new()
-	line.width = width
-	line.default_color = color
-	line.joint_mode = Line2D.LINE_JOINT_ROUND
-	line.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	line.end_cap_mode = Line2D.LINE_CAP_ROUND
+func _width_curve() -> Curve:
 	var curve := Curve.new()
 	curve.min_value = 0.0
 	curve.max_value = 1.0
 	curve.add_point(Vector2(0.0, 1.0))
 	curve.add_point(Vector2(0.68, 0.86))
 	curve.add_point(Vector2(1.0, 0.18))
-	line.width_curve = curve
-	return line
-
-
-func _particle_texture() -> GradientTexture2D:
-	var gradient := Gradient.new()
-	gradient.colors = PackedColorArray([Color.WHITE, Color(1, 1, 1, 0.0)])
-	var texture := GradientTexture2D.new()
-	texture.gradient = gradient
-	texture.width = 12
-	texture.height = 12
-	texture.fill = GradientTexture2D.FILL_RADIAL
-	texture.fill_from = Vector2(0.5, 0.5)
-	texture.fill_to = Vector2(1.0, 0.5)
-	return texture
+	return curve

@@ -1,44 +1,31 @@
 extends Node2D
 
-const STREAM_SCENE := preload("res://scenes/liquid_stream.tscn")
-const TARGET_SCENE := preload("res://scenes/wettable_target.tscn")
-const HUD_SCENE := preload("res://scenes/stream_hud.tscn")
-
 ## Playable portrait-first sample level. All world positions are derived from the
 ## visible rectangle, so expand stretching and taller phone ratios stay usable.
 ## The stream source is deliberately below the frame: the player controls the
 ## jet, never a visible wand or nozzle.
 
-var input_controller: InputController
-var pressure_model: PressureModel
-var stream: LiquidStream
-var hud: StreamHUD
+@onready var input_controller: InputController = $InputController
+@onready var pressure_model: PressureModel = $PressureModel
+@onready var stream: LiquidStream = $LiquidStream
+@onready var hud: StreamHUD = $HUDLayer/HUD
 var targets: Array[WettableTarget] = []
-var _broad_light: PointLight2D
-var _impact_light: PointLight2D
+@onready var _broad_light: PointLight2D = $BroadMoonLight
+@onready var _impact_light: PointLight2D = $StreamImpactLight
 var _world_size := Vector2(720.0, 1280.0)
 var _layout_signature := Vector2.ZERO
 
 
 func _ready() -> void:
-	input_controller = InputController.new()
-	input_controller.name = "InputController"
-	add_child(input_controller)
-	pressure_model = PressureModel.new()
-	pressure_model.name = "PressureModel"
-	add_child(pressure_model)
+	targets = [$WettablePlot01, $WettablePlot02, $WettablePlot03]
 	pressure_model.requested_pressure = input_controller.requested_pressure
 
-	stream = STREAM_SCENE.instantiate() as LiquidStream
-	stream.name = "LiquidStream"
 	stream.input_controller = input_controller
 	stream.pressure_model = pressure_model
 	stream.wet_target_hit.connect(_on_wet_target_hit)
-	add_child(stream)
-
-	_create_targets()
-	_create_lighting()
-	_create_hud()
+	for target in targets:
+		target.soaked.connect(_on_target_soaked.bind(target))
+	_wire_hud()
 	_layout_world()
 	queue_redraw()
 
@@ -72,67 +59,12 @@ func _layout_world() -> void:
 			_impact_light.position = stream.source_position
 
 
-func _create_targets() -> void:
-	for i in 3:
-		var target := TARGET_SCENE.instantiate() as WettableTarget
-		target.name = "WettablePlot%02d" % (i + 1)
-		target.target_size = Vector2(174.0, 112.0) if i != 1 else Vector2(188.0, 120.0)
-		target.base_color = [Color("#68724b"), Color("#79634b"), Color("#4f7060")][i]
-		target.accent_color = [Color("#e4d15d"), Color("#efd66a"), Color("#d6c34d")][i]
-		target.required_liquid = 1.25
-		target.soaked.connect(_on_target_soaked.bind(target))
-		add_child(target)
-		targets.append(target)
-
-
-func _create_lighting() -> void:
-	var ambient := CanvasModulate.new()
-	ambient.color = Color("#566080")
-	add_child(ambient)
-	_broad_light = PointLight2D.new()
-	_broad_light.name = "BroadMoonLight"
-	_broad_light.texture = _light_texture()
-	_broad_light.texture_scale = 3.4
-	_broad_light.energy = 0.72
-	_broad_light.color = Color("#91a9ff")
-	_broad_light.position = Vector2(_world_size.x * 0.50, _world_size.y * 0.34)
-	add_child(_broad_light)
-	_impact_light = PointLight2D.new()
-	_impact_light.name = "StreamImpactLight"
-	_impact_light.texture = _light_texture()
-	_impact_light.texture_scale = 0.82
-	_impact_light.energy = 1.1
-	_impact_light.color = Color("#ffe589")
-	_impact_light.position = stream.source_position
-	add_child(_impact_light)
-
-
-func _light_texture() -> GradientTexture2D:
-	var gradient := Gradient.new()
-	gradient.colors = PackedColorArray([Color(1, 1, 1, 0.95), Color(1, 1, 1, 0.0)])
-	var texture := GradientTexture2D.new()
-	texture.gradient = gradient
-	texture.width = 256
-	texture.height = 256
-	texture.fill = GradientTexture2D.FILL_RADIAL
-	texture.fill_from = Vector2(0.5, 0.5)
-	texture.fill_to = Vector2(1.0, 0.5)
-	return texture
-
-
-func _create_hud() -> void:
-	var layer := CanvasLayer.new()
-	layer.name = "HUDLayer"
-	add_child(layer)
-	hud = HUD_SCENE.instantiate() as StreamHUD
-	hud.name = "HUD"
+func _wire_hud() -> void:
 	hud.input_controller = input_controller
 	hud.pressure_model = pressure_model
 	hud.stream = stream
 	hud.target_nodes = targets
 	hud.show_touch_controls = input_controller.touch_controls_visible
-	hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	layer.add_child(hud)
 
 
 func _on_wet_target_hit(
