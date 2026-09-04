@@ -10,6 +10,13 @@ mkdir -p "${RESULTS_DIR}"
 "${GODOT_BIN}" \
 	--headless \
 	--path "${PROJECT_DIR}" \
+	--editor \
+	--quit \
+	--import
+
+"${GODOT_BIN}" \
+	--headless \
+	--path "${PROJECT_DIR}" \
 	--script addons/gut/gut_cmdln.gd \
 	-gexit \
 	-gignore_pause \
