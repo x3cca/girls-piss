@@ -68,3 +68,8 @@ notes, and skills/ AI workflow notes.
 The structure and workflow ideas were adapted from dating-chess,
 Date-or-Mate-2, and fvf.x3c.ca. The included Godot MCP addon comes from
 godot-mcp-cli and is kept under its MIT license. See third_party/.
+
+The included UI sound effects are from [Case Portman Audio's Cute & Cozy UI
+Audio Free Sample](https://caseportman.itch.io/cute-cozy-ui-sfx) and are used
+under its royalty-free, attribution-required license. See
+`assets/audio/cute_cozy_ui/license.txt`.
