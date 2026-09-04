@@ -12,6 +12,7 @@ const RESOURCE_SUFFIX := "_canvas_texture.tres"
 const HEIGHT_RADIUS := 2
 const NORMAL_STRENGTH := 1.35
 
+
 func _init() -> void:
 	var files: Array[String] = []
 	_collect_pngs(ART_ROOT, files)
@@ -19,6 +20,7 @@ func _init() -> void:
 	for source_path in files:
 		_bake(source_path)
 	quit()
+
 
 func _collect_pngs(directory_path: String, output: Array[String]) -> void:
 	var directory := DirAccess.open(directory_path)
@@ -37,6 +39,7 @@ func _collect_pngs(directory_path: String, output: Array[String]) -> void:
 			output.append(path)
 		entry = directory.get_next()
 	directory.list_dir_end()
+
 
 func _bake(source_path: String) -> void:
 	var image := Image.load_from_file(ProjectSettings.globalize_path(source_path))
@@ -63,6 +66,7 @@ func _bake(source_path: String) -> void:
 	if error != OK:
 		push_warning("Could not save CanvasTexture %s (%s)" % [resource_path, error])
 
+
 func _height(image: Image, x: int, y: int) -> float:
 	var total := 0.0
 	var weight_total := 0.0
@@ -76,8 +80,22 @@ func _height(image: Image, x: int, y: int) -> float:
 			weight_total += weight
 	return total / maxf(weight_total, 0.001)
 
+
 func _sobel_x(image: Image, x: int, y: int) -> float:
-	return ((_height(image, x + 1, y - 1) + 2.0 * _height(image, x + 1, y) + _height(image, x + 1, y + 1)) - (_height(image, x - 1, y - 1) + 2.0 * _height(image, x - 1, y) + _height(image, x - 1, y + 1))) / 8.0
+	var right := _height(image, x + 1, y - 1)
+	right += 2.0 * _height(image, x + 1, y)
+	right += _height(image, x + 1, y + 1)
+	var left := _height(image, x - 1, y - 1)
+	left += 2.0 * _height(image, x - 1, y)
+	left += _height(image, x - 1, y + 1)
+	return (right - left) / 8.0
+
 
 func _sobel_y(image: Image, x: int, y: int) -> float:
-	return ((_height(image, x - 1, y + 1) + 2.0 * _height(image, x, y + 1) + _height(image, x + 1, y + 1)) - (_height(image, x - 1, y - 1) + 2.0 * _height(image, x, y - 1) + _height(image, x + 1, y - 1))) / 8.0
+	var down := _height(image, x - 1, y + 1)
+	down += 2.0 * _height(image, x, y + 1)
+	down += _height(image, x + 1, y + 1)
+	var up := _height(image, x - 1, y - 1)
+	up += 2.0 * _height(image, x, y - 1)
+	up += _height(image, x + 1, y - 1)
+	return (down - up) / 8.0

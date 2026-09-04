@@ -29,6 +29,7 @@ var _last_hit_target: Object
 var _last_hit_position := Vector2.INF
 var _current_points := PackedVector2Array()
 
+
 func _ready() -> void:
 	_edge_line = _make_line(14.0, Color("#493719"))
 	_body_line = _make_line(9.0, liquid_color)
@@ -72,6 +73,7 @@ func _ready() -> void:
 	add_child(_impact)
 	queue_redraw()
 
+
 func _process(delta: float) -> void:
 	if input_controller == null or pressure_model == null:
 		return
@@ -79,8 +81,8 @@ func _process(delta: float) -> void:
 	var direction := input_controller.aim_direction.normalized()
 	if direction == Vector2.ZERO:
 		direction = Vector2.UP
-	_update_parcels(delta)
-	_emit_parcels(direction, pressure, delta)
+	update_parcels(delta)
+	emit_parcels(direction, pressure, delta)
 	_current_points = _build_parcel_centerline(direction, pressure)
 	var hit := _truncate_at_target(_current_points)
 	if not hit.is_empty():
@@ -96,7 +98,8 @@ func _process(delta: float) -> void:
 	_droplets.emitting = pressure > 0.15
 	queue_redraw()
 
-func _update_parcels(delta: float) -> void:
+
+func update_parcels(delta: float) -> void:
 	# Parcels are independent. Once emitted, their launch velocity never reads the
 	# input controller again; only gravity changes that parcel's velocity.
 	for parcel in _parcels:
@@ -105,7 +108,8 @@ func _update_parcels(delta: float) -> void:
 		parcel["velocity"] = velocity + gravity * delta
 		parcel["age"] = float(parcel["age"]) + delta
 
-func _emit_parcels(direction: Vector2, pressure: float, delta: float) -> void:
+
+func emit_parcels(direction: Vector2, pressure: float, delta: float) -> void:
 	var speed := lerpf(launch_speed_min, launch_speed_max, clampf(pressure, 0.0, 1.0))
 	_emission_accumulator += delta
 	var interval := 1.0 / 60.0
@@ -119,11 +123,25 @@ func _emit_parcels(direction: Vector2, pressure: float, delta: float) -> void:
 	# slower frames.
 	emitted = maxi(emitted, 1)
 	for _i in emitted:
-		_parcels.push_front({"position": source_position, "velocity": launch_velocity, "launch_velocity": launch_velocity, "age": 0.0})
-	var stream_age := lerpf(minimum_length, maximum_length, clampf(pressure, 0.0, 1.0)) / maxf(speed, 1.0)
+		_parcels.push_front(
+			{
+				"position": source_position,
+				"velocity": launch_velocity,
+				"launch_velocity": launch_velocity,
+				"age": 0.0,
+			}
+		)
+	var stream_age := lerpf(minimum_length, maximum_length, clampf(pressure, 0.0, 1.0)) / maxf(
+		speed,
+		1.0,
+	)
 	var lifetime := minf(parcel_lifetime, stream_age)
-	while not _parcels.is_empty() and (float(_parcels.back()["age"]) > lifetime or _parcels.size() > max_parcels):
+	while (
+		not _parcels.is_empty()
+		and (float(_parcels.back()["age"]) > lifetime or _parcels.size() > max_parcels)
+	):
 		_parcels.pop_back()
+
 
 func _build_parcel_centerline(_direction: Vector2, _pressure: float) -> PackedVector2Array:
 	# Render a capped sample of the moving parcel chain. The visible ribbon is an
@@ -136,13 +154,18 @@ func _build_parcel_centerline(_direction: Vector2, _pressure: float) -> PackedVe
 	var point_count := mini(ribbon_points, _parcels.size())
 	for i in range(1, point_count):
 		var fraction := float(i) / float(maxi(point_count - 1, 1))
-		var parcel_index := clampi(roundi(fraction * float(_parcels.size() - 1)), 0, _parcels.size() - 1)
+		var parcel_index := clampi(
+			roundi(fraction * float(_parcels.size() - 1)),
+			0,
+			_parcels.size() - 1,
+		)
 		points.append(_parcels[parcel_index]["position"])
 	return points
 
+
 func _truncate_at_target(points: PackedVector2Array) -> Dictionary:
 	if points.size() < 2:
-		return {}
+		return { }
 	var space := get_world_2d().direct_space_state
 	for i in range(points.size() - 1):
 		var query := PhysicsRayQueryParameters2D.create(points[i], points[i + 1], collision_mask)
@@ -161,8 +184,14 @@ func _truncate_at_target(points: PackedVector2Array) -> Dictionary:
 		for j in range(i + 1):
 			clipped.append(points[j])
 		clipped.append(result.position)
-		return {"points": clipped, "target": target, "position": result.position, "normal": result.normal}
-	return {}
+		return {
+			"points": clipped,
+			"target": target,
+			"position": result.position,
+			"normal": result.normal,
+		}
+	return { }
+
 
 func _emit_hit(hit: Dictionary, amount: float) -> void:
 	var target: WettableTarget = hit.target
@@ -176,12 +205,14 @@ func _emit_hit(hit: Dictionary, amount: float) -> void:
 	_last_hit_position = position
 	wet_target_hit.emit(target, amount, position, normal)
 
+
 func _offset_highlight(points: PackedVector2Array) -> PackedVector2Array:
 	var result := PackedVector2Array()
 	for i in points.size():
 		var tangent := _tangent_at(i, Vector2.UP)
 		result.append(points[i] + Vector2(-tangent.y, tangent.x) * 1.2)
 	return result
+
 
 func _tangent_at(index: int, fallback: Vector2) -> Vector2:
 	if _current_points.size() < 2 or index < 0:
@@ -190,6 +221,7 @@ func _tangent_at(index: int, fallback: Vector2) -> Vector2:
 	var previous_index := maxi(index - 1, 0)
 	var tangent := _current_points[next_index] - _current_points[previous_index]
 	return tangent.normalized() if tangent.length_squared() > 0.001 else fallback
+
 
 func _make_line(width: float, color: Color) -> Line2D:
 	var line := Line2D.new()
@@ -206,6 +238,7 @@ func _make_line(width: float, color: Color) -> Line2D:
 	curve.add_point(Vector2(1.0, 0.18))
 	line.width_curve = curve
 	return line
+
 
 func _particle_texture() -> GradientTexture2D:
 	var gradient := Gradient.new()
