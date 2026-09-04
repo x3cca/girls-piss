@@ -1,22 +1,69 @@
-[gd_scene format=3]
+[gd_scene load_steps=9 format=3]
 
-[node name="SmokeTest" type="Control"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/liquid_stream.tscn" id="2_stream"]
+[ext_resource type="PackedScene" path="res://scenes/wettable_target.tscn" id="3_target"]
+[ext_resource type="PackedScene" path="res://scenes/stream_hud.tscn" id="4_hud"]
+[ext_resource type="Script" path="res://scripts/input_controller.gd" id="5_input"]
+[ext_resource type="Script" path="res://scripts/pressure_model.gd" id="6_pressure"]
 
-[node name="Center" type="CenterContainer" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[sub_resource type="Gradient" id="Gradient_light"]
+colors = PackedColorArray(1, 1, 1, 0.95, 1, 1, 1, 0)
 
-[node name="Label" type="Label" parent="Center"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "Godot jam starter ready"
+[sub_resource type="GradientTexture2D" id="GradientTexture_light"]
+gradient = SubResource("Gradient_light")
+width = 256
+height = 256
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[node name="LiquidStreamPrototype" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="InputController" type="Node" parent="."]
+script = ExtResource("5_input")
+
+[node name="PressureModel" type="Node" parent="."]
+script = ExtResource("6_pressure")
+
+[node name="LiquidStream" parent="." instance=ExtResource("2_stream")]
+
+[node name="WettablePlot01" parent="." instance=ExtResource("3_target")]
+target_size = Vector2(174, 112)
+base_color = Color(0.408, 0.447, 0.294, 1)
+accent_color = Color(0.894, 0.82, 0.365, 1)
+required_liquid = 1.25
+
+[node name="WettablePlot02" parent="." instance=ExtResource("3_target")]
+target_size = Vector2(188, 120)
+base_color = Color(0.475, 0.388, 0.294, 1)
+accent_color = Color(0.937, 0.839, 0.416, 1)
+required_liquid = 1.25
+
+[node name="WettablePlot03" parent="." instance=ExtResource("3_target")]
+target_size = Vector2(174, 112)
+base_color = Color(0.31, 0.439, 0.376, 1)
+accent_color = Color(0.839, 0.765, 0.302, 1)
+required_liquid = 1.25
+
+[node name="Ambient" type="CanvasModulate" parent="."]
+color = Color(0.337, 0.376, 0.502, 1)
+
+[node name="BroadMoonLight" type="PointLight2D" parent="."]
+texture = SubResource("GradientTexture_light")
+texture_scale = 3.4
+energy = 0.72
+color = Color(0.569, 0.663, 1, 1)
+position = Vector2(360, 435)
+
+[node name="StreamImpactLight" type="PointLight2D" parent="."]
+texture = SubResource("GradientTexture_light")
+texture_scale = 0.82
+energy = 1.1
+color = Color(1, 0.898, 0.537, 1)
+position = Vector2(360, 1328)
+
+[node name="HUDLayer" type="CanvasLayer" parent="."]
+
+[node name="HUD" parent="HUDLayer" instance=ExtResource("4_hud")]

@@ -1,10 +1,12 @@
 # girl-pisser
 
-Small Godot 4 game-jam starter focused on plugins and developer workflow.
+Small Godot 4 game-jam prototype focused on a portrait liquid-stream loop and
+developer workflow.
 
-This combines the useful pieces found in dating-chess, the current tooling
-from Date-or-Mate-2, and the itch.io build shape from fvf.x3c.ca. It leaves
-the game code intentionally empty so a jam project can start cleanly.
+The playable sample aims a continuous inertial urine stream entering from below
+the bottom-center of the frame, manages a requested pressure plus an exertion
+reserve, and wets persistent targets. Desktop uses A/D and W/S; touch devices
+get an independent right aim joystick and left pressure fader.
 
 ## Included
 
@@ -15,11 +17,14 @@ the game code intentionally empty so a jam project can start cleanly.
 - Web export preset targeting build/web/index.html.
 - GitHub Actions for Godot checks and HTML5/Butler deployment.
 - A local/CI test wrapper at tools/run-tests.sh with JUnit output.
-- A minimal smoke-test scene to confirm the project opens.
+- A portrait liquid-stream sample scene with wettable targets and lighting.
+- An inertial stream model where emitted flow keeps its launch velocity while
+  gravity carries it through direction changes.
+- An offline alpha-silhouette normal-map baker in `tools/`.
 - Agent and MCP workflow notes.
 
-Open the folder in Godot 4.7.2+ and replace scenes/smoke_test.tscn when the
-actual game begins.
+Open the folder in Godot 4.7.2+ and run `scenes/smoke_test.tscn` (the historical
+filename is retained so existing export presets keep working).
 
 ## Local MCP
 
@@ -59,9 +64,9 @@ girl-pisser. See docs/pipeline.md for setup details.
 
 ## Layout
 
-addons/ editor plugins, scenes/ smoke-test scene, tests/ GUT tests, tools/
-developer scripts, assets/ project assets, .github/ automation, docs/ workflow
-notes, and skills/ AI workflow notes.
+addons/ editor plugins, scenes/ prototype and component scenes, tests/ GUT
+tests, tools/ developer scripts, assets/ project assets, .github/ automation,
+docs/ workflow notes, and skills/ AI workflow notes.
 
 ## Attribution
 
