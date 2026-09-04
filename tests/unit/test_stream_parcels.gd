@@ -2,7 +2,8 @@ extends GutTest
 
 
 func test_new_aim_only_changes_newly_emitted_parcel() -> void:
-	var stream := LiquidStream.new()
+	var stream_scene := load("res://scenes/liquid_stream.tscn") as PackedScene
+	var stream := stream_scene.instantiate() as LiquidStream
 	add_child_autofree(stream)
 	stream.gravity = Vector2.ZERO
 	stream.source_position = Vector2.ZERO
