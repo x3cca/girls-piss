@@ -2,6 +2,8 @@ extends Node2D
 
 ## Playable portrait-first sample level. All world positions are derived from the
 ## visible rectangle, so expand stretching and taller phone ratios stay usable.
+## The stream source is deliberately below the frame: the player controls the
+## jet, never a visible wand or nozzle.
 
 var input_controller: InputController
 var pressure_model: PressureModel
@@ -41,13 +43,14 @@ func _process(_delta: float) -> void:
 func _layout_world() -> void:
 	if _world_size.x <= 1.0 or _world_size.y <= 1.0:
 		return
-	stream.source_position = Vector2(_world_size.x * 0.5, _world_size.y - 174.0)
-	stream.minimum_length = minf(180.0, _world_size.y * 0.18)
-	stream.maximum_length = minf(640.0, _world_size.y * 0.60)
+	# The source stays just below the visible rectangle; only the jet enters frame.
+	stream.source_position = Vector2(_world_size.x * 0.5, _world_size.y + 48.0)
+	stream.minimum_length = minf(190.0, _world_size.y * 0.18)
+	stream.maximum_length = minf(1080.0, _world_size.y * 0.84)
 	var positions := [
-		Vector2(_world_size.x * 0.24, _world_size.y * 0.30),
-		Vector2(_world_size.x * 0.72, _world_size.y * 0.42),
-		Vector2(_world_size.x * 0.34, _world_size.y * 0.55),
+		Vector2(_world_size.x * 0.24, _world_size.y * 0.32),
+		Vector2(_world_size.x * 0.72, _world_size.y * 0.45),
+		Vector2(_world_size.x * 0.34, _world_size.y * 0.58),
 	]
 	for i in mini(targets.size(), positions.size()):
 		targets[i].position = positions[i]
@@ -63,8 +66,8 @@ func _create_targets() -> void:
 		var target := WettableTarget.new()
 		target.name = "WettablePlot%02d" % (i + 1)
 		target.target_size = Vector2(174.0, 112.0) if i != 1 else Vector2(188.0, 120.0)
-		target.base_color = [Color("#5f668e"), Color("#75618d"), Color("#536f91")][i]
-		target.accent_color = [Color("#62ddd5"), Color("#f3a77c"), Color("#7dd0ff")][i]
+		target.base_color = [Color("#68724b"), Color("#79634b"), Color("#4f7060")][i]
+		target.accent_color = [Color("#e4d15d"), Color("#efd66a"), Color("#d6c34d")][i]
 		target.required_liquid = 1.25
 		target.soaked.connect(_on_target_soaked.bind(target))
 		add_child(target)
@@ -87,7 +90,7 @@ func _create_lighting() -> void:
 	_impact_light.texture = _light_texture()
 	_impact_light.texture_scale = 0.82
 	_impact_light.energy = 1.1
-	_impact_light.color = Color("#63e9dc")
+	_impact_light.color = Color("#ffe589")
 	_impact_light.position = stream.source_position
 	add_child(_impact_light)
 
@@ -137,15 +140,3 @@ func _draw() -> void:
 		var x := fmod(float(i * 113 + 47), maxf(_world_size.x, 1.0))
 		var y := fmod(float(i * 71 + 31), maxf(_world_size.y * 0.72, 1.0))
 		draw_circle(Vector2(x, y), 1.5 if i % 3 else 2.5, Color(0.48, 0.66, 0.91, 0.20))
-	# A subtle wetland basin at the source anchors the bottom-center nozzle.
-	var basin := Rect2(Vector2(_world_size.x * 0.14, _world_size.y - 126.0), Vector2(_world_size.x * 0.72, 82.0))
-	draw_style_box(_panel(Color(0.08, 0.17, 0.29, 0.75), 26), basin)
-
-func _panel(color: Color, radius: int) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = color
-	style.corner_radius_top_left = radius
-	style.corner_radius_top_right = radius
-	style.corner_radius_bottom_left = radius
-	style.corner_radius_bottom_right = radius
-	return style

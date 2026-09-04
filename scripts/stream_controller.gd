@@ -3,13 +3,13 @@ class_name LiquidStream
 
 signal wet_target_hit(target: WettableTarget, amount: float, position: Vector2, normal: Vector2)
 
-@export var source_position := Vector2(360.0, 1090.0)
+@export var source_position := Vector2(360.0, 1320.0)
 @export_range(150.0, 800.0, 1.0) var minimum_length := 150.0
 @export_range(150.0, 800.0, 1.0) var maximum_length := 620.0
 @export_range(16, 48, 1) var ribbon_points := 28
-@export var wobble_frequency := 4.0
+@export var wobble_frequency := 2.7
 @export var collision_mask := 1
-@export var liquid_color := Color("#57e6df")
+@export var liquid_color := Color("#f1d34f")
 
 var input_controller: InputController
 var pressure_model: PressureModel
@@ -25,9 +25,9 @@ var _last_hit_position := Vector2.INF
 var _current_points := PackedVector2Array()
 
 func _ready() -> void:
-	_edge_line = _make_line(18.0, Color("#102c4b"))
-	_body_line = _make_line(12.0, liquid_color)
-	_highlight_line = _make_line(3.0, Color("#b8fff4"))
+	_edge_line = _make_line(14.0, Color("#493719"))
+	_body_line = _make_line(9.0, liquid_color)
+	_highlight_line = _make_line(2.5, Color("#fff3a0"))
 	add_child(_edge_line)
 	add_child(_body_line)
 	add_child(_highlight_line)
@@ -44,7 +44,7 @@ func _ready() -> void:
 	_droplets.gravity = Vector2(0.0, 38.0)
 	_droplets.scale_amount_min = 0.45
 	_droplets.scale_amount_max = 0.9
-	_droplets.color = Color("#8bf6ec")
+	_droplets.color = Color("#f7e479")
 	_droplets.texture = _particle_texture()
 	_droplets.emitting = true
 	add_child(_droplets)
@@ -62,7 +62,7 @@ func _ready() -> void:
 	_impact.gravity = Vector2(0.0, 120.0)
 	_impact.scale_amount_min = 0.4
 	_impact.scale_amount_max = 1.1
-	_impact.color = Color("#b8fff4")
+	_impact.color = Color("#fff0a0")
 	_impact.texture = _particle_texture()
 	add_child(_impact)
 	queue_redraw()
@@ -97,7 +97,9 @@ func _build_centerline(direction: Vector2, pressure: float) -> PackedVector2Arra
 	for i in count:
 		var t := float(i) / float(count - 1)
 		var envelope := sin(t * PI) * (0.7 + pressure * 0.7)
-		var lateral := sin(_time * wobble_frequency + t * 8.0) * (5.0 + 12.0 * pressure) * envelope
+		# A urine stream should read as a taut jet, not a waving wand. Keep just
+		# enough lateral motion to show that it is alive at close range.
+		var lateral := sin(_time * wobble_frequency + t * 8.0) * (1.5 + 3.5 * pressure) * envelope
 		points.append(source_position + direction * (length * t) + perpendicular * lateral)
 	return points
 
@@ -171,9 +173,3 @@ func _particle_texture() -> GradientTexture2D:
 	texture.fill_from = Vector2(0.5, 0.5)
 	texture.fill_to = Vector2(1.0, 0.5)
 	return texture
-
-func _draw() -> void:
-	# Nozzle and a small halo establish the source without competing with the ribbon.
-	draw_circle(source_position, 22.0, Color("#102c4b"))
-	draw_circle(source_position, 14.0, Color("#2e7890"))
-	draw_circle(source_position + Vector2(0.0, -2.0), 7.0, Color("#b8fff4"))

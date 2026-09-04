@@ -3,10 +3,10 @@
 Small Godot 4 game-jam prototype focused on a portrait liquid-stream loop and
 developer workflow.
 
-The playable sample aims a continuous procedural stream from the bottom-center
-nozzle, manages a requested pressure plus an exertion reserve, and wets
-persistent targets. Desktop uses A/D and W/S; touch devices get an independent
-right aim joystick and left pressure fader.
+The playable sample aims a continuous procedural urine stream entering from
+below the bottom-center of the frame, manages a requested pressure plus an
+exertion reserve, and wets persistent targets. Desktop uses A/D and W/S; touch
+devices get an independent right aim joystick and left pressure fader.
 
 ## Included
 
