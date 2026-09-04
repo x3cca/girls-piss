@@ -18,6 +18,8 @@ devices get an independent right aim joystick and left pressure fader.
 - GitHub Actions for Godot checks and HTML5/Butler deployment.
 - A local/CI test wrapper at tools/run-tests.sh with JUnit output.
 - A portrait liquid-stream sample scene with wettable targets and lighting.
+- An inertial stream model where emitted flow keeps its launch velocity while
+  gravity carries it through direction changes.
 - An offline alpha-silhouette normal-map baker in `tools/`.
 - Agent and MCP workflow notes.
 
