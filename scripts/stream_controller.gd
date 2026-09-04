@@ -5,9 +5,12 @@ signal wet_target_hit(target: WettableTarget, amount: float, position: Vector2, 
 
 @export var source_position := Vector2(360.0, 1320.0)
 @export_range(150.0, 800.0, 1.0) var minimum_length := 150.0
-@export_range(150.0, 800.0, 1.0) var maximum_length := 620.0
+@export_range(150.0, 1200.0, 1.0) var maximum_length := 620.0
 @export_range(16, 48, 1) var ribbon_points := 28
-@export var wobble_frequency := 2.7
+@export var launch_speed_min := 560.0
+@export var launch_speed_max := 1120.0
+@export var gravity := Vector2(0.0, 360.0)
+@export var history_seconds := 1.35
 @export var collision_mask := 1
 @export var liquid_color := Color("#f1d34f")
 
@@ -19,7 +22,7 @@ var _body_line: Line2D
 var _highlight_line: Line2D
 var _droplets: CPUParticles2D
 var _impact: CPUParticles2D
-var _time := 0.0
+var _emission_history: Array[Dictionary] = []
 var _last_hit_target: Object
 var _last_hit_position := Vector2.INF
 var _current_points := PackedVector2Array()
@@ -70,12 +73,12 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if input_controller == null or pressure_model == null:
 		return
-	_time += delta
 	var pressure := pressure_model.effective_pressure
 	var direction := input_controller.aim_direction.normalized()
 	if direction == Vector2.ZERO:
 		direction = Vector2.UP
-	_current_points = _build_centerline(direction, pressure)
+	_record_emission(direction, pressure, delta)
+	_current_points = _build_inertial_centerline(direction, pressure)
 	var hit := _truncate_at_target(_current_points)
 	if not hit.is_empty():
 		_current_points = hit.points
@@ -83,25 +86,48 @@ func _process(delta: float) -> void:
 
 	_edge_line.points = _current_points
 	_body_line.points = _current_points
-	_highlight_line.points = _offset_highlight(_current_points, direction)
-	_droplets.position = _current_points[min(8, _current_points.size() - 1)] if not _current_points.is_empty() else source_position
-	_droplets.direction = direction
+	_highlight_line.points = _offset_highlight(_current_points)
+	var droplet_index := mini(8, _current_points.size() - 2)
+	_droplets.position = _current_points[droplet_index] if droplet_index >= 0 else source_position
+	_droplets.direction = _tangent_at(droplet_index, direction)
 	_droplets.emitting = pressure > 0.15
 	queue_redraw()
 
-func _build_centerline(direction: Vector2, pressure: float) -> PackedVector2Array:
+func _record_emission(direction: Vector2, pressure: float, delta: float) -> void:
+	for index in _emission_history.size():
+		_emission_history[index]["age"] = float(_emission_history[index]["age"]) + delta
+	var speed := lerpf(launch_speed_min, launch_speed_max, clampf(pressure, 0.0, 1.0))
+	_emission_history.push_front({"age": 0.0, "velocity": direction * speed})
+	while not _emission_history.is_empty() and float(_emission_history.back()["age"]) > history_seconds:
+		_emission_history.pop_back()
+
+func _build_inertial_centerline(direction: Vector2, pressure: float) -> PackedVector2Array:
+	# Each segment is a parcel launched at a previous aim direction. Older parcels
+	# keep their launch velocity and only gravity changes it, so a quick aim change
+	# bends the stream naturally instead of rotating the whole ribbon in place.
 	var points := PackedVector2Array()
+	var speed := lerpf(launch_speed_min, launch_speed_max, clampf(pressure, 0.0, 1.0))
 	var length := lerpf(minimum_length, maximum_length, clampf(pressure, 0.0, 1.0))
-	var perpendicular := Vector2(-direction.y, direction.x)
+	var stream_age := length / maxf(speed, 1.0)
 	var count := maxi(16, ribbon_points)
 	for i in count:
-		var t := float(i) / float(count - 1)
-		var envelope := sin(t * PI) * (0.7 + pressure * 0.7)
-		# A urine stream should read as a taut jet, not a waving wand. Keep just
-		# enough lateral motion to show that it is alive at close range.
-		var lateral := sin(_time * wobble_frequency + t * 8.0) * (1.5 + 3.5 * pressure) * envelope
-		points.append(source_position + direction * (length * t) + perpendicular * lateral)
+		if i == 0:
+			points.append(source_position)
+			continue
+		var previous_age := stream_age * float(i - 1) / float(count - 1)
+		var current_age := stream_age * float(i) / float(count - 1)
+		var midpoint_age := (previous_age + current_age) * 0.5
+		var velocity := _velocity_at_age(midpoint_age, direction, speed) + gravity * midpoint_age
+		points.append(points[i - 1] + velocity * (current_age - previous_age))
 	return points
+
+func _velocity_at_age(age: float, fallback_direction: Vector2, fallback_speed: float) -> Vector2:
+	if _emission_history.is_empty():
+		return fallback_direction * fallback_speed
+	for sample in _emission_history:
+		if float(sample["age"]) >= age:
+			return sample["velocity"]
+	return _emission_history.back()["velocity"]
 
 func _truncate_at_target(points: PackedVector2Array) -> Dictionary:
 	if points.size() < 2:
@@ -139,12 +165,20 @@ func _emit_hit(hit: Dictionary, amount: float) -> void:
 	_last_hit_position = position
 	wet_target_hit.emit(target, amount, position, normal)
 
-func _offset_highlight(points: PackedVector2Array, direction: Vector2) -> PackedVector2Array:
-	var offset := Vector2(-direction.y, direction.x) * 1.5
+func _offset_highlight(points: PackedVector2Array) -> PackedVector2Array:
 	var result := PackedVector2Array()
-	for point in points:
-		result.append(point + offset)
+	for i in points.size():
+		var tangent := _tangent_at(i, Vector2.UP)
+		result.append(points[i] + Vector2(-tangent.y, tangent.x) * 1.2)
 	return result
+
+func _tangent_at(index: int, fallback: Vector2) -> Vector2:
+	if _current_points.size() < 2 or index < 0:
+		return fallback
+	var next_index := mini(index + 1, _current_points.size() - 1)
+	var previous_index := maxi(index - 1, 0)
+	var tangent := _current_points[next_index] - _current_points[previous_index]
+	return tangent.normalized() if tangent.length_squared() > 0.001 else fallback
 
 func _make_line(width: float, color: Color) -> Line2D:
 	var line := Line2D.new()
