@@ -40,7 +40,7 @@ func test_custom_mesh_tapers_and_fades_at_distal_end() -> void:
 	var stream := STREAM_SCENE.instantiate() as LiquidStream
 	add_child_autofree(stream)
 	var points := PackedVector2Array(
-		[Vector2(0.0, 0.0), Vector2(0.0, -100.0), Vector2(0.0, -200.0)]
+		[Vector2(0.0, 0.0), Vector2(0.0, -100.0), Vector2(0.0, -200.0)],
 	)
 	stream.update_ribbon_meshes(points, 200.0, 1.0, false)
 
