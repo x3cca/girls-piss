@@ -6,11 +6,12 @@ signal wet_target_hit(target: WettableTarget, amount: float, position: Vector2, 
 @export var source_position := Vector2(360.0, 1320.0)
 @export_range(150.0, 800.0, 1.0) var minimum_length := 150.0
 @export_range(150.0, 1200.0, 1.0) var maximum_length := 620.0
-@export_range(16, 48, 1) var ribbon_points := 28
+@export_range(24, 32, 1) var ribbon_points := 28
 @export var launch_speed_min := 560.0
 @export var launch_speed_max := 1120.0
 @export var gravity := Vector2(0.0, 360.0)
-@export var history_seconds := 1.35
+@export var parcel_lifetime := 1.35
+@export_range(32, 128, 1) var max_parcels := 96
 @export var collision_mask := 1
 @export var liquid_color := Color("#f1d34f")
 
@@ -22,7 +23,8 @@ var _body_line: Line2D
 var _highlight_line: Line2D
 var _droplets: CPUParticles2D
 var _impact: CPUParticles2D
-var _emission_history: Array[Dictionary] = []
+var _parcels: Array[Dictionary] = []
+var _emission_accumulator := 0.0
 var _last_hit_target: Object
 var _last_hit_position := Vector2.INF
 var _current_points := PackedVector2Array()
@@ -77,8 +79,9 @@ func _process(delta: float) -> void:
 	var direction := input_controller.aim_direction.normalized()
 	if direction == Vector2.ZERO:
 		direction = Vector2.UP
-	_record_emission(direction, pressure, delta)
-	_current_points = _build_inertial_centerline(direction, pressure)
+	_update_parcels(delta)
+	_emit_parcels(direction, pressure, delta)
+	_current_points = _build_parcel_centerline(direction, pressure)
 	var hit := _truncate_at_target(_current_points)
 	if not hit.is_empty():
 		_current_points = hit.points
@@ -93,43 +96,49 @@ func _process(delta: float) -> void:
 	_droplets.emitting = pressure > 0.15
 	queue_redraw()
 
-func _record_emission(direction: Vector2, pressure: float, delta: float) -> void:
-	for index in _emission_history.size():
-		_emission_history[index]["age"] = float(_emission_history[index]["age"]) + delta
-	var speed := lerpf(launch_speed_min, launch_speed_max, clampf(pressure, 0.0, 1.0))
-	_emission_history.push_front({"age": 0.0, "velocity": direction * speed})
-	while not _emission_history.is_empty() and float(_emission_history.back()["age"]) > history_seconds:
-		_emission_history.pop_back()
+func _update_parcels(delta: float) -> void:
+	# Parcels are independent. Once emitted, their launch velocity never reads the
+	# input controller again; only gravity changes that parcel's velocity.
+	for parcel in _parcels:
+		var velocity: Vector2 = parcel["velocity"]
+		parcel["position"] = parcel["position"] + velocity * delta + gravity * (delta * delta * 0.5)
+		parcel["velocity"] = velocity + gravity * delta
+		parcel["age"] = float(parcel["age"]) + delta
 
-func _build_inertial_centerline(direction: Vector2, pressure: float) -> PackedVector2Array:
-	# Each segment is a parcel launched at a previous aim direction. Older parcels
-	# keep their launch velocity and only gravity changes it, so a quick aim change
-	# bends the stream naturally instead of rotating the whole ribbon in place.
+func _emit_parcels(direction: Vector2, pressure: float, delta: float) -> void:
+	var speed := lerpf(launch_speed_min, launch_speed_max, clampf(pressure, 0.0, 1.0))
+	_emission_accumulator += delta
+	var interval := 1.0 / 60.0
+	var emitted := 0
+	var launch_velocity := direction * speed
+	while _emission_accumulator >= interval and emitted < 4:
+		_emission_accumulator -= interval
+		emitted += 1
+	# Always emit at least one parcel per rendered frame. This keeps the source
+	# continuous on high-refresh displays while the accumulator catches up on
+	# slower frames.
+	emitted = maxi(emitted, 1)
+	for _i in emitted:
+		_parcels.push_front({"position": source_position, "velocity": launch_velocity, "launch_velocity": launch_velocity, "age": 0.0})
+	var stream_age := lerpf(minimum_length, maximum_length, clampf(pressure, 0.0, 1.0)) / maxf(speed, 1.0)
+	var lifetime := minf(parcel_lifetime, stream_age)
+	while not _parcels.is_empty() and (float(_parcels.back()["age"]) > lifetime or _parcels.size() > max_parcels):
+		_parcels.pop_back()
+
+func _build_parcel_centerline(_direction: Vector2, _pressure: float) -> PackedVector2Array:
+	# Render a capped sample of the moving parcel chain. The visible ribbon is an
+	# interpolation of locked-in parcels, not a fresh curve from the current aim.
 	var points := PackedVector2Array()
-	var speed := lerpf(launch_speed_min, launch_speed_max, clampf(pressure, 0.0, 1.0))
-	var length := lerpf(minimum_length, maximum_length, clampf(pressure, 0.0, 1.0))
-	var stream_age := length / maxf(speed, 1.0)
-	var count := maxi(16, ribbon_points)
-	for i in count:
-		if i == 0:
-			points.append(source_position)
-			continue
-		var previous_age := stream_age * float(i - 1) / float(count - 1)
-		var current_age := stream_age * float(i) / float(count - 1)
-		var midpoint_age := (previous_age + current_age) * 0.5
-		var velocity := _velocity_at_age(midpoint_age, direction, speed) + gravity * midpoint_age
-		points.append(points[i - 1] + velocity * (current_age - previous_age))
+	if _parcels.is_empty():
+		points.append(source_position)
+		return points
+	points.append(_parcels[0]["position"])
+	var point_count := mini(ribbon_points, _parcels.size())
+	for i in range(1, point_count):
+		var fraction := float(i) / float(maxi(point_count - 1, 1))
+		var parcel_index := clampi(roundi(fraction * float(_parcels.size() - 1)), 0, _parcels.size() - 1)
+		points.append(_parcels[parcel_index]["position"])
 	return points
-
-func _velocity_at_age(age: float, fallback_direction: Vector2, fallback_speed: float) -> Vector2:
-	if _emission_history.is_empty():
-		return fallback_direction * fallback_speed
-	var selected: Vector2 = _emission_history[0]["velocity"]
-	for sample in _emission_history:
-		if float(sample["age"]) > age:
-			break
-		selected = sample["velocity"]
-	return selected
 
 func _truncate_at_target(points: PackedVector2Array) -> Dictionary:
 	if points.size() < 2:
