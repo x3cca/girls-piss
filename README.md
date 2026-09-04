@@ -5,8 +5,9 @@ developer workflow.
 
 The playable sample aims a continuous inertial urine stream entering from below
 the bottom-center of the frame, manages a requested pressure plus an exertion
-reserve, and wets persistent targets. Desktop uses A/D and W/S; touch devices
-get an independent right aim joystick and left pressure fader.
+reserve, and wets persistent targets. Desktop uses A/D and W/S alongside the
+persistent draggable carrot aim indicator; touch devices also get a left
+pressure fader.
 
 ## Included
 
