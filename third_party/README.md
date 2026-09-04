@@ -17,3 +17,9 @@ https://github.com/bitwes/Gut, pinned at commit
 aeb5d4f3f7f0a6c9b5e178876d6c99b791fda605. It is included under its MIT
 license, retained at addons/gut/LICENSE.md. The plugin supplies the editor
 test panel and the headless runner used by tools/run-tests.sh.
+
+## Boil effect shader
+
+shaders/boil_effect.gdshader is adapted from the squigglevision shader used by
+the related dating-chess project. The original reference is
+https://godotshaders.com/shader/squigglevision/.
