@@ -124,10 +124,12 @@ func _build_inertial_centerline(direction: Vector2, pressure: float) -> PackedVe
 func _velocity_at_age(age: float, fallback_direction: Vector2, fallback_speed: float) -> Vector2:
 	if _emission_history.is_empty():
 		return fallback_direction * fallback_speed
+	var selected: Vector2 = _emission_history[0]["velocity"]
 	for sample in _emission_history:
-		if float(sample["age"]) >= age:
-			return sample["velocity"]
-	return _emission_history.back()["velocity"]
+		if float(sample["age"]) > age:
+			break
+		selected = sample["velocity"]
+	return selected
 
 func _truncate_at_target(points: PackedVector2Array) -> Dictionary:
 	if points.size() < 2:
