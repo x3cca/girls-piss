@@ -2,8 +2,8 @@ extends Node2D
 
 class_name TouchReticle
 
-## Raw touch target indicator. It follows the finger directly; the stream/player
-## aim uses a separate smoothed value.
+## Crosshair target indicator. It stays at the requested target while the stream
+## eases toward it independently.
 
 @export var reticle_size := 48.0
 
@@ -16,6 +16,10 @@ func _ready() -> void:
 
 
 func set_touch_target(target_position: Vector2, active: bool) -> void:
+	set_aim_target(target_position, active)
+
+
+func set_aim_target(target_position: Vector2, active: bool = true) -> void:
 	visible = active
 	if active:
 		position = target_position

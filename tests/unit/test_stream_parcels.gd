@@ -3,36 +3,72 @@ extends GutTest
 const STREAM_SCENE := preload("res://scenes/liquid_stream.tscn")
 
 
-func test_new_aim_only_changes_newly_emitted_parcel() -> void:
+func test_new_target_only_changes_newly_emitted_parcel() -> void:
 	var stream := STREAM_SCENE.instantiate() as LiquidStream
 	add_child_autofree(stream)
 	stream.gravity = Vector2.ZERO
+	stream.stream_speed = 1000.0
 	stream.source_position = Vector2.ZERO
-	stream.emit_parcels(Vector2.UP, 0.8, 0.0)
+	stream.emit_parcels(Vector2(0.0, -200.0), 0.0)
 	stream.update_parcels(0.1)
 	var old_position: Vector2 = stream.parcel_at(0)["position"]
 	var old_launch_velocity: Vector2 = stream.parcel_at(0)["launch_velocity"]
 
-	stream.emit_parcels(Vector2.RIGHT, 0.1, 0.0)
+	stream.emit_parcels(Vector2(200.0, 0.0), 0.0)
 	var new_launch_velocity: Vector2 = stream.parcel_at(0)["launch_velocity"]
 	var old_parcel: Dictionary = stream.parcel_at(1)
 
-	assert_eq(new_launch_velocity, Vector2.RIGHT * 616.0)
+	assert_eq(new_launch_velocity, Vector2(1000.0, 0.0))
 	assert_eq(old_parcel["launch_velocity"], old_launch_velocity)
 	assert_eq(old_parcel["position"], old_position)
+	assert_eq(stream.build_parcel_centerline()[1], old_position)
 
 
-func test_stream_profile_stays_continuous_at_every_pressure() -> void:
+func test_parcel_centerline_uses_committed_positions() -> void:
 	var stream := STREAM_SCENE.instantiate() as LiquidStream
 	add_child_autofree(stream)
-	var normal := stream.get_stream_profile()
-	var high_pressure := stream.get_stream_profile()
+	stream.source_position = Vector2(360.0, 1328.0)
+	var target := Vector2(520.0, 180.0)
+	stream.set_parcel_chain(
+		[
+			{"position": stream.source_position},
+			{"position": target},
+		],
+	)
+	var points := stream.build_parcel_centerline()
 
-	assert_eq(float(normal["emission_rate"]), stream.normal_emission_rate)
-	assert_eq(float(high_pressure["emission_rate"]), stream.normal_emission_rate)
-	assert_eq(int(normal["burst_amount"]), 0)
-	assert_eq(int(high_pressure["burst_amount"]), 0)
-	assert_eq(float(high_pressure["ribbon_alpha"]), 1.0)
+	assert_eq(points[0], stream.source_position)
+	assert_eq(points[points.size() - 1], target)
+
+
+func test_stream_target_eases_when_crosshair_moves() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+	var controller := InputController.new()
+	add_child_autofree(controller)
+	controller.set_process(false)
+	stream.set_process(false)
+	stream.input_controller = controller
+	stream.source_position = Vector2(360.0, 1328.0)
+	var first_target := Vector2(250.0, 420.0)
+	var second_target := Vector2(540.0, 260.0)
+	controller.set_target_position(first_target)
+	stream._process(0.1)
+	controller.set_target_position(second_target)
+	stream._process(0.1)
+
+	var eased_target := stream.get_stream_target_position()
+	assert_true(eased_target != second_target)
+	assert_true(eased_target.distance_to(second_target) < first_target.distance_to(second_target))
+
+
+func test_stream_profile_is_fixed_for_every_shot() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+	var profile := stream.get_stream_profile()
+
+	assert_eq(float(profile["emission_rate"]), stream.normal_emission_rate)
+	assert_eq(float(profile["ribbon_alpha"]), 1.0)
 
 
 func test_custom_mesh_tapers_and_fades_at_distal_end() -> void:
@@ -59,37 +95,3 @@ func test_custom_mesh_tapers_and_fades_at_distal_end() -> void:
 	assert_true(colors[0].a > colors[4].a)
 	assert_true(colors[4].a > 0.0)
 	assert_almost_eq(colors[4].a, stream.distal_end_alpha, 0.01)
-
-
-func test_perspective_arc_is_zero_centered_and_subtle_off_center() -> void:
-	var stream := STREAM_SCENE.instantiate() as LiquidStream
-	add_child_autofree(stream)
-	stream.ribbon_points = 3
-	var parcels: Array[Dictionary] = [
-		{ "position": Vector2(0.0, 0.0), "launch_velocity": Vector2.UP },
-		{ "position": Vector2(0.0, -100.0), "launch_velocity": Vector2.UP },
-		{ "position": Vector2(0.0, -200.0), "launch_velocity": Vector2.UP },
-	]
-	stream.set_parcel_chain(parcels)
-	var centered := stream.build_parcel_centerline(Vector2.UP, 0.55)
-	var old_path_after_aim_change := stream.build_parcel_centerline(Vector2.RIGHT, 0.55)
-	for parcel in parcels:
-		parcel["launch_velocity"] = Vector2.RIGHT
-	stream.set_parcel_chain(parcels)
-	var off_center := stream.build_parcel_centerline(Vector2.RIGHT, 0.55)
-
-	assert_almost_eq(centered[1].x, 0.0, 0.001)
-	assert_almost_eq(old_path_after_aim_change[1].x, 0.0, 0.001)
-	assert_true(off_center[1].x > 0.0)
-	assert_true(off_center[1].x <= stream.perspective_arc_strength)
-
-
-func test_jitter_strength_increases_with_effective_pressure_in_all_modes() -> void:
-	var stream := STREAM_SCENE.instantiate() as LiquidStream
-	add_child_autofree(stream)
-	var sample_time := 0.73
-	var low_pressure := absf(stream.get_jitter_angle(0.15, sample_time))
-	var high_pressure := absf(stream.get_jitter_angle(1.0, sample_time))
-
-	assert_true(high_pressure > low_pressure)
-	assert_true(high_pressure < deg_to_rad(1.4))

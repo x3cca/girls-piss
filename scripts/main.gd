@@ -5,7 +5,6 @@ extends Node2D
 ## jet, never a visible wand or nozzle.
 
 @onready var input_controller: InputController = $InputController
-@onready var pressure_model: PressureModel = $PressureModel
 @onready var stream: LiquidStream = $LiquidStream
 @onready var shape_trace: ShapeTrace = $ShapeTrace
 @onready var line_recorder: PissLineRecorder = $PissLineRecorder
@@ -37,10 +36,7 @@ func _ready() -> void:
 			var collision_body := child.get_node_or_null("CollisionBody") as CollisionObject2D
 			if collision_body:
 				collision_body.collision_layer = 0
-	pressure_model.requested_pressure = input_controller.requested_pressure
-
 	stream.input_controller = input_controller
-	stream.pressure_model = pressure_model
 	stream.wet_target_hit.connect(_on_wet_target_hit)
 	stream.drawing_point_updated.connect(_on_drawing_point_updated)
 	shape_trace.trace_completed.connect(_on_trace_completed)
@@ -56,8 +52,7 @@ func _process(_delta: float) -> void:
 		_elapsed += _delta
 	_world_size = get_viewport().get_visible_rect().size
 	if state == PLAYING:
-		pressure_model.requested_pressure = input_controller.requested_pressure
-	_layout_world()
+		_layout_world()
 	queue_redraw()
 
 
@@ -66,17 +61,6 @@ func _layout_world() -> void:
 		return
 	# The source stays just below the visible rectangle; only the jet enters frame.
 	stream.source_position = Vector2(_world_size.x * 0.5, _world_size.y + 48.0)
-	stream.minimum_length = minf(190.0, _world_size.y * 0.18)
-	stream.maximum_length = minf(2200.0, _world_size.y * 1.72)
-	stream.parcel_lifetime = 2.25
-	input_controller.set_stream_geometry(
-		stream.source_position,
-		stream.minimum_length,
-		stream.maximum_length,
-		stream.launch_speed_min,
-		stream.launch_speed_max,
-		stream.gravity,
-	)
 	if _layout_signature != _world_size:
 		_layout_signature = _world_size
 		if _broad_light:
@@ -87,7 +71,6 @@ func _layout_world() -> void:
 
 func _wire_hud() -> void:
 	hud.input_controller = input_controller
-	hud.pressure_model = pressure_model
 	hud.stream = stream
 	hud.target_nodes = targets
 	hud.show_touch_controls = input_controller.touch_controls_visible
@@ -110,7 +93,6 @@ func _on_trace_completed() -> void:
 	line_recorder.finish_recording()
 	input_controller.set_process_input(false)
 	input_controller.set_process(false)
-	pressure_model.set_process(false)
 	stream.set_live_enabled(false)
 	shape_trace.set_trace_visible(false)
 	hud.set_gameplay_controls_visible(false)
@@ -141,7 +123,6 @@ func reset_level() -> void:
 	input_controller.reset_input()
 	input_controller.set_process_input(true)
 	input_controller.set_process(true)
-	pressure_model.set_process(true)
 	hud.hide_completion_card()
 	hud.set_gameplay_controls_visible(true)
 	_impact_light.enabled = true
