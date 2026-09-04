@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/liquid_stream.tscn" id="2_stream"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/stream_hud.tscn" id="4_hud"]
 [ext_resource type="Script" path="res://scripts/input_controller.gd" id="5_input"]
 [ext_resource type="Script" path="res://scripts/pressure_model.gd" id="6_pressure"]
+[ext_resource type="PackedScene" path="res://scenes/screen_overlay.tscn" id="7_overlay"]
 
 [sub_resource type="Gradient" id="Gradient_light"]
 colors = PackedColorArray(1, 1, 1, 0.95, 1, 1, 1, 0)
@@ -63,6 +64,8 @@ texture_scale = 0.82
 energy = 1.1
 color = Color(1, 0.898, 0.537, 1)
 position = Vector2(360, 1328)
+
+[node name="ScreenOverlay" parent="." instance=ExtResource("7_overlay")]
 
 [node name="HUDLayer" type="CanvasLayer" parent="."]
 
