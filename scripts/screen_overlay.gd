@@ -110,7 +110,7 @@ func get_active_effect_count() -> int:
 
 func _reset_started_cues() -> void:
 	_started_cues.clear()
-	for _cue in timeline_cues:
+	for cue in timeline_cues:
 		_started_cues.append(false)
 
 

@@ -74,10 +74,10 @@ func test_sine_opacity_uses_configured_bounds() -> void:
 	effect.opacity_sine_max = 0.8
 	effect.opacity_sine_phase = 0.0
 	effect.opacity = 1.0
-	effect._process(0.0)
+	effect.advance_opacity(0.0)
 
 	assert_almost_eq(effect.self_modulate.a, 0.5, 0.001)
-	effect._process(0.25)
+	effect.advance_opacity(0.25)
 	assert_almost_eq(effect.self_modulate.a, 0.8, 0.001)
 
 
@@ -89,7 +89,7 @@ func _make_frames(size: Vector2i, frame_count := 1) -> SpriteFrames:
 	texture.width = size.x
 	texture.height = size.y
 	var frames := SpriteFrames.new()
-	for _frame in frame_count:
+	for frame_index in frame_count:
 		frames.add_frame(&"default", texture)
 	frames.set_animation_loop(&"default", false)
 	return frames

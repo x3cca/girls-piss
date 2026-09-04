@@ -57,6 +57,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	advance_opacity(delta)
+
+
+func advance_opacity(delta: float) -> void:
 	_opacity_time += delta
 	_update_opacity()
 
@@ -126,7 +130,10 @@ func _update_sprite_transform() -> void:
 	var frame_count := _sprite.sprite_frames.get_frame_count(_sprite.animation)
 	if frame_count == 0:
 		return
-	var texture := _sprite.sprite_frames.get_frame_texture(_sprite.animation, _sprite.frame)
+	var texture := _sprite.sprite_frames.get_frame_texture(
+		_sprite.animation,
+		_sprite.frame,
+	)
 	if texture == null:
 		return
 	var texture_size := texture.get_size()
