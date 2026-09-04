@@ -24,21 +24,21 @@ func _draw() -> void:
 	var small := 16
 	var medium := 22
 	# Header and compact pressure cards.
-	draw_string(font, safe.position + Vector2(0, 24), "LIQUID STUDY", HORIZONTAL_ALIGNMENT_LEFT, -1, medium, Color("#d8e8ff"))
-	draw_string(font, safe.position + Vector2(0, 48), "keep the garden glowing", HORIZONTAL_ALIGNMENT_LEFT, -1, small, Color("#8396bb"))
-	_draw_meter(Rect2(safe.position + Vector2(0, 72), Vector2(196, 18)), pressure_model.requested_pressure if pressure_model else 0.0, Color("#5ce5dd"), "REQUEST")
-	_draw_meter(Rect2(safe.position + Vector2(218, 72), Vector2(196, 18)), pressure_model.reserve if pressure_model else 0.0, Color("#8ba8ff"), "RESERVE")
+	draw_string(font, safe.position + Vector2(0, 24), "PISSER", HORIZONTAL_ALIGNMENT_LEFT, -1, medium, Color("#fff0a0"))
+	draw_string(font, safe.position + Vector2(0, 48), "aim • squeeze • soak", HORIZONTAL_ALIGNMENT_LEFT, -1, small, Color("#b2a77a"))
+	_draw_meter(Rect2(safe.position + Vector2(0, 72), Vector2(196, 18)), pressure_model.requested_pressure if pressure_model else 0.0, Color("#f1d34f"), "PRESSURE")
+	_draw_meter(Rect2(safe.position + Vector2(218, 72), Vector2(196, 18)), pressure_model.reserve if pressure_model else 0.0, Color("#c3b57a"), "RESERVE")
 	if pressure_model and pressure_model.exhausted:
 		draw_string(font, safe.position + Vector2(0, 120), "RECOVERING", HORIZONTAL_ALIGNMENT_LEFT, -1, small, Color("#ffbf7a"))
 	else:
-		draw_string(font, safe.position + Vector2(0, 120), "W / S  pressure     A / D  aim", HORIZONTAL_ALIGNMENT_LEFT, -1, small, Color("#8396bb"))
+		draw_string(font, safe.position + Vector2(0, 120), "W / S  pressure     A / D  aim", HORIZONTAL_ALIGNMENT_LEFT, -1, small, Color("#b2a77a"))
 
 	# Small target progress tags remain readable on wide and tall portrait ratios.
 	for index in target_nodes.size():
 		var target := target_nodes[index]
 		if is_instance_valid(target):
 			var label_position := target.position + Vector2(-target.target_size.x * 0.5, -target.target_size.y * 0.5 - 16.0)
-			draw_string(font, label_position, "PLOT %02d  %d%%" % [index + 1, roundi(target.wetness * 100.0)], HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#a8b6dd"))
+			draw_string(font, label_position, "TARGET %02d  %d%%" % [index + 1, roundi(target.wetness * 100.0)], HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#d5c77f"))
 
 	if show_touch_controls:
 		_draw_touch_controls(safe)
@@ -58,17 +58,17 @@ func _draw_touch_controls(safe: Rect2) -> void:
 	var fader_top := safe.position.y + 178.0
 	var fader_bottom := safe.end.y - 188.0
 	draw_line(Vector2(fader_x, fader_top), Vector2(fader_x, fader_bottom), Color(0.5, 0.65, 0.86, 0.28), 18.0)
-	draw_line(Vector2(fader_x, fader_top), Vector2(fader_x, fader_bottom), Color("#5ce5dd"), 4.0)
+	draw_line(Vector2(fader_x, fader_top), Vector2(fader_x, fader_bottom), Color("#f1d34f"), 4.0)
 	var pressure := pressure_model.requested_pressure if pressure_model else 0.55
 	var knob_y := lerpf(fader_bottom, fader_top, inverse_lerp(0.15, 1.0, pressure))
-	draw_circle(Vector2(fader_x, knob_y), 17.0, Color("#d8fff8"))
-	draw_circle(Vector2(fader_x, knob_y), 11.0, Color("#4bcac8"))
-	draw_string(ThemeDB.fallback_font, Vector2(fader_x - 30.0, fader_top - 22.0), "FLOW", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#a8b6dd"))
+	draw_circle(Vector2(fader_x, knob_y), 17.0, Color("#fff3a0"))
+	draw_circle(Vector2(fader_x, knob_y), 11.0, Color("#d0b52f"))
+	draw_string(ThemeDB.fallback_font, Vector2(fader_x - 35.0, fader_top - 22.0), "PRESSURE", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#d5c77f"))
 	draw_circle(joystick_center, 86.0, Color(0.08, 0.12, 0.25, 0.74))
 	draw_arc(joystick_center, 86.0, 0.0, TAU, 64, Color(0.46, 0.61, 0.9, 0.55), 3.0)
 	var aim := input_controller.aim_direction if input_controller else Vector2.UP
-	draw_circle(joystick_center + aim * 47.0, 23.0, Color("#8bf6ec"))
-	draw_string(ThemeDB.fallback_font, joystick_center + Vector2(-41.0, 112.0), "AIM", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#a8b6dd"))
+	draw_circle(joystick_center + aim * 47.0, 23.0, Color("#f1d34f"))
+	draw_string(ThemeDB.fallback_font, joystick_center + Vector2(-41.0, 112.0), "AIM", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#d5c77f"))
 
 func _box(color: Color, radius: int) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
