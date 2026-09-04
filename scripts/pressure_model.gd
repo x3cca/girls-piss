@@ -9,9 +9,11 @@ signal exhaustion_changed(exhausted: bool)
 @export var regeneration_rate := 0.18
 @export var drain_rate := 0.22
 @export var recovery_unlock := 0.30
+@export var sputter_ramp_rate := 3.2
 
 var effective_pressure := 0.55
 var exhausted := false
+var sputter_intensity := 0.0
 
 
 func _process(delta: float) -> void:
@@ -40,3 +42,9 @@ func advance(delta: float) -> void:
 		exhaustion_changed.emit(false)
 
 	effective_pressure = 0.25 if exhausted else requested_pressure
+	var target_sputter := 1.0 if exhausted else clampf(1.0 - reserve, 0.0, 1.0)
+	sputter_intensity = move_toward(
+		sputter_intensity,
+		target_sputter,
+		sputter_ramp_rate * delta,
+	)
