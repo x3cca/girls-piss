@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/stream_controller.gd" id="1_stream"]
 [ext_resource type="Texture2D" path="res://assets/art/stream_body_placeholder.png" id="2_body"]
 [ext_resource type="Texture2D" path="res://assets/art/stream_body_placeholder_normal.png" id="3_normal"]
 [ext_resource type="Texture2D" path="res://assets/art/stream_particle_placeholder.png" id="4_particle"]
+[ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="5_boil"]
 
 [sub_resource type="CanvasTexture" id="CanvasTexture_stream_body"]
 diffuse_texture = ExtResource("2_body")
@@ -14,14 +15,17 @@ script = ExtResource("1_stream")
 
 [node name="EdgeRibbon" type="MeshInstance2D" parent="."]
 texture_filter = 1
+material = ExtResource("5_boil")
 
 [node name="BodyRibbon" type="MeshInstance2D" parent="."]
 texture = SubResource("CanvasTexture_stream_body")
 texture_filter = 1
 texture_repeat = 1
+material = ExtResource("5_boil")
 
 [node name="HighlightRibbon" type="MeshInstance2D" parent="."]
 texture_filter = 1
+material = ExtResource("5_boil")
 
 [node name="Droplets" type="CPUParticles2D" parent="."]
 amount = 7
@@ -36,6 +40,7 @@ scale_amount_min = 0.45
 scale_amount_max = 0.9
 color = Color(0.969, 0.894, 0.475, 1)
 texture = ExtResource("4_particle")
+material = ExtResource("5_boil")
 emitting = true
 
 [node name="SputterBurst" type="CPUParticles2D" parent="."]
@@ -52,6 +57,7 @@ scale_amount_min = 0.35
 scale_amount_max = 1.15
 color = Color(1, 0.91, 0.49, 1)
 texture = ExtResource("4_particle")
+material = ExtResource("5_boil")
 
 [node name="ImpactBurst" type="CPUParticles2D" parent="."]
 amount = 18
@@ -65,3 +71,4 @@ scale_amount_min = 0.4
 scale_amount_max = 1.1
 color = Color(1, 0.941, 0.627, 1)
 texture = ExtResource("4_particle")
+material = ExtResource("5_boil")
