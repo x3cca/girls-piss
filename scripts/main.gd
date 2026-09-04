@@ -1,5 +1,4 @@
 extends Node2D
-
 ## Playable portrait-first sample level. All world positions are derived from the
 ## visible rectangle, so expand stretching and taller phone ratios stay usable.
 ## The stream source is deliberately below the frame: the player controls the
@@ -68,10 +67,10 @@ func _wire_hud() -> void:
 
 
 func _on_wet_target_hit(
-	target: WettableTarget,
-	amount: float,
-	position: Vector2,
-	normal: Vector2,
+		target: WettableTarget,
+		amount: float,
+		position: Vector2,
+		normal: Vector2,
 ) -> void:
 	if is_instance_valid(target):
 		target.apply_liquid(amount, position)

@@ -1,4 +1,5 @@
 extends Node2D
+
 class_name WettableTarget
 
 signal wetness_changed(value: float)

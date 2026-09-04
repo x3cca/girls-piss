@@ -1,4 +1,5 @@
 extends Node
+
 class_name InputController
 
 ## Unified desktop/touch input for the portrait prototype.

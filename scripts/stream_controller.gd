@@ -1,4 +1,5 @@
 extends Node2D
+
 class_name LiquidStream
 
 signal wet_target_hit(target: WettableTarget, amount: float, position: Vector2, normal: Vector2)
@@ -86,23 +87,25 @@ func emit_parcels(direction: Vector2, pressure: float, delta: float) -> void:
 	# continuous on high-refresh displays while the accumulator catches up on
 	# slower frames.
 	emitted = maxi(emitted, 1)
-	for _i in emitted:
+	var parcel_index := 0
+	while parcel_index < emitted:
 		_parcels.push_front(
 			{
 				"position": source_position,
 				"velocity": launch_velocity,
 				"launch_velocity": launch_velocity,
 				"age": 0.0,
-			}
+			},
 		)
+		parcel_index += 1
 	var stream_age := lerpf(minimum_length, maximum_length, clampf(pressure, 0.0, 1.0)) / maxf(
 		speed,
 		1.0,
 	)
 	var lifetime := minf(parcel_lifetime, stream_age)
 	while (
-		not _parcels.is_empty()
-		and (float(_parcels.back()["age"]) > lifetime or _parcels.size() > max_parcels)
+			not _parcels.is_empty()
+			and (float(_parcels.back()["age"]) > lifetime or _parcels.size() > max_parcels)
 	):
 		_parcels.pop_back()
 
