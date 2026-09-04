@@ -1,8 +1,10 @@
 # Project-scoped Codex CLI MCP configuration.
-# Open Godot, enable the Godot MCP plugin, and start its local server first.
+# The Date-or-Mate-2 addon speaks legacy SSE/HTTP; mcp-remote adapts it to
+# Codex CLI's stdio MCP transport.
 
 [mcp_servers."godot-mcp"]
-url = "http://localhost:9080/mcp"
+command = "npx"
+args = ["-y", "mcp-remote", "http://127.0.0.1:9080/mcp"]
 enabled = true
 required = false
 startup_timeout_sec = 20

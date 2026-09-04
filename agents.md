@@ -10,7 +10,9 @@ their own child scenes directly.
 Run this before committing:
     godot --headless --editor --check-only
 
-The MCP URL is http://localhost:9080/mcp. If it does not connect, make sure
-the Godot editor is open and the Godot MCP plugin is enabled.
+The Date-or-Mate-2 MCP addon listens at http://127.0.0.1:9080/mcp. Codex
+connects through npx mcp-remote, so Node.js 20+ must be installed. If it
+does not connect, make sure Godot is open, the plugin is enabled, and the
+project-scoped Codex config is trusted.
 
 Third-party code in addons/ must not be reformatted or linted.
