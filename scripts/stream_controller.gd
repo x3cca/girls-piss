@@ -15,6 +15,10 @@ signal wet_target_hit(target: WettableTarget, amount: float, position: Vector2, 
 @export_range(32, 128, 1) var max_parcels := 96
 @export var collision_mask := 1
 @export var liquid_color := Color("#f1d34f")
+@export var normal_emission_rate := 60.0
+@export var sputtering_emission_rate := 10.0
+@export var sputter_burst_min_interval := 0.16
+@export var sputter_burst_max_interval := 1.35
 
 var input_controller: InputController
 var pressure_model: PressureModel
@@ -24,8 +28,10 @@ var pressure_model: PressureModel
 @onready var _highlight_line: Line2D = $HighlightRibbon
 @onready var _droplets: CPUParticles2D = $Droplets
 @onready var _impact: CPUParticles2D = $ImpactBurst
+@onready var _sputter_burst: CPUParticles2D = $SputterBurst
 var _parcels: Array[Dictionary] = []
 var _emission_accumulator := 0.0
+var _sputter_accumulator := 0.0
 var _last_hit_target: Object
 var _last_hit_position := Vector2.INF
 var _current_points := PackedVector2Array()
@@ -47,7 +53,11 @@ func _process(delta: float) -> void:
 	if direction == Vector2.ZERO:
 		direction = Vector2.UP
 	update_parcels(delta)
-	emit_parcels(direction, pressure, delta)
+	var sputter_intensity := pressure_model.sputter_intensity
+	if pressure_model.exhausted:
+		_emission_accumulator = 0.0
+	else:
+		emit_parcels(direction, pressure, delta, sputter_intensity)
 	_current_points = _build_parcel_centerline(direction, pressure)
 	var hit := _truncate_at_target(_current_points)
 	if not hit.is_empty():
@@ -60,7 +70,7 @@ func _process(delta: float) -> void:
 	var droplet_index := mini(8, _current_points.size() - 2)
 	_droplets.position = _current_points[droplet_index] if droplet_index >= 0 else source_position
 	_droplets.direction = _tangent_at(droplet_index, direction)
-	_droplets.emitting = pressure > 0.15
+	_update_sputter_effects(delta, direction, sputter_intensity, pressure_model.exhausted)
 	queue_redraw()
 
 
@@ -74,10 +84,20 @@ func update_parcels(delta: float) -> void:
 		parcel["age"] = float(parcel["age"]) + delta
 
 
-func emit_parcels(direction: Vector2, pressure: float, delta: float) -> void:
+func emit_parcels(
+		direction: Vector2,
+		pressure: float,
+		delta: float,
+		sputter_intensity := 0.0,
+) -> void:
 	var speed := lerpf(launch_speed_min, launch_speed_max, clampf(pressure, 0.0, 1.0))
+	var emission_rate := lerpf(
+		normal_emission_rate,
+		sputtering_emission_rate,
+		clampf(sputter_intensity, 0.0, 1.0),
+	)
 	_emission_accumulator += delta
-	var interval := 1.0 / 60.0
+	var interval := 1.0 / maxf(emission_rate, 1.0)
 	var emitted := 0
 	var launch_velocity := direction * speed
 	while _emission_accumulator >= interval and emitted < 4:
@@ -108,6 +128,59 @@ func emit_parcels(direction: Vector2, pressure: float, delta: float) -> void:
 			and (float(_parcels.back()["age"]) > lifetime or _parcels.size() > max_parcels)
 	):
 		_parcels.pop_back()
+
+
+func get_sputter_profile(intensity: float, is_exhausted: bool) -> Dictionary:
+	var sputter := clampf(intensity, 0.0, 1.0)
+	var fade := clampf((sputter - 0.68) / 0.32, 0.0, 1.0)
+	return {
+		"ambient_amount": roundi(lerpf(7.0, 14.0, sputter)),
+		"ambient_lifetime": lerpf(0.42, 0.28, sputter),
+		"ambient_velocity_min": lerpf(28.0, 52.0, sputter),
+		"ambient_velocity_max": lerpf(64.0, 112.0, sputter),
+		"burst_amount": roundi(lerpf(3.0, 28.0, sputter)),
+		"burst_velocity_min": lerpf(20.0, 78.0, sputter),
+		"burst_velocity_max": lerpf(48.0, 156.0, sputter),
+		"burst_interval": lerpf(sputter_burst_max_interval, sputter_burst_min_interval, sputter),
+		"emission_rate": 0.0 if is_exhausted else lerpf(
+			normal_emission_rate,
+			sputtering_emission_rate,
+			sputter,
+		),
+		"ribbon_alpha": 0.0 if is_exhausted else 1.0 - fade * 0.62,
+	}
+
+
+func _update_sputter_effects(
+		delta: float,
+		direction: Vector2,
+		intensity: float,
+		is_exhausted: bool,
+) -> void:
+	var profile := get_sputter_profile(intensity, is_exhausted)
+	_droplets.position = source_position
+	_droplets.direction = direction
+	_droplets.amount = int(profile["ambient_amount"])
+	_droplets.lifetime = float(profile["ambient_lifetime"])
+	_droplets.initial_velocity_min = float(profile["ambient_velocity_min"])
+	_droplets.initial_velocity_max = float(profile["ambient_velocity_max"])
+	_droplets.emitting = true
+	_sputter_burst.position = source_position
+	_sputter_burst.direction = direction
+	_sputter_burst.amount = int(profile["burst_amount"])
+	_sputter_burst.initial_velocity_min = float(profile["burst_velocity_min"])
+	_sputter_burst.initial_velocity_max = float(profile["burst_velocity_max"])
+	_sputter_accumulator += delta
+	var burst_interval := float(profile["burst_interval"])
+	if intensity < 0.05:
+		_sputter_accumulator = 0.0
+	elif _sputter_accumulator >= burst_interval:
+		_sputter_accumulator = fmod(_sputter_accumulator, burst_interval)
+		_sputter_burst.restart()
+	var ribbon_alpha := float(profile["ribbon_alpha"])
+	_edge_line.modulate.a = ribbon_alpha
+	_body_line.modulate.a = ribbon_alpha
+	_highlight_line.modulate.a = ribbon_alpha
 
 
 func _build_parcel_centerline(_direction: Vector2, _pressure: float) -> PackedVector2Array:

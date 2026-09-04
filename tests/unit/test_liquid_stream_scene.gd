@@ -17,6 +17,7 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 	assert_not_null(instance.get_node_or_null("LiquidStream/BodyRibbon"))
 	assert_not_null(instance.get_node_or_null("LiquidStream/HighlightRibbon"))
 	assert_not_null(instance.get_node_or_null("LiquidStream/Droplets"))
+	assert_not_null(instance.get_node_or_null("LiquidStream/SputterBurst"))
 	assert_not_null(instance.get_node_or_null("LiquidStream/ImpactBurst"))
 	assert_not_null(instance.get_node_or_null("WettablePlot01/CollisionBody/CollisionShape2D"))
 	assert_not_null(instance.get_node_or_null("BroadMoonLight"))
