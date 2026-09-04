@@ -96,16 +96,16 @@ func _process(delta: float) -> void:
 
 
 func get_jitter_angle(pressure: float, at_time := -1.0) -> float:
-	"""Return a smooth, pressure-scaled direction wobble for every input mode."""
+	## Return a smooth, pressure-scaled direction wobble for every input mode.
 	var time := _jitter_time if at_time < 0.0 else at_time
 	var pressure_fraction := clampf(inverse_lerp(0.15, 1.0, pressure), 0.0, 1.0)
 	# Keep a little movement at minimum pressure, then ramp strongly into
 	# overdrive. Several frequencies avoid the mechanical feel of one sine wave.
 	var pressure_strength := lerpf(0.16, 1.0, pressure_fraction)
 	var noise := (
-		sin(time * 10.0) * 0.58
-		+ sin(time * 16.5 + 1.7) * 0.29
-		+ sin(time * 27.0 + 4.1) * 0.13
+			sin(time * 10.0) * 0.58
+			+ sin(time * 16.5 + 1.7) * 0.29
+			+ sin(time * 27.0 + 4.1) * 0.13
 	)
 	return deg_to_rad(jitter_max_degrees) * pressure_strength * noise
 

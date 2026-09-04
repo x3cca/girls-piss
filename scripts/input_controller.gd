@@ -37,6 +37,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	process_frame(delta)
+
+
+func process_frame(delta: float) -> void:
 	var keyboard_aim_axis := float(_aim_right_pressed) - float(_aim_left_pressed)
 	var aim_axis := keyboard_aim_axis if absf(keyboard_aim_axis) > 0.01 else Input.get_axis(
 		"aim_left",
@@ -46,9 +50,10 @@ func _process(delta: float) -> void:
 		set_aim_angle(_aim_angle() + aim_axis * aim_turn_speed * delta)
 
 	var keyboard_pressure_axis := float(_pressure_up_pressed) - float(_pressure_down_pressed)
-	var pressure_axis := keyboard_pressure_axis if absf(keyboard_pressure_axis) > 0.01 else Input.get_axis(
-		"pressure_down",
-		"pressure_up",
+	var pressure_axis := (
+			keyboard_pressure_axis
+			if absf(keyboard_pressure_axis) > 0.01
+			else Input.get_axis("pressure_down", "pressure_up")
 	)
 	if absf(pressure_axis) > 0.01:
 		requested_pressure = clampf(
@@ -59,6 +64,10 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	handle_input_event(event)
+
+
+func handle_input_event(event: InputEvent) -> void:
 	if event is InputEventKey:
 		_update_keyboard_state(event as InputEventKey)
 	elif event is InputEventScreenTouch:
@@ -89,7 +98,7 @@ func _update_keyboard_state(event: InputEventKey) -> void:
 
 
 func set_aim_angle(angle: float) -> void:
-	"""Set an absolute aim angle in radians, constrained to the 120° cone."""
+	## Set an absolute aim angle in radians, constrained to the 120° cone.
 	var constrained := clampf(angle, -AIM_HALF_CONE_RADIANS, AIM_HALF_CONE_RADIANS)
 	_aim_angle_value = constrained
 	aim_direction = Vector2.UP.rotated(constrained).normalized()
@@ -97,7 +106,7 @@ func set_aim_angle(angle: float) -> void:
 
 
 func set_swayed_aim_angle(angle: float) -> void:
-	"""Set the live stream angle without changing the player's base aim."""
+	## Set the live stream angle without changing the player's base aim.
 	var constrained := clampf(angle, -AIM_HALF_CONE_RADIANS, AIM_HALF_CONE_RADIANS)
 	aim_direction = Vector2.UP.rotated(constrained).normalized()
 

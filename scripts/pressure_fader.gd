@@ -43,11 +43,15 @@ func set_track_bounds(top: float, bottom: float, x: float = 72.0) -> void:
 func _apply_visual() -> void:
 	if not is_instance_valid(_track):
 		return
-	var knob_y := lerpf(_track_bottom, _track_top, inverse_lerp(
-		minimum_pressure,
-		maximum_pressure,
-		pressure,
-	))
+	var knob_y := lerpf(
+		_track_bottom,
+		_track_top,
+		inverse_lerp(
+			minimum_pressure,
+			maximum_pressure,
+			pressure,
+		),
+	)
 	_track_glow.position = Vector2(_track_x - 9.0, _track_top)
 	_track_glow.size = Vector2(18.0, maxf(_track_bottom - _track_top, 1.0))
 	_track.position = Vector2(_track_x - 2.0, _track_top)

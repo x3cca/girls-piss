@@ -30,6 +30,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	advance_sway(delta)
+
+
+func advance_sway(delta: float) -> void:
 	_sway_time += delta
 	_apply_carrot_transform()
 	swayed_aim_angle_changed.emit(get_swayed_aim_angle())
@@ -106,8 +110,12 @@ func angle_for_track_x(x: float) -> float:
 
 
 func set_drag_position(position: Vector2) -> void:
-	"""Apply a local drag position and emit its clamped absolute angle."""
+	## Apply a local drag position and emit its clamped absolute angle.
 	_update_from_position(position)
+
+
+func handle_input_event(event: InputEvent) -> void:
+	_gui_input(event)
 
 
 func begin_drag(position: Vector2) -> void:

@@ -20,6 +20,10 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	process_frame(_delta)
+
+
+func process_frame(_delta: float) -> void:
 	if input_controller:
 		show_touch_controls = input_controller.touch_controls_visible
 	_wire_input_controller()
@@ -37,8 +41,12 @@ func _wire_input_controller() -> void:
 	if is_instance_valid(_wired_input_controller):
 		if _wired_input_controller.aim_angle_changed.is_connected(carrot_aim_control.set_aim_angle):
 			_wired_input_controller.aim_angle_changed.disconnect(carrot_aim_control.set_aim_angle)
-		if carrot_aim_control.swayed_aim_angle_changed.is_connected(_wired_input_controller.set_swayed_aim_angle):
-			carrot_aim_control.swayed_aim_angle_changed.disconnect(_wired_input_controller.set_swayed_aim_angle)
+		if carrot_aim_control.swayed_aim_angle_changed.is_connected(
+			_wired_input_controller.set_swayed_aim_angle,
+		):
+			carrot_aim_control.swayed_aim_angle_changed.disconnect(
+				_wired_input_controller.set_swayed_aim_angle,
+			)
 	_wired_input_controller = input_controller
 	if not is_instance_valid(_wired_input_controller):
 		return
@@ -46,8 +54,12 @@ func _wire_input_controller() -> void:
 		carrot_aim_control.aim_angle_changed.connect(_wired_input_controller.set_aim_angle)
 	if not _wired_input_controller.aim_angle_changed.is_connected(carrot_aim_control.set_aim_angle):
 		_wired_input_controller.aim_angle_changed.connect(carrot_aim_control.set_aim_angle)
-	if not carrot_aim_control.swayed_aim_angle_changed.is_connected(_wired_input_controller.set_swayed_aim_angle):
-		carrot_aim_control.swayed_aim_angle_changed.connect(_wired_input_controller.set_swayed_aim_angle)
+		if not carrot_aim_control.swayed_aim_angle_changed.is_connected(
+			_wired_input_controller.set_swayed_aim_angle,
+		):
+			carrot_aim_control.swayed_aim_angle_changed.connect(
+				_wired_input_controller.set_swayed_aim_angle,
+			)
 	carrot_aim_control.set_aim_angle(_wired_input_controller.get_aim_angle())
 
 

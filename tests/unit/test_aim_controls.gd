@@ -43,7 +43,7 @@ func test_carrot_sway_updates_live_direction_and_stays_subtle() -> void:
 	carrot.swayed_aim_angle_changed.connect(controller.set_swayed_aim_angle)
 	carrot.set_process(false)
 	carrot.set_aim_angle(0.0)
-	carrot._process(PI / (2.0 * carrot.sway_speed))
+	carrot.advance_sway(PI / (2.0 * carrot.sway_speed))
 
 	assert_almost_eq(carrot.get_aim_angle(), 0.0, 0.001)
 	assert_almost_eq(controller.get_aim_angle(), 0.0, 0.001)
@@ -76,7 +76,7 @@ func test_gui_touch_position_is_local_even_when_control_is_moved() -> void:
 	touch.index = 3
 	touch.position = Vector2(track.end.x, track.position.y)
 	touch.pressed = true
-	carrot._gui_input(touch)
+	carrot.handle_input_event(touch)
 
 	assert_almost_eq(carrot.get_aim_angle(), PI / 3.0, 0.001)
 
@@ -99,7 +99,7 @@ func test_keyboard_aim_actions_still_change_angle() -> void:
 	controller.set_process(false)
 
 	Input.action_press("aim_right")
-	controller._process(0.1)
+	controller.process_frame(0.1)
 	Input.action_release("aim_right")
 
 	assert_almost_eq(controller.get_aim_angle(), 0.235, 0.001)
@@ -113,22 +113,22 @@ func test_physical_keyboard_events_change_aim_and_pressure() -> void:
 	var aim_down := InputEventKey.new()
 	aim_down.physical_keycode = KEY_D
 	aim_down.pressed = true
-	controller._input(aim_down)
-	controller._process(0.1)
+	controller.handle_input_event(aim_down)
+	controller.process_frame(0.1)
 	var aim_up := InputEventKey.new()
 	aim_up.physical_keycode = KEY_D
 	aim_up.pressed = false
-	controller._input(aim_up)
+	controller.handle_input_event(aim_up)
 
 	var pressure_down := InputEventKey.new()
 	pressure_down.physical_keycode = KEY_W
 	pressure_down.pressed = true
-	controller._input(pressure_down)
-	controller._process(0.1)
+	controller.handle_input_event(pressure_down)
+	controller.process_frame(0.1)
 	var pressure_up := InputEventKey.new()
 	pressure_up.physical_keycode = KEY_W
 	pressure_up.pressed = false
-	controller._input(pressure_up)
+	controller.handle_input_event(pressure_up)
 
 	assert_almost_eq(controller.get_aim_angle(), 0.235, 0.001)
 	assert_almost_eq(Vector2.UP.angle_to(controller.aim_direction), 0.235, 0.001)
