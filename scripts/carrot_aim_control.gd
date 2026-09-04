@@ -58,28 +58,9 @@ func _gui_input(event: InputEvent) -> void:
 		accept_event()
 		return
 
-	if event is InputEventScreenTouch:
-		var touch := event as InputEventScreenTouch
-		if touch.pressed and _touch_index == -1:
-			# Leave the left touch region available to InputController's pressure
-			# fader. A drag that started on the carrot can still travel all the way
-			# left to select the -60° limit.
-			if touch.position.x < size.x * touch_start_fraction:
-				return
-			_touch_index = touch.index
-			_update_from_position(_event_local_position(touch.position))
-			accept_event()
-		elif not touch.pressed and touch.index == _touch_index:
-			_touch_index = -1
-			# The angle intentionally persists after release.
-			accept_event()
-		return
-
-	if event is InputEventScreenDrag:
-		var drag := event as InputEventScreenDrag
-		if drag.index == _touch_index:
-			_update_from_position(_event_local_position(drag.position))
-			accept_event()
+	# Screen input is owned by InputController so one finger can set both aim and
+	# pressure. Keeping it out of this GUI callback also prevents the centered aim
+	# readout from stealing the touch before the controller sees it.
 
 
 func set_aim_angle(angle: float) -> void:
@@ -115,6 +96,21 @@ func set_drag_position(position: Vector2) -> void:
 
 
 func handle_input_event(event: InputEvent) -> void:
+	# Retain this explicit helper for scene/unit callers that exercise the control
+	# in isolation. Actual viewport touch events are handled by InputController.
+	if event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		if touch.pressed and _touch_index == -1:
+			_touch_index = touch.index
+			_update_from_position(_event_local_position(touch.position))
+		elif not touch.pressed and touch.index == _touch_index:
+			_touch_index = -1
+		return
+	if event is InputEventScreenDrag:
+		var drag := event as InputEventScreenDrag
+		if drag.index == _touch_index:
+			_update_from_position(_event_local_position(drag.position))
+		return
 	_gui_input(event)
 
 

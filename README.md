@@ -3,11 +3,10 @@
 Small Godot 4 game-jam prototype focused on a portrait liquid-stream loop and
 developer workflow.
 
-The playable sample aims a continuous inertial urine stream entering from below
-the bottom-center of the frame, manages a requested pressure plus an exertion
-reserve, and wets persistent targets. Desktop uses A/D and W/S alongside the
-persistent draggable carrot aim indicator; touch devices also get a left
-pressure fader.
+The playable sample traces an authored loop with a continuous inertial urine
+stream entering from below the bottom-center of the frame, then replays the
+recorded line as a 3× time-lapse. Desktop uses A/D and W/S to move the aim and
+pressure target, with Space held to piss; touch uses one finger for both axes.
 
 ## Included
 
@@ -18,7 +17,7 @@ pressure fader.
 - Web export preset targeting build/web/index.html.
 - GitHub Actions for Godot checks and HTML5/Butler deployment.
 - A local/CI test wrapper at tools/run-tests.sh with JUnit output.
-- A portrait liquid-stream sample scene with wettable targets and lighting.
+- A portrait liquid-stream sample scene with animated trace targets and lighting.
 - An inertial stream model where emitted flow keeps its launch velocity while
   gravity carries it through direction changes.
 - An offline alpha-silhouette normal-map baker in `tools/`.

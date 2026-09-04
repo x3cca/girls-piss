@@ -1,12 +1,14 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene format=3 uid="uid://kjxwgld7c0f2"]
 
-[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://dij0pqyiaityo" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/liquid_stream.tscn" id="2_stream"]
-[ext_resource type="PackedScene" path="res://scenes/wettable_target.tscn" id="3_target"]
 [ext_resource type="PackedScene" path="res://scenes/stream_hud.tscn" id="4_hud"]
-[ext_resource type="Script" path="res://scripts/input_controller.gd" id="5_input"]
-[ext_resource type="Script" path="res://scripts/pressure_model.gd" id="6_pressure"]
+[ext_resource type="Script" uid="uid://buquefbu7hq45" path="res://scripts/input_controller.gd" id="5_input"]
+[ext_resource type="Script" uid="uid://b1mamlfldebug" path="res://scripts/pressure_model.gd" id="6_pressure"]
 [ext_resource type="PackedScene" path="res://scenes/screen_overlay.tscn" id="7_overlay"]
+[ext_resource type="PackedScene" path="res://scenes/shape_trace.tscn" id="8_trace"]
+[ext_resource type="PackedScene" path="res://scenes/piss_line_recorder.tscn" id="9_recorder"]
+[ext_resource type="PackedScene" path="res://scenes/piss_line_replay.tscn" id="10_replay"]
 
 [sub_resource type="Gradient" id="Gradient_light"]
 colors = PackedColorArray(1, 1, 1, 0.95, 1, 1, 1, 0)
@@ -19,54 +21,43 @@ fill = 1
 fill_from = Vector2(0.5, 0.5)
 fill_to = Vector2(1, 0.5)
 
-[node name="LiquidStreamPrototype" type="Node2D"]
+[node name="LiquidStreamPrototype" type="Node2D" unique_id=968857839]
 script = ExtResource("1_main")
 
-[node name="InputController" type="Node" parent="."]
+[node name="InputController" type="Node" parent="." unique_id=2026477760]
 script = ExtResource("5_input")
 
-[node name="PressureModel" type="Node" parent="."]
+[node name="PressureModel" type="Node" parent="." unique_id=1094355759]
 script = ExtResource("6_pressure")
 
-[node name="LiquidStream" parent="." instance=ExtResource("2_stream")]
+[node name="LiquidStream" parent="." unique_id=1204969384 instance=ExtResource("2_stream")]
 
-[node name="WettablePlot01" parent="." instance=ExtResource("3_target")]
-target_size = Vector2(174, 112)
-base_color = Color(0.408, 0.447, 0.294, 1)
-accent_color = Color(0.894, 0.82, 0.365, 1)
-required_liquid = 1.25
+[node name="ShapeTrace" parent="." unique_id=136454311 instance=ExtResource("8_trace")]
+normalized_points = PackedVector2Array(0.5, 0.34, 0.69, 0.43, 0.69, 0.62, 0.5, 0.72, 0.31, 0.62, 0.31, 0.43)
 
-[node name="WettablePlot02" parent="." instance=ExtResource("3_target")]
-target_size = Vector2(188, 120)
-base_color = Color(0.475, 0.388, 0.294, 1)
-accent_color = Color(0.937, 0.839, 0.416, 1)
-required_liquid = 1.25
+[node name="PissLineRecorder" parent="." unique_id=1552256490 instance=ExtResource("9_recorder")]
 
-[node name="WettablePlot03" parent="." instance=ExtResource("3_target")]
-target_size = Vector2(174, 112)
-base_color = Color(0.31, 0.439, 0.376, 1)
-accent_color = Color(0.839, 0.765, 0.302, 1)
-required_liquid = 1.25
+[node name="PissLineReplay" parent="." unique_id=1262491738 instance=ExtResource("10_replay")]
 
-[node name="Ambient" type="CanvasModulate" parent="."]
+[node name="Ambient" type="CanvasModulate" parent="." unique_id=1496793359]
 color = Color(0.337, 0.376, 0.502, 1)
 
-[node name="BroadMoonLight" type="PointLight2D" parent="."]
+[node name="BroadMoonLight" type="PointLight2D" parent="." unique_id=687514520]
+position = Vector2(360, 435)
+color = Color(0.569, 0.663, 1, 1)
+energy = 0.72
 texture = SubResource("GradientTexture_light")
 texture_scale = 3.4
-energy = 0.72
-color = Color(0.569, 0.663, 1, 1)
-position = Vector2(360, 435)
 
-[node name="StreamImpactLight" type="PointLight2D" parent="."]
+[node name="StreamImpactLight" type="PointLight2D" parent="." unique_id=172867828]
+position = Vector2(360, 1328)
+color = Color(1, 0.898, 0.537, 1)
+energy = 1.1
 texture = SubResource("GradientTexture_light")
 texture_scale = 0.82
-energy = 1.1
-color = Color(1, 0.898, 0.537, 1)
-position = Vector2(360, 1328)
 
-[node name="ScreenOverlay" parent="." instance=ExtResource("7_overlay")]
+[node name="ScreenOverlay" parent="." unique_id=125728605 instance=ExtResource("7_overlay")]
 
-[node name="HUDLayer" type="CanvasLayer" parent="."]
+[node name="HUDLayer" type="CanvasLayer" parent="." unique_id=341283502]
 
-[node name="HUD" parent="HUDLayer" instance=ExtResource("4_hud")]
+[node name="HUD" parent="HUDLayer" unique_id=759194984 instance=ExtResource("4_hud")]
