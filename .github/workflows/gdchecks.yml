@@ -1,0 +1,50 @@
+name: "GDScript Checks"
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  gdchecks:
+    name: Lint, Format & Headless Check
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.7.2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install GDScript formatter
+        run: |
+          apt-get update && apt-get install -y curl unzip
+          curl -sL "https://github.com/GDQuest/GDScript-formatter/releases/download/0.20.1/gdscript-formatter-0.20.1-linux-x86_64.zip" -o /tmp/gdformatter.zip
+          unzip -o /tmp/gdformatter.zip -d /tmp/gdformatter
+          mv /tmp/gdformatter/gdscript-formatter-0.20.1-linux-x86_64 /usr/local/bin/gdscript-formatter
+          chmod +x /usr/local/bin/gdscript-formatter
+
+      - name: Format check (project scripts only)
+        run: |
+          find . -name "*.gd" -not -path "./.godot/*" -not -path "./addons/*" -print0 \
+            | xargs -0 -r gdscript-formatter --check
+
+      - name: Lint check (project scripts only)
+        if: github.event_name == 'pull_request'
+        run: |
+          LINT_OUTPUT=$(find . -name "*.gd" -not -path "./.godot/*" -not -path "./addons/*" -print0 \
+            | xargs -0 -r gdscript-formatter lint 2>&1)
+          echo "$LINT_OUTPUT"
+          test -z "$LINT_OUTPUT"
+
+      - name: Setup Godot export templates
+        run: |
+          mkdir -v -p ~/.local/share/godot/export_templates/
+          mv /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable \
+             ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Godot headless check
+        run: godot --headless --editor --check-only

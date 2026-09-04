@@ -1,0 +1,20 @@
+# Godot generated files
+.godot/
+.import/
+export.cfg
+
+# Export output
+build/
+dist/
+*.pck
+*.zip
+
+# Mono/editor files
+.mono/
+data_*/
+mono_crash.*.json
+
+# OS/editor files
+.DS_Store
+*~
+.directory
