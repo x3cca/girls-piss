@@ -58,9 +58,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Import Godot resources
-        run: godot --headless --editor --quit --import .
-
       - name: Run GUT tests
         run: ./tools/run-tests.sh
 
