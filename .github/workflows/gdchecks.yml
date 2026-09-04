@@ -48,3 +48,27 @@ jobs:
 
       - name: Godot headless check
         run: godot --headless --editor --check-only
+
+  unit-tests:
+    name: GUT unit tests
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.7.2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Import Godot resources
+        run: godot --headless --editor --quit --import .
+
+      - name: Run GUT tests
+        run: ./tools/run-tests.sh
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-test-results
+          path: build/test-results
+          if-no-files-found: warn
+          retention-days: 7
