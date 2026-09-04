@@ -19,7 +19,10 @@ func test_stream_renderables_use_the_shared_boil_material() -> void:
 	]:
 		var canvas_item := stream.get_node(node_path) as CanvasItem
 		assert_not_null(canvas_item, "%s should be a canvas item." % node_path)
-		assert_true(canvas_item.material == BOIL_MATERIAL, "%s should use the boil material." % node_path)
+		assert_true(
+			canvas_item.material == BOIL_MATERIAL,
+			"%s should use the boil material." % node_path,
+		)
 
 
 func test_boil_material_exposes_the_source_noise_and_motion_parameters() -> void:
