@@ -13,6 +13,15 @@ debugger through a local MCP HTTP/SSE endpoint.
 The repository includes .mcp.json with that URL for MCP clients that read
 project-local configuration.
 
+Codex CLI uses .codex/config.toml in this repository. When Codex asks whether
+to trust the project, accept it so the project-scoped MCP configuration loads.
+Verify it with:
+
+~~~text
+cd /path/to/girl-pisser
+codex mcp list
+~~~
+
 ## Useful checks
 
 ~~~text

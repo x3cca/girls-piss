@@ -9,7 +9,8 @@ the game code intentionally empty so a jam project can start cleanly.
 ## Included
 
 - Godot MCP editor bridge in addons/godot_mcp/.
-- .mcp.json for MCP clients that support the local HTTP/SSE server.
+- .codex/config.toml so Codex CLI discovers the local MCP server per project.
+- .mcp.json for other MCP clients that support the local HTTP/SSE server.
 - Web export preset targeting build/web/index.html.
 - GitHub Actions for Godot checks and HTML5/Butler deployment.
 - A minimal smoke-test scene to confirm the project opens.
@@ -25,7 +26,8 @@ from the plugin panel. The MCP client configuration points to:
 
 http://localhost:9080/mcp
 
-See skills/godot-mcp-cli.md for the short command/tool reference.
+See skills/godot-mcp-cli.md for the short command/tool reference. Codex CLI
+only loads the project-scoped file after the project is trusted.
 
 ## itch.io deployment
 
