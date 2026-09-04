@@ -1,8 +1,6 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
-[ext_resource type="PackedScene" path="res://scenes/carrot_aim_control.tscn" id="2_carrot"]
-[ext_resource type="PackedScene" path="res://scenes/pressure_fader.tscn" id="3_pressure"]
 [ext_resource type="Script" path="res://scripts/completion_card.gd" id="4_completion"]
 [ext_resource type="PackedScene" path="res://scenes/touch_reticle.tscn" id="5_touch_reticle"]
 
@@ -40,11 +38,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_hud")
 
-[node name="CarrotAimControl" parent="." instance=ExtResource("2_carrot")]
-
-[node name="PressureFader" parent="." instance=ExtResource("3_pressure")]
-
-[node name="TouchReticle" parent="." instance=ExtResource("5_touch_reticle")]
+[node name="AimReticle" parent="." instance=ExtResource("5_touch_reticle")]
 
 [node name="CompletionCard" type="Control" parent="."]
 layout_mode = 1

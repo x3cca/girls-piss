@@ -6,11 +6,9 @@ signal wet_target_hit(target: WettableTarget, amount: float, position: Vector2, 
 signal drawing_point_updated(position: Vector2, active: bool)
 
 @export var source_position := Vector2(360.0, 1320.0)
-@export_range(150.0, 800.0, 1.0) var minimum_length := 150.0
-@export_range(150.0, 2400.0, 1.0) var maximum_length := 620.0
+@export var stream_speed := 920.0
+@export var target_smoothing_speed := 8.0
 @export_range(24, 32, 1) var ribbon_points := 28
-@export var launch_speed_min := 560.0
-@export var launch_speed_max := 1120.0
 @export var gravity := Vector2(0.0, 360.0)
 @export var parcel_lifetime := 2.25
 @export_range(32, 128, 1) var max_parcels := 96
@@ -21,12 +19,9 @@ signal drawing_point_updated(position: Vector2, active: bool)
 @export var distal_width_scale := 0.55
 @export var distal_fade_start := 0.78
 @export_range(0.1, 1.0, 0.01) var distal_end_alpha := 0.5
-@export var perspective_arc_strength := 34.0
 @export var normal_emission_rate := 60.0
-@export var jitter_max_degrees := 1.4
 
 var input_controller: InputController
-var pressure_model: PressureModel
 
 @onready var _edge_mesh: MeshInstance2D = $EdgeRibbon
 @onready var _body_mesh: MeshInstance2D = $BodyRibbon
@@ -39,7 +34,8 @@ var _highlight_mesh_resource := ArrayMesh.new()
 var _parcels: Array[Dictionary] = []
 var _emission_accumulator := 0.0
 var _current_points := PackedVector2Array()
-var _jitter_time := 0.0
+var _stream_target_position := Vector2.ZERO
+var _stream_target_initialized := false
 var _live_enabled := true
 
 
@@ -55,7 +51,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if input_controller == null or pressure_model == null:
+	if input_controller == null:
 		return
 	if not _live_enabled:
 		# Replay owns the only visible path after tracing completes. Keep the
@@ -63,35 +59,39 @@ func _process(delta: float) -> void:
 		# render it while the replay is on screen.
 		drawing_point_updated.emit(Vector2.ZERO, false)
 		return
-	var pressure := pressure_model.effective_pressure
 	var is_pissing := input_controller.is_pissing()
-	_jitter_time += delta
-	var direction := input_controller.aim_direction.normalized()
+	var target := input_controller.get_target_position()
+	if not _stream_target_initialized:
+		_stream_target_position = target
+		_stream_target_initialized = true
+	else:
+		var target_weight := 1.0 - exp(-target_smoothing_speed * delta)
+		_stream_target_position = _stream_target_position.lerp(target, target_weight)
+	var direction := (_stream_target_position - source_position).normalized()
 	if direction == Vector2.ZERO:
 		direction = Vector2.UP
-	direction = direction.rotated(get_jitter_angle(pressure)).normalized()
 	if is_pissing:
 		update_parcels(delta)
-		emit_parcels(direction, pressure, delta)
+		emit_parcels(_stream_target_position, delta)
 	else:
 		# Releasing Space/a finger closes the stream immediately. A later press
-		# starts a fresh visible jet while the pressure model eases independently.
+		# starts a fresh visible jet while the crosshair keeps its position.
 		_parcels.clear()
 		_emission_accumulator = 0.0
-	_current_points = build_parcel_centerline(direction, pressure)
+	_current_points = build_parcel_centerline()
 	var hit := _truncate_at_target(_current_points)
 	var hit_target := not hit.is_empty()
 	_impact.emitting = false
 	if is_pissing and not hit.is_empty():
 		_current_points = hit.points
-		_emit_hit(hit, pressure * delta * 0.50)
+		_emit_hit(hit, delta)
 	elif is_pissing and _current_points.size() >= 2:
 		_emit_floor_impact(_current_points[_current_points.size() - 1])
 
 	var profile := get_stream_profile()
 	update_ribbon_meshes(
 		_current_points,
-		lerpf(minimum_length, maximum_length, clampf(pressure, 0.0, 1.0)),
+		_path_length(_current_points),
 		float(profile["ribbon_alpha"]) if is_pissing else 0.0,
 		hit_target,
 	)
@@ -118,10 +118,16 @@ func is_live_enabled() -> bool:
 	return _live_enabled
 
 
+func get_stream_target_position() -> Vector2:
+	return _stream_target_position
+
+
 func reset_stream() -> void:
 	_parcels.clear()
 	_emission_accumulator = 0.0
 	_current_points = PackedVector2Array()
+	_stream_target_position = Vector2.ZERO
+	_stream_target_initialized = false
 	_impact.emitting = false
 	_droplets.emitting = false
 	queue_redraw()
@@ -139,21 +145,6 @@ func _set_live_visuals(enabled: bool) -> void:
 	else:
 		# The stream only starts when Space/a finger is held.
 		_droplets.emitting = false
-
-
-func get_jitter_angle(pressure: float, at_time := -1.0) -> float:
-	## Return a smooth, pressure-scaled direction wobble for every input mode.
-	var time := _jitter_time if at_time < 0.0 else at_time
-	var pressure_fraction := clampf(inverse_lerp(0.15, 1.0, pressure), 0.0, 1.0)
-	# Keep a little movement at minimum pressure, then ramp strongly into
-	# overdrive. Several frequencies avoid the mechanical feel of one sine wave.
-	var pressure_strength := lerpf(0.16, 1.0, pressure_fraction)
-	var noise := (
-			sin(time * 10.0) * 0.58
-			+ sin(time * 16.5 + 1.7) * 0.29
-			+ sin(time * 27.0 + 4.1) * 0.13
-	)
-	return deg_to_rad(jitter_max_degrees) * pressure_strength * noise
 
 
 func update_parcels(delta: float) -> void:
@@ -175,16 +166,14 @@ func set_parcel_chain(parcels: Array[Dictionary]) -> void:
 
 
 func emit_parcels(
-		direction: Vector2,
-		pressure: float,
+		target_position: Vector2,
 		delta: float,
-		_unused_legacy_profile := 0.0,
 ) -> void:
-	var speed := lerpf(launch_speed_min, launch_speed_max, clampf(pressure, 0.0, 1.0))
 	_emission_accumulator += delta
 	var interval := 1.0 / maxf(normal_emission_rate, 1.0)
 	var emitted := 0
-	var launch_velocity := direction * speed
+	var travel_time := _travel_time_for_target(target_position)
+	var launch_velocity := _launch_velocity_for_target(target_position)
 	while _emission_accumulator >= interval and emitted < 4:
 		_emission_accumulator -= interval
 		emitted += 1
@@ -200,33 +189,28 @@ func emit_parcels(
 				"velocity": launch_velocity,
 				"launch_velocity": launch_velocity,
 				"age": 0.0,
+				"lifetime": minf(parcel_lifetime, travel_time),
 			},
 		)
 		parcel_index += 1
-	var stream_age := lerpf(minimum_length, maximum_length, clampf(pressure, 0.0, 1.0)) / maxf(
-		speed,
-		1.0,
-	)
-	var lifetime := minf(parcel_lifetime, stream_age)
 	while (
 			not _parcels.is_empty()
-			and (float(_parcels.back()["age"]) > lifetime or _parcels.size() > max_parcels)
+			and (
+				float(_parcels.back()["age"]) > float(_parcels.back().get("lifetime", parcel_lifetime))
+				or _parcels.size() > max_parcels
+			)
 	):
 		_parcels.pop_back()
 
 
 func get_stream_profile() -> Dictionary:
-	## Every active stream has the same continuous output; pressure changes only
-	## its launch speed and length.
+	## Every active stream has the same continuous output. The crosshair controls
+	## the target position, never a separate pressure mode.
 	return {
 		"ambient_amount": 7,
 		"ambient_lifetime": 0.42,
 		"ambient_velocity_min": 28.0,
 		"ambient_velocity_max": 64.0,
-		"burst_amount": 0,
-		"burst_velocity_min": 20.0,
-		"burst_velocity_max": 48.0,
-		"burst_interval": 1.0,
 		"emission_rate": normal_emission_rate,
 		"ribbon_alpha": 1.0,
 	}
@@ -251,34 +235,48 @@ func _update_stream_effects(direction: Vector2, is_pissing: bool) -> void:
 	_edge_mesh.modulate.a = ribbon_alpha
 	_body_mesh.modulate.a = ribbon_alpha
 	_highlight_mesh.modulate.a = ribbon_alpha
-func build_parcel_centerline(_direction: Vector2, _pressure: float) -> PackedVector2Array:
-	# Render a capped sample of the moving parcel chain. The visible ribbon is an
-	# interpolation of locked-in parcels, not a fresh curve from the current aim.
+
+
+func build_parcel_centerline() -> PackedVector2Array:
+	## Render the moving parcel chain. Each parcel is a committed sample of the
+	## target and gravity at the instant it was emitted, so old stream segments do
+	## not bend when the crosshair moves.
 	var points := PackedVector2Array()
 	if _parcels.is_empty():
 		points.append(source_position)
 		return points
-	points.append(_perspective_position(_parcels[0], 0.0))
 	var point_count := mini(ribbon_points, _parcels.size())
-	for i in range(1, point_count):
+	for i in point_count:
 		var fraction := float(i) / float(maxi(point_count - 1, 1))
 		var parcel_index := clampi(
 			roundi(fraction * float(_parcels.size() - 1)),
 			0,
 			_parcels.size() - 1,
 		)
-		points.append(_perspective_position(_parcels[parcel_index], fraction))
+		points.append(_parcels[parcel_index]["position"])
 	return points
 
 
-func _perspective_position(parcel: Dictionary, fraction: float) -> Vector2:
-	# The parcel trajectory remains the source of truth. This small lateral bow is
-	# a top-down perspective cue, not a second aim curve, and is zero when centered.
-	var launch_velocity: Vector2 = parcel["launch_velocity"]
-	var lateral_aim := clampf(launch_velocity.x / maxf(launch_velocity.length(), 1.0), -1.0, 1.0)
-	var bow := lateral_aim * perspective_arc_strength * sin(fraction * PI)
-	return parcel["position"] + Vector2(bow, 0.0)
+func _path_length(points: PackedVector2Array) -> float:
+	var length := 0.0
+	for i in range(1, points.size()):
+		length += points[i - 1].distance_to(points[i])
+	return maxf(length, 1.0)
 
+
+func _launch_velocity_for_target(target_position: Vector2) -> Vector2:
+	# Pick a stable flight time, then solve the ordinary projectile equation so
+	# each newly emitted parcel is aimed at the eased crosshair target.
+	var offset := target_position - source_position
+	var travel_time := _travel_time_for_target(target_position)
+	return (offset - gravity * travel_time * travel_time * 0.5) / travel_time
+
+
+func _travel_time_for_target(target_position: Vector2) -> float:
+	return maxf(
+		target_position.distance_to(source_position) / maxf(stream_speed, 1.0),
+		0.12,
+	)
 
 func _truncate_at_target(points: PackedVector2Array) -> Dictionary:
 	if points.size() < 2:

@@ -4,7 +4,6 @@
 [ext_resource type="PackedScene" path="res://scenes/liquid_stream.tscn" id="2_stream"]
 [ext_resource type="PackedScene" path="res://scenes/stream_hud.tscn" id="4_hud"]
 [ext_resource type="Script" uid="uid://buquefbu7hq45" path="res://scripts/input_controller.gd" id="5_input"]
-[ext_resource type="Script" uid="uid://b1mamlfldebug" path="res://scripts/pressure_model.gd" id="6_pressure"]
 [ext_resource type="PackedScene" path="res://scenes/screen_overlay.tscn" id="7_overlay"]
 [ext_resource type="PackedScene" path="res://scenes/shape_trace.tscn" id="8_trace"]
 [ext_resource type="PackedScene" path="res://scenes/piss_line_recorder.tscn" id="9_recorder"]
@@ -26,9 +25,6 @@ script = ExtResource("1_main")
 
 [node name="InputController" type="Node" parent="." unique_id=2026477760]
 script = ExtResource("5_input")
-
-[node name="PressureModel" type="Node" parent="." unique_id=1094355759]
-script = ExtResource("6_pressure")
 
 [node name="LiquidStream" parent="." unique_id=1204969384 instance=ExtResource("2_stream")]
 

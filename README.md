@@ -5,8 +5,8 @@ developer workflow.
 
 The playable sample traces an authored loop with a continuous inertial urine
 stream entering from below the bottom-center of the frame, then replays the
-recorded line as a 3× time-lapse. Desktop uses A/D and W/S to move the aim and
-pressure target, with Space held to piss; touch uses one finger for both axes.
+recorded line as a 3× time-lapse. Desktop uses WASD to move one crosshair target
+and Space held to piss; touch uses one finger to place the crosshair and piss.
 
 ## Included
 
@@ -19,7 +19,7 @@ pressure target, with Space held to piss; touch uses one finger for both axes.
 - A local/CI test wrapper at tools/run-tests.sh with JUnit output.
 - A portrait liquid-stream sample scene with animated trace targets and lighting.
 - An inertial stream model where emitted flow keeps its launch velocity while
-  gravity carries it through direction changes.
+  the visible stream eases toward the crosshair target.
 - An offline alpha-silhouette normal-map baker in `tools/`.
 - Agent and MCP workflow notes.
 
