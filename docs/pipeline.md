@@ -1,5 +1,13 @@
 # Build and deploy pipeline
 
+## Checks and tests
+
+`gdchecks.yml` runs the Godot headless project check and a separate `GUT unit
+tests` job on every pull request and push to `main`/`master`. The test job
+executes `./tools/run-tests.sh` in the same Godot CI container used by the
+project checks and uploads the JUnit report as `godot-test-results`, including
+when tests fail.
+
 build-and-deploy.yml follows the current Date-or-Mate-2 workflow:
 
 1. Run in barichello/godot-ci:4.7.2.
@@ -29,5 +37,6 @@ Actions unless a separate workflow explicitly needs it.
 
 ## Export notes
 
-The MCP addon is excluded in export_presets.cfg. Keep editor-only plugins out
-of runtime builds unless the game specifically needs them.
+The MCP and GUT addons, tests, and development scripts are excluded in
+export_presets.cfg. Keep editor-only plugins and test assets out of runtime
+builds unless the game specifically needs them.
