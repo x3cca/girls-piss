@@ -1,0 +1,135 @@
+[gd_scene load_steps=2 format=3 uid="uid://c2kuk5yuiage8"]
+
+[ext_resource type="Script" path="res://addons/godot_mcp/ui/mcp_panel.gd" id="1_3cbiu"]
+
+[node name="MCPPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+custom_minimum_size = Vector2(0, 0)
+clip_contents = true
+script = ExtResource("1_3cbiu")
+
+[node name="MainHBox" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="LogArea" type="VBoxContainer" parent="MainHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 90)
+
+[node name="LogText" type="RichTextLabel" parent="MainHBox/LogArea"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+threaded = true
+scroll_follow = true
+selection_enabled = true
+context_menu_enabled = true
+focus_mode = 2
+deselect_on_focus_loss_enabled = false
+
+[node name="BottomBar" type="HFlowContainer" parent="MainHBox/LogArea"]
+layout_mode = 2
+alignment = 2
+
+[node name="FilterBox" type="LineEdit" parent="MainHBox/LogArea/BottomBar"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(150, 0)
+placeholder_text = "Filter Messages"
+clear_button_enabled = true
+accessibility_name = "Filter Messages"
+
+[node name="SidebarPanel" type="PanelContainer" parent="MainHBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(210, 0)
+
+[node name="SidebarVBox" type="VBoxContainer" parent="MainHBox/SidebarPanel"]
+layout_mode = 2
+
+[node name="ToolRow" type="HBoxContainer" parent="MainHBox/SidebarPanel/SidebarVBox"]
+layout_mode = 2
+
+[node name="ClearButton" type="Button" parent="MainHBox/SidebarPanel/SidebarVBox/ToolRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"BottomPanelButton"
+text = "Clear"
+focus_mode = 2
+accessibility_name = "Clear Log"
+
+[node name="SearchToggle" type="Button" parent="MainHBox/SidebarPanel/SidebarVBox/ToolRow"]
+layout_mode = 2
+theme_type_variation = &"BottomPanelButton"
+toggle_mode = true
+focus_mode = 2
+accessibility_name = "Search Messages"
+
+[node name="Separator0" type="HSeparator" parent="MainHBox/SidebarPanel/SidebarVBox"]
+layout_mode = 2
+
+[node name="StatusHeader" type="Label" parent="MainHBox/SidebarPanel/SidebarVBox"]
+layout_mode = 2
+theme_type_variation = &"HeaderSmall"
+text = "Server Status"
+autowrap_mode = 0
+
+[node name="StatusLabel" type="Label" parent="MainHBox/SidebarPanel/SidebarVBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Stopped"
+horizontal_alignment = 1
+
+[node name="Separator1" type="HSeparator" parent="MainHBox/SidebarPanel/SidebarVBox"]
+layout_mode = 2
+
+[node name="PortHeader" type="Label" parent="MainHBox/SidebarPanel/SidebarVBox"]
+layout_mode = 2
+theme_type_variation = &"HeaderSmall"
+text = "Port"
+
+[node name="PortSpinBox" type="SpinBox" parent="MainHBox/SidebarPanel/SidebarVBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1.0
+max_value = 65535.0
+value = 9080.0
+
+[node name="Separator2" type="HSeparator" parent="MainHBox/SidebarPanel/SidebarVBox"]
+layout_mode = 2
+
+[node name="StartButton" type="Button" parent="MainHBox/SidebarPanel/SidebarVBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Start Server"
+
+[node name="StopButton" type="Button" parent="MainHBox/SidebarPanel/SidebarVBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Stop Server"
+
+[node name="Separator3" type="HSeparator" parent="MainHBox/SidebarPanel/SidebarVBox"]
+layout_mode = 2
+
+[node name="ClientsHeader" type="Label" parent="MainHBox/SidebarPanel/SidebarVBox"]
+layout_mode = 2
+theme_type_variation = &"HeaderSmall"
+text = "Connected Clients"
+
+[node name="CountLabel" type="Label" parent="MainHBox/SidebarPanel/SidebarVBox"]
+layout_mode = 2
+text = "0"
+horizontal_alignment = 1
