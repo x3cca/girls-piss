@@ -2,8 +2,7 @@
 
 This is a Godot 4.7.2 game-jam starter.
 
-Always use Godot 4+ syntax.
-
+Always use Godot 4+ syntax and semantic input action names.
 Always follow `skills/godot-best-practices.md`.
 
 When making nodes and scenes, make them bespoke scenes encapsulating the
@@ -33,6 +32,20 @@ you need a more specific placeholder, ask the user to add it under
 
 When adding new input types, make new actions in the InputMap on the project
 settings. Keep action names semantic.
+
+## Testing
+
+Run these before committing:
+
+```bash
+./tools/run-tests.sh
+godot --headless --editor --check-only
+```
+
+Tests use GUT (Godot Unit Test) v9.7.1. Put fast isolated tests in
+`tests/unit/` and scene/multi-system coverage in `tests/integration/`. Test
+files must be named `test_*.gd`. The test wrapper is the same command used by
+the GitHub Actions runner and writes a local JUnit report under `build/`.
 
 ## MCP
 
@@ -78,3 +91,6 @@ find . -name "*.gd" -not -path "./.godot/*" -not -path "./addons/*" -print0 \
 
 After a run, check headlessly for GDScript errors. Once scripts are
 error-free, format and lint them, then fix any remaining errors and warnings.
+
+Third-party code in `addons/` includes both `addons/godot_mcp/` and
+`addons/gut/`; do not reformat or lint either directory.

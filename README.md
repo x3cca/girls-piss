@@ -9,10 +9,12 @@ the game code intentionally empty so a jam project can start cleanly.
 ## Included
 
 - Godot MCP editor bridge in addons/godot_mcp/.
+- GUT v9.7.1 unit/integration test plugin in addons/gut/.
 - .codex/config.toml so Codex CLI discovers the local MCP server per project.
 - .mcp.json for other MCP clients using the same local MCP adapter.
 - Web export preset targeting build/web/index.html.
 - GitHub Actions for Godot checks and HTML5/Butler deployment.
+- A local/CI test wrapper at tools/run-tests.sh with JUnit output.
 - A minimal smoke-test scene to confirm the project opens.
 - Agent and MCP workflow notes.
 
@@ -37,6 +39,12 @@ After opening Godot and enabling the plugin, restart Codex or run:
 
 See skills/godot-mcp-cli.md for the short command/tool reference.
 
+## Tests
+
+Run `./tools/run-tests.sh` from the repository root. It runs GUT headlessly,
+and GitHub Actions runs the same command on pull requests and pushes. See
+tests/README.md and docs/testing.md for test conventions.
+
 ## itch.io deployment
 
 The workflow pushes the Web export to the html-staging channel on pushes to
@@ -51,8 +59,9 @@ girl-pisser. See docs/pipeline.md for setup details.
 
 ## Layout
 
-addons/ editor plugins, scenes/ smoke-test scene, assets/ project assets,
-.github/ automation, docs/ workflow notes, and skills/ AI workflow notes.
+addons/ editor plugins, scenes/ smoke-test scene, tests/ GUT tests, tools/
+developer scripts, assets/ project assets, .github/ automation, docs/ workflow
+notes, and skills/ AI workflow notes.
 
 ## Attribution
 
