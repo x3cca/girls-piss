@@ -1,8 +1,10 @@
 extends GutTest
 
+const STREAM_SCENE := preload("res://scenes/liquid_stream.tscn")
+
+
 func test_new_aim_only_changes_newly_emitted_parcel() -> void:
-	var stream_scene := load("res://scenes/liquid_stream.tscn") as PackedScene
-	var stream := stream_scene.instantiate() as LiquidStream
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
 	add_child_autofree(stream)
 	stream.gravity = Vector2.ZERO
 	stream.source_position = Vector2.ZERO
@@ -18,3 +20,17 @@ func test_new_aim_only_changes_newly_emitted_parcel() -> void:
 	assert_eq(new_launch_velocity, Vector2.RIGHT * 616.0)
 	assert_eq(old_parcel["launch_velocity"], old_launch_velocity)
 	assert_eq(old_parcel["position"], old_position)
+
+
+func test_sputter_profile_reduces_continuity_and_increases_bursts() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+	var normal := stream.get_sputter_profile(0.0, false)
+	var low_pressure := stream.get_sputter_profile(0.65, false)
+	var exhausted := stream.get_sputter_profile(1.0, true)
+
+	assert_true(float(normal["emission_rate"]) > float(low_pressure["emission_rate"]))
+	assert_true(float(low_pressure["burst_amount"]) > float(normal["burst_amount"]))
+	assert_true(float(exhausted["burst_amount"]) > float(low_pressure["burst_amount"]))
+	assert_eq(float(exhausted["emission_rate"]), 0.0)
+	assert_eq(float(exhausted["ribbon_alpha"]), 0.0)
