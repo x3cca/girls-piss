@@ -1,5 +1,9 @@
 extends Node2D
 
+const STREAM_SCENE := preload("res://scenes/liquid_stream.tscn")
+const TARGET_SCENE := preload("res://scenes/wettable_target.tscn")
+const HUD_SCENE := preload("res://scenes/stream_hud.tscn")
+
 ## Playable portrait-first sample level. All world positions are derived from the
 ## visible rectangle, so expand stretching and taller phone ratios stay usable.
 ## The stream source is deliberately below the frame: the player controls the
@@ -15,14 +19,18 @@ var _impact_light: PointLight2D
 var _world_size := Vector2(720.0, 1280.0)
 var _layout_signature := Vector2.ZERO
 
+
 func _ready() -> void:
 	input_controller = InputController.new()
+	input_controller.name = "InputController"
 	add_child(input_controller)
 	pressure_model = PressureModel.new()
+	pressure_model.name = "PressureModel"
 	add_child(pressure_model)
 	pressure_model.requested_pressure = input_controller.requested_pressure
 
-	stream = LiquidStream.new()
+	stream = STREAM_SCENE.instantiate() as LiquidStream
+	stream.name = "LiquidStream"
 	stream.input_controller = input_controller
 	stream.pressure_model = pressure_model
 	stream.wet_target_hit.connect(_on_wet_target_hit)
@@ -34,11 +42,13 @@ func _ready() -> void:
 	_layout_world()
 	queue_redraw()
 
+
 func _process(_delta: float) -> void:
 	_world_size = get_viewport().get_visible_rect().size
 	pressure_model.requested_pressure = input_controller.requested_pressure
 	_layout_world()
 	queue_redraw()
+
 
 func _layout_world() -> void:
 	if _world_size.x <= 1.0 or _world_size.y <= 1.0:
@@ -61,9 +71,10 @@ func _layout_world() -> void:
 		if _impact_light:
 			_impact_light.position = stream.source_position
 
+
 func _create_targets() -> void:
 	for i in 3:
-		var target := WettableTarget.new()
+		var target := TARGET_SCENE.instantiate() as WettableTarget
 		target.name = "WettablePlot%02d" % (i + 1)
 		target.target_size = Vector2(174.0, 112.0) if i != 1 else Vector2(188.0, 120.0)
 		target.base_color = [Color("#68724b"), Color("#79634b"), Color("#4f7060")][i]
@@ -72,6 +83,7 @@ func _create_targets() -> void:
 		target.soaked.connect(_on_target_soaked.bind(target))
 		add_child(target)
 		targets.append(target)
+
 
 func _create_lighting() -> void:
 	var ambient := CanvasModulate.new()
@@ -94,6 +106,7 @@ func _create_lighting() -> void:
 	_impact_light.position = stream.source_position
 	add_child(_impact_light)
 
+
 func _light_texture() -> GradientTexture2D:
 	var gradient := Gradient.new()
 	gradient.colors = PackedColorArray([Color(1, 1, 1, 0.95), Color(1, 1, 1, 0.0)])
@@ -106,11 +119,12 @@ func _light_texture() -> GradientTexture2D:
 	texture.fill_to = Vector2(1.0, 0.5)
 	return texture
 
+
 func _create_hud() -> void:
 	var layer := CanvasLayer.new()
 	layer.name = "HUDLayer"
 	add_child(layer)
-	hud = StreamHUD.new()
+	hud = HUD_SCENE.instantiate() as StreamHUD
 	hud.name = "HUD"
 	hud.input_controller = input_controller
 	hud.pressure_model = pressure_model
@@ -120,14 +134,22 @@ func _create_hud() -> void:
 	hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(hud)
 
-func _on_wet_target_hit(target: WettableTarget, amount: float, position: Vector2, normal: Vector2) -> void:
+
+func _on_wet_target_hit(
+	target: WettableTarget,
+	amount: float,
+	position: Vector2,
+	normal: Vector2,
+) -> void:
 	if is_instance_valid(target):
 		target.apply_liquid(amount, position)
 		_impact_light.position = position + normal * 12.0
 
+
 func _on_target_soaked(target: WettableTarget) -> void:
 	target.base_color = target.base_color.lightened(0.12)
 	target.queue_redraw()
+
 
 func _draw() -> void:
 	# Low-contrast bands give the stream readable depth without painted textures.

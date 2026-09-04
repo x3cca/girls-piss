@@ -12,7 +12,14 @@ signal exhaustion_changed(exhausted: bool)
 var effective_pressure := 0.55
 var exhausted := false
 
+
 func _process(delta: float) -> void:
+	advance(delta)
+
+
+## Advances reserve/exhaustion state by a deterministic simulation step.
+## Exposed so tests and alternate game loops can drive the model explicitly.
+func advance(delta: float) -> void:
 	requested_pressure = clampf(requested_pressure, 0.15, 1.0)
 	# Exhaustion is a recovery state: the reserve must refill even if the player
 	# keeps holding maximum pressure, otherwise the hysteresis unlock could never
