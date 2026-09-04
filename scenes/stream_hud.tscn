@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
+[ext_resource type="PackedScene" path="res://scenes/carrot_aim_control.tscn" id="2_carrot"]
+[ext_resource type="PackedScene" path="res://scenes/pressure_fader.tscn" id="3_pressure"]
 
 [node name="StreamHUD" type="Control"]
 layout_mode = 3
@@ -11,3 +13,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_hud")
+
+[node name="CarrotAimControl" parent="." instance=ExtResource("2_carrot")]
+
+[node name="PressureFader" parent="." instance=ExtResource("3_pressure")]

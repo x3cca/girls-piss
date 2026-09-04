@@ -13,6 +13,16 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 	assert_not_null(instance.get_node_or_null("PressureModel"))
 	assert_not_null(instance.get_node_or_null("LiquidStream"))
 	assert_not_null(instance.get_node_or_null("HUDLayer/HUD"))
+	var hud := instance.get_node_or_null("HUDLayer/HUD")
+	assert_not_null(hud.get_node_or_null("CarrotAimControl") if hud else null)
+	assert_not_null(hud.get_node_or_null("PressureFader") if hud else null)
+	var carrot := hud.get_node_or_null("CarrotAimControl") if hud else null
+	var carrot_sprite := carrot.get_node_or_null("CarrotSprite") if carrot else null
+	assert_true(carrot_sprite is TextureRect)
+	assert_not_null(carrot_sprite.texture if carrot_sprite is TextureRect else null)
+	var pressure_fader := hud.get_node_or_null("PressureFader") if hud else null
+	assert_not_null(pressure_fader.get_node_or_null("Track") if pressure_fader else null)
+	assert_not_null(pressure_fader.get_node_or_null("Knob") if pressure_fader else null)
 	var edge := instance.get_node_or_null("LiquidStream/EdgeRibbon")
 	var body := instance.get_node_or_null("LiquidStream/BodyRibbon")
 	var highlight := instance.get_node_or_null("LiquidStream/HighlightRibbon")
