@@ -5,6 +5,7 @@ class_name CompletionCard
 signal play_again_pressed
 
 @onready var _play_again_button: Button = $PlayAgainButton
+var failure_state := false
 
 
 func _ready() -> void:
@@ -18,14 +19,28 @@ func _process(_delta: float) -> void:
 
 
 func show_card() -> void:
+	failure_state = false
 	visible = true
 	_layout_card()
 	_play_again_button.grab_focus()
 	queue_redraw()
 
 
+func show_failure_card() -> void:
+	failure_state = true
+	visible = true
+	_layout_card()
+	_play_again_button.grab_focus()
+	queue_redraw()
+
+
+func is_failure_card() -> bool:
+	return failure_state
+
+
 func hide_card() -> void:
 	visible = false
+	failure_state = false
 
 
 func _on_play_again_pressed() -> void:
@@ -45,16 +60,16 @@ func _draw() -> void:
 	draw_string(
 		ThemeDB.fallback_font,
 		card.position + Vector2(0.0, 92.0),
-		"LEVEL COMPLETE",
+		"THREE STRIKES" if failure_state else "LEVEL COMPLETE",
 		HORIZONTAL_ALIGNMENT_CENTER,
 		card.size.x,
 		30,
-		Color("#fff0a0"),
+		Color("#ff8790") if failure_state else Color("#fff0a0"),
 	)
 	draw_string(
 		ThemeDB.fallback_font,
 		card.position + Vector2(0.0, 126.0),
-		"YOUR LINE, PLAYED BACK",
+		"TRY AGAIN" if failure_state else "YOUR LINE, PLAYED BACK",
 		HORIZONTAL_ALIGNMENT_CENTER,
 		card.size.x,
 		14,

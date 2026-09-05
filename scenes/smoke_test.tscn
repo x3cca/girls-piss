@@ -12,6 +12,7 @@
 [ext_resource type="Script" uid="uid://7hyf0kirxip1" path="res://scripts/depth_map.gd" id="12_depth_map"]
 [ext_resource type="Texture2D" uid="uid://m44oqg56v0ay" path="res://resources/depth_map_baked.png" id="13_depth_texture"]
 [ext_resource type="PackedScene" path="res://scenes/depth_environment.tscn" id="14_depth_environment"]
+[ext_resource type="PackedScene" path="res://scenes/negative_zone.tscn" id="15_negative_zone"]
 
 [sub_resource type="Gradient" id="Gradient_light"]
 colors = PackedColorArray(1, 1, 1, 0.95, 1, 1, 1, 0)
@@ -45,6 +46,12 @@ normalized_points = PackedVector2Array(0.5, 0.78, 0.69, 0.71, 0.79, 0.54, 0.74, 
 closed_path = false
 checkpoint_look_ahead = 3
 target_size = 144.0
+
+[node name="NegativeZone01" parent="." unique_id=2103637511 instance=ExtResource("15_negative_zone")]
+normalized_points = PackedVector2Array(0.04, 0.11, 0.3, 0.11, 0.26, 0.29, 0.06, 0.29)
+
+[node name="NegativeZone02" parent="." unique_id=776967907 instance=ExtResource("15_negative_zone")]
+normalized_points = PackedVector2Array(0.72, 0.1, 0.97, 0.1, 0.92, 0.29, 0.75, 0.27)
 
 [node name="PissLineRecorder" parent="." unique_id=1552256490 instance=ExtResource("9_recorder")]
 

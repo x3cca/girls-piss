@@ -69,6 +69,41 @@ func test_depth_increases_parcel_flight_time_and_lifetime() -> void:
 	assert_eq(parcel["lifetime"], parcel["flight_time"])
 
 
+func test_in_flight_parcel_keeps_committed_depth_after_new_target() -> void:
+	var image := Image.create(2, 1, false, Image.FORMAT_RGBA8)
+	image.set_pixel(0, 0, Color(0.0, 0.0, 0.0, 1.0))
+	image.set_pixel(1, 0, Color(1.0, 0.0, 0.0, 1.0))
+	var map := DepthMap2D.new()
+	add_child_autofree(map)
+	map.depth_texture = ImageTexture.create_from_image(image)
+	map.world_rect = Rect2(0.0, 0.0, 100.0, 1.0)
+	var stream := preload("res://scenes/liquid_stream.tscn").instantiate() as LiquidStream
+	add_child_autofree(stream)
+	stream.set_depth_map(map)
+	stream.source_position = Vector2(1.0, 0.5)
+	stream.stream_speed = 1000.0
+	stream.depth_distance_scale = 100.0
+	stream.emit_parcels(Vector2(99.0, 0.5), 0.0)
+	stream.update_parcels(0.05)
+	var old_parcel := stream.parcel_at(0)
+	var old_depth := float(old_parcel["depth"])
+	assert_true(old_depth > 0.0)
+
+	stream.emit_parcels(Vector2(1.0, 0.5), 0.0)
+	var still_flying_old_parcel := stream.parcel_at(1)
+
+	assert_eq(still_flying_old_parcel["target_depth"], 1.0)
+	assert_almost_eq(float(still_flying_old_parcel["depth"]), old_depth, 0.001)
+	var committed_points := PackedVector2Array(
+		[Vector2(1.0, 0.5), Vector2(99.0, 0.5)],
+	)
+	var committed_depths := PackedFloat32Array([0.0, 0.0])
+	var split_data: Dictionary = stream._depth_band_points(committed_points, committed_depths)
+	var split_points: Array = split_data["points"]
+	assert_eq((split_points[0] as PackedVector2Array).size(), 2)
+	assert_eq((split_points[3] as PackedVector2Array).size(), 0)
+
+
 func test_ribbon_builds_depth_band_meshes_when_map_is_assigned() -> void:
 	var image := Image.create(4, 1, false, Image.FORMAT_RGBA8)
 	for x in 4:

@@ -68,6 +68,19 @@ emitted parcels preserve their launch velocity while the visible ribbon eases
 toward the current target. Completing the path stops live input, replays the
 recorded line as a time-lapse, and then shows the completion card.
 
+The visible target sprites are the only checkpoint labels. Open space is neutral;
+the authored `NegativeZone` polygon/area nodes mark bad regions. The reticle uses
+`Crosshair2.png` for neutral space, `Crosshair1.png` over a bad region, and
+`Crosshair3.png` for the short success burst. Actual contact is evaluated from
+the stream endpoint rather than the requested reticle position.
+
+Checkpoint and bad-zone contact each require `0.35` seconds of continuous
+endpoint contact. Leaving a region resets its timer. A bad hit gives a strike
+and starts a `0.75` second safety cooldown. If the endpoint remains in the bad
+region, another strike is possible as soon as that grace period ends. Three
+strikes stop the attempt and show the retry card; the three small HUD markers
+show the remaining attempts.
+
 The stream uses the baked `resources/depth_map_baked.png` through `DepthMap2D`.
 The environment is split into four depth bands so stream ribbons, particles,
 and the world can be ordered consistently in the portrait scene. The offline
