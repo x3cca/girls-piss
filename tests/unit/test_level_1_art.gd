@@ -13,6 +13,9 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 
 	assert_eq(level.shape_trace.normalized_points.size(), 11)
 	assert_eq(level.shape_trace.target_textures.size(), 11)
+	assert_eq(level.shape_trace.checkpoint_look_ahead, 3)
+	assert_almost_eq(level.shape_trace.look_ahead_opacity, 0.25, 0.001)
+	assert_almost_eq(level.shape_trace.look_ahead_opacity_falloff, 0.5, 0.001)
 	assert_eq(
 		level.input_controller.get_target_position(),
 		level.shape_trace.get_checkpoint_position(0),
@@ -43,6 +46,19 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 		level.get_node("Level1Chrome/Back").texture.resource_path,
 		"res://assets/art/drive/Back1.png",
 	)
+	level.shape_trace.process_frame(0.0)
+	assert_true(level.shape_trace._targets[0].visible)
+	assert_true(level.shape_trace._targets[1].visible)
+	assert_true(level.shape_trace._targets[2].visible)
+	assert_false(level.shape_trace._targets[3].visible)
+	assert_almost_eq(level.shape_trace._targets[0].modulate.a, 1.0, 0.001)
+	assert_almost_eq(level.shape_trace._targets[1].modulate.a, 0.25, 0.001)
+	assert_almost_eq(level.shape_trace._targets[2].modulate.a, 0.125, 0.001)
+	for index in level.shape_trace.normalized_points.size():
+		assert_eq(
+			level.shape_trace._targets[index].position,
+			level.shape_trace.get_checkpoint_position(index),
+		)
 
 
 func test_title_composition_keeps_level_1_visible_underneath() -> void:

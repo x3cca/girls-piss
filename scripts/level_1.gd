@@ -41,9 +41,10 @@ func _ready() -> void:
 	shape_trace.normalized_points = target_points
 	shape_trace.closed_path = false
 	shape_trace.show_outline = false
-	shape_trace.checkpoint_look_ahead = TARGET_TEXTURES.size()
-	shape_trace.look_ahead_opacity = 1.0
-	shape_trace.look_ahead_opacity_falloff = 1.0
+	# Keep the same readable three-target preview as the smoke test. The first
+	# target is fully visible; upcoming objects fade using ShapeTrace's shared
+	# look-ahead rules instead of revealing the entire toilet pattern at once.
+	shape_trace.checkpoint_look_ahead = 3
 	shape_trace.target_texture = TARGET_TEXTURES[0]
 	shape_trace.target_textures = TARGET_TEXTURES
 	shape_trace.use_native_target_sizes = true
