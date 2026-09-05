@@ -1,8 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scripts/completion_card.gd" id="4_completion"]
 [ext_resource type="PackedScene" path="res://scenes/touch_reticle.tscn" id="5_touch_reticle"]
+[ext_resource type="Texture2D" path="res://assets/art/carrot_aim_placeholder.png" id="6_carrot"]
+[ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="7_boil"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_button"]
 bg_color = Color(0.945, 0.827, 0.329, 1)
@@ -39,6 +41,16 @@ mouse_filter = 2
 script = ExtResource("1_hud")
 
 [node name="AimReticle" parent="." instance=ExtResource("5_touch_reticle")]
+
+[node name="CarrotMarker" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 56.0
+offset_bottom = 112.0
+mouse_filter = 2
+texture = ExtResource("6_carrot")
+material = ExtResource("7_boil")
+expand_mode = 1
+stretch_mode = 2
 
 [node name="CompletionCard" type="Control" parent="."]
 layout_mode = 1

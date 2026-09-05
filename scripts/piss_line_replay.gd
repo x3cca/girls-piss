@@ -13,6 +13,7 @@ var playback_time := 0.0
 var revealed_strokes: Array = []
 
 var _strokes: Array = []
+var _start_timestamp := 0.0
 var _final_timestamp := 0.0
 var _finished_emitted := false
 
@@ -37,14 +38,19 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-func play(strokes: Array) -> void:
+func play(strokes: Array, start_timestamp := -1.0) -> void:
 	_strokes = strokes.duplicate(true)
 	revealed_strokes = []
-	playback_time = 0.0
 	_final_timestamp = _find_final_timestamp(_strokes)
+	_start_timestamp = _find_start_timestamp(_strokes, start_timestamp)
+	playback_time = _start_timestamp
 	_finished_emitted = false
 	visible = true
-	if _strokes.is_empty() or _final_timestamp <= 0.0:
+	if start_timestamp >= 0.0:
+		# The prefix that existed before the replay origin is already complete when
+		# playback begins; only the time after the first target hit is animated.
+		_update_revealed_strokes()
+	if _strokes.is_empty() or _final_timestamp <= _start_timestamp:
 		_update_revealed_strokes()
 		playing = false
 		_finished_emitted = true
@@ -61,6 +67,7 @@ func stop() -> void:
 	_strokes.clear()
 	revealed_strokes.clear()
 	playback_time = 0.0
+	_start_timestamp = 0.0
 	_final_timestamp = 0.0
 	_finished_emitted = false
 	queue_redraw()
@@ -71,7 +78,7 @@ func is_replaying() -> bool:
 
 
 func get_duration() -> float:
-	return _final_timestamp / maxf(speed_multiplier, 0.001)
+	return maxf(_final_timestamp - _start_timestamp, 0.0) / maxf(speed_multiplier, 0.001)
 
 
 func _find_final_timestamp(strokes: Array) -> float:
@@ -80,6 +87,16 @@ func _find_final_timestamp(strokes: Array) -> float:
 		for point in stroke:
 			final_timestamp = maxf(final_timestamp, _point_timestamp(point))
 	return final_timestamp
+
+
+func _find_start_timestamp(strokes: Array, requested_start: float) -> float:
+	if requested_start >= 0.0:
+		return clampf(requested_start, 0.0, _find_final_timestamp(strokes))
+	var first_timestamp := INF
+	for stroke in strokes:
+		for point in stroke:
+			first_timestamp = minf(first_timestamp, _point_timestamp(point))
+	return 0.0 if first_timestamp == INF else first_timestamp
 
 
 func _update_revealed_strokes() -> void:
@@ -103,6 +120,8 @@ func _prefix_for_stroke(stroke: Array, time: float) -> Array:
 		if index > 0:
 			var previous: Dictionary = stroke[index - 1]
 			var previous_time := _point_timestamp(previous)
+			if time <= previous_time:
+				break
 			var fraction := inverse_lerp(previous_time, timestamp, time)
 			var previous_position: Vector2 = previous["position"]
 			var current_position: Vector2 = point["position"]

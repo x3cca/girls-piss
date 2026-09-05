@@ -8,6 +8,7 @@ var target_nodes: Array[WettableTarget] = []
 var show_touch_controls := false
 var safe_margin := 28.0
 @onready var aim_reticle: TouchReticle = $AimReticle
+@onready var carrot_marker: TextureRect = $CarrotMarker
 @onready var completion_card: CompletionCard = $CompletionCard
 var _wired_input_controller: InputController
 var gameplay_controls_visible := true
@@ -32,6 +33,10 @@ func process_frame(_delta: float) -> void:
 			input_controller.get_target_position() if input_controller else Vector2.ZERO,
 			gameplay_controls_visible,
 		)
+	if is_instance_valid(carrot_marker):
+		carrot_marker.visible = gameplay_controls_visible
+		if stream:
+			carrot_marker.rotation = Vector2.UP.angle_to(stream.get_current_stream_direction())
 	_layout_controls()
 	queue_redraw()
 
@@ -40,6 +45,8 @@ func set_gameplay_controls_visible(enabled: bool) -> void:
 	gameplay_controls_visible = enabled
 	if is_instance_valid(aim_reticle):
 		aim_reticle.set_aim_target(aim_reticle.position, enabled)
+	if is_instance_valid(carrot_marker):
+		carrot_marker.visible = enabled
 	queue_redraw()
 
 
@@ -76,8 +83,16 @@ func _on_touch_target_changed(position: Vector2, active: bool) -> void:
 
 func _layout_controls() -> void:
 	# The crosshair is a viewport-space target, so no hidden aim or pressure track
-	# needs to intercept the pointer.
-	pass
+	# needs to intercept the pointer. The carrot is only the centered player marker.
+	if not is_instance_valid(carrot_marker):
+		return
+	var viewport := get_viewport_rect()
+	var safe := viewport.grow(-minf(safe_margin, minf(viewport.size.x, viewport.size.y) * 0.04))
+	carrot_marker.pivot_offset = Vector2(carrot_marker.size.x * 0.5, carrot_marker.size.y)
+	carrot_marker.position = Vector2(
+		viewport.get_center().x - carrot_marker.size.x * 0.5,
+		safe.end.y - 32.0 - carrot_marker.size.y,
+	)
 
 
 func _draw() -> void:

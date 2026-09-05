@@ -18,6 +18,9 @@ particle sprite later.
 circle with a black outline and transparent corners. It is shared by the
 ambient droplets and the continuous floor impact effect.
 
+`carrot_aim_placeholder.png` is the temporary centered player marker. It is a
+visual-only sprite now; the circular aimer owns all aiming input.
+
 `aimer_placeholder.png` is a temporary transparent black-and-white circular
 crosshair/trace-target sprite. It follows the current keyboard or touch target;
 it is also used by trace targets. Replace it with authored 2D target art; these
