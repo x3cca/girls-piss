@@ -18,6 +18,14 @@ signal trace_completed
 	Vector2(0.31, 0.62),
 	Vector2(0.31, 0.43),
 ])
+@export var closed_path := true
+## Number of upcoming target sprites to keep visible. One means only the
+## current checkpoint is shown as the target to hit.
+@export_range(1, 8, 1) var checkpoint_look_ahead := 1
+## The first checkpoint after the current one is shown at this opacity; each
+## additional visible checkpoint halves that opacity again.
+@export_range(0.0, 1.0, 0.05) var look_ahead_opacity := 0.25
+@export_range(0.1, 1.0, 0.05) var look_ahead_opacity_falloff := 0.5
 @export_range(0.01, 0.25, 0.005) var checkpoint_radius_fraction := 0.06
 @export var outline_color := Color(0.83, 0.78, 0.38, 0.24)
 @export var completed_color := Color(1.0, 0.91, 0.35, 0.92)
@@ -42,6 +50,7 @@ var _targets: Array[TraceTarget] = []
 
 func _ready() -> void:
 	_sync_target_sprites()
+	_update_target_visibility()
 	queue_redraw()
 
 
@@ -53,6 +62,7 @@ func _process(_delta: float) -> void:
 	for index in _targets.size():
 		_targets[index].set_anchor_position(get_checkpoint_position(index))
 		_targets[index].set_center_position(center)
+	_update_target_visibility()
 
 
 func reset_trace() -> void:
@@ -63,6 +73,7 @@ func reset_trace() -> void:
 	_completion_emitted = false
 	for target in _targets:
 		target.reset_target()
+	_update_target_visibility()
 	queue_redraw()
 
 
@@ -92,6 +103,7 @@ func observe_drawing_point(position: Vector2, active: bool) -> void:
 		if completed_steps >= total_steps and not _completion_emitted:
 			_completion_emitted = true
 			trace_completed.emit()
+		_update_target_visibility()
 
 	_previous_endpoint = position
 	_has_previous_endpoint = true
@@ -145,13 +157,20 @@ func _draw() -> void:
 	var points := PackedVector2Array()
 	for normalized_point in normalized_points:
 		points.append(normalized_to_viewport(normalized_point))
-	if point_count >= 2:
+	var segment_count := maxi(point_count - 1, 0)
+	if closed_path:
 		points.append(points[0])
+		segment_count = point_count
+	if point_count >= 2:
 		draw_polyline(points, outline_color, outline_width, true)
-		for segment_index in range(point_count):
+		for segment_index in range(segment_count):
 			var segment_completed := (
 				segment_index < completed_steps - 1
-				or (completed_steps >= point_count and segment_index == point_count - 1)
+				or (
+					closed_path
+					and completed_steps >= point_count
+					and segment_index == point_count - 1
+				)
 			)
 			if segment_completed:
 				draw_line(
@@ -194,6 +213,30 @@ func _sync_target_sprites() -> void:
 			float(index) * 0.91,
 		)
 		_targets.append(target)
+
+
+func _update_target_visibility() -> void:
+	var look_ahead := maxi(checkpoint_look_ahead, 1)
+	var last_visible_index := mini(completed_steps + look_ahead - 1, _targets.size() - 1)
+	for index in _targets.size():
+		var target := _targets[index]
+		if target.is_hit():
+			# Let a completed target remain visible while it swirls into the bowl.
+			continue
+		var is_in_look_ahead := index >= completed_steps and index <= last_visible_index
+		target.visible = is_in_look_ahead
+		if not is_in_look_ahead:
+			continue
+		var steps_ahead := index - completed_steps
+		var target_opacity := 1.0
+		if steps_ahead > 0:
+			target_opacity = look_ahead_opacity * pow(
+				look_ahead_opacity_falloff,
+				steps_ahead - 1,
+			)
+		var target_modulate := target.modulate
+		target_modulate.a = target_opacity
+		target.modulate = target_modulate
 
 
 func _get_target_center() -> Vector2:
