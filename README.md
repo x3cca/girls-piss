@@ -5,8 +5,9 @@ developer workflow.
 
 The playable sample traces an authored loop with a continuous inertial urine
 stream entering from below the bottom-center of the frame, then replays the
-recorded line as a 3× time-lapse. Desktop uses WASD to move one crosshair target
-and Space held to piss; touch uses one finger to place the crosshair and piss.
+recorded line as a 3× time-lapse. The crosshair starts at the first trace point.
+Desktop uses WASD or left mouse to aim, while touch uses one finger to place the
+crosshair. Space, touch, or left mouse starts the persistent stream.
 
 ## Included
 

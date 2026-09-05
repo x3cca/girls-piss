@@ -41,7 +41,7 @@ func test_wasd_moves_the_crosshair_in_two_dimensions() -> void:
 	controller.handle_input_event(up_up)
 
 
-func test_space_only_gates_pissing_and_does_not_change_target() -> void:
+func test_space_starts_pissing_and_release_does_not_stop_by_default() -> void:
 	var controller := InputController.new()
 	add_child_autofree(controller)
 	controller.set_process(false)
@@ -59,10 +59,10 @@ func test_space_only_gates_pissing_and_does_not_change_target() -> void:
 	space_up.physical_keycode = KEY_SPACE
 	space_up.pressed = false
 	controller.handle_input_event(space_up)
-	assert_false(controller.is_pissing())
+	assert_true(controller.is_pissing())
 
 
-func test_one_touch_places_crosshair_directly_and_gates_stream() -> void:
+func test_one_touch_places_crosshair_directly_and_keeps_stream_active() -> void:
 	var controller := InputController.new()
 	add_child_autofree(controller)
 	controller.set_process(false)
@@ -95,7 +95,7 @@ func test_one_touch_places_crosshair_directly_and_gates_stream() -> void:
 	touch_up.index = 1
 	touch_up.pressed = false
 	controller.handle_input_event(touch_up)
-	assert_false(controller.is_pissing())
+	assert_true(controller.is_pissing())
 	assert_eq(controller.get_target_position(), drag.position)
 
 
@@ -109,3 +109,49 @@ func test_target_is_clamped_to_the_viewport_edges() -> void:
 	controller.set_target_position(Vector2(99999.0, 99999.0))
 	var viewport_size := controller.get_viewport().get_visible_rect().size
 	assert_eq(controller.get_target_position(), viewport_size)
+
+
+func test_left_mouse_starts_at_the_pick_and_stays_active_after_release() -> void:
+	var controller := InputController.new()
+	add_child_autofree(controller)
+	controller.set_process(false)
+
+	var mouse_down := InputEventMouseButton.new()
+	mouse_down.button_index = MOUSE_BUTTON_LEFT
+	mouse_down.position = Vector2(410.0, 260.0)
+	mouse_down.pressed = true
+	controller.handle_input_event(mouse_down)
+
+	assert_eq(controller.get_target_position(), mouse_down.position)
+	assert_true(controller.is_pissing())
+
+	var mouse_motion := InputEventMouseMotion.new()
+	mouse_motion.position = Vector2(520.0, 640.0)
+	controller.handle_input_event(mouse_motion)
+	assert_eq(controller.get_target_position(), mouse_motion.position)
+
+	var mouse_up := InputEventMouseButton.new()
+	mouse_up.button_index = MOUSE_BUTTON_LEFT
+	mouse_up.position = mouse_motion.position
+	mouse_up.pressed = false
+	controller.handle_input_event(mouse_up)
+	assert_true(controller.is_pissing())
+
+
+func test_disabling_force_pissing_restores_release_gating() -> void:
+	var controller := InputController.new()
+	add_child_autofree(controller)
+	controller.set_process(false)
+	controller.force_pissing_after_start = false
+
+	var space_down := InputEventKey.new()
+	space_down.physical_keycode = KEY_SPACE
+	space_down.pressed = true
+	controller.handle_input_event(space_down)
+	assert_true(controller.is_pissing())
+
+	var space_up := InputEventKey.new()
+	space_up.physical_keycode = KEY_SPACE
+	space_up.pressed = false
+	controller.handle_input_event(space_up)
+	assert_false(controller.is_pissing())
