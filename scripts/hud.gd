@@ -122,7 +122,7 @@ func _draw() -> void:
 	draw_string(
 		font,
 		safe.position + Vector2(0, 78),
-		"WASD / TOUCH / CLICK  AIM     SPACE  START",
+		"WASD / MOUSE / STICK / TOUCH  AIM     SPACE / CLICK / RT / TOUCH  START",
 		HORIZONTAL_ALIGNMENT_LEFT,
 		-1,
 		16,
