@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scripts/completion_card.gd" id="4_completion"]
 [ext_resource type="PackedScene" path="res://scenes/touch_reticle.tscn" id="5_touch_reticle"]
+[ext_resource type="PackedScene" path="res://scenes/input_prompt.tscn" id="6_prompt"]
 [ext_resource type="Texture2D" path="res://assets/art/carrot_aim_placeholder.png" id="6_carrot"]
 [ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="7_boil"]
 
@@ -51,6 +52,8 @@ texture = ExtResource("6_carrot")
 material = ExtResource("7_boil")
 expand_mode = 1
 stretch_mode = 2
+
+[node name="InputPrompt" parent="." instance=ExtResource("6_prompt")]
 
 [node name="CompletionCard" type="Control" parent="."]
 layout_mode = 1

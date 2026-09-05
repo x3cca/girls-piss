@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://scenes/shape_trace.tscn" id="8_trace"]
 [ext_resource type="PackedScene" path="res://scenes/piss_line_recorder.tscn" id="9_recorder"]
 [ext_resource type="PackedScene" path="res://scenes/piss_line_replay.tscn" id="10_replay"]
+[ext_resource type="PackedScene" path="res://scenes/title_screen.tscn" id="11_title"]
 
 [sub_resource type="Gradient" id="Gradient_light"]
 colors = PackedColorArray(1, 1, 1, 0.95, 1, 1, 1, 0)
@@ -60,3 +61,7 @@ texture_scale = 0.82
 [node name="HUDLayer" type="CanvasLayer" parent="." unique_id=341283502]
 
 [node name="HUD" parent="HUDLayer" unique_id=759194984 instance=ExtResource("4_hud")]
+
+[node name="TitleLayer" type="Node" parent="." unique_id=1894128963]
+
+[node name="TitleScreen" parent="TitleLayer" unique_id=2068530869 instance=ExtResource("11_title")]

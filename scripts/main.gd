@@ -1,4 +1,7 @@
 extends Node2D
+
+class_name Main
+
 ## Playable portrait-first sample level. All world positions are derived from the
 ## visible rectangle, so expand stretching and taller phone ratios stay usable.
 ## The stream source is deliberately below the frame: the player controls the
@@ -11,6 +14,9 @@ extends Node2D
 @onready var line_replay: PissLineReplay = $PissLineReplay
 @onready var hud: StreamHUD = $HUDLayer/HUD
 @onready var _hud_layer: CanvasLayer = $HUDLayer
+@onready var title_screen: TitleScreen = $TitleLayer/TitleScreen
+
+@export var skip_title_screen := false
 
 enum State { PLAYING, REPLAYING, COMPLETE }
 const PLAYING := State.PLAYING
@@ -42,6 +48,8 @@ var _pulse_shake_remaining := 0.0
 var _pulse_shake_elapsed := 0.0
 var _pulse_shake_amplitude := 0.0
 var _pulse_shake_phase := 0.0
+var gameplay_started := false
+var initial_input_source := InputController.AimSource.KEYBOARD
 
 
 func _ready() -> void:
@@ -62,6 +70,10 @@ func _ready() -> void:
 	shape_trace.trace_completed.connect(_on_trace_completed)
 	line_replay.replay_finished.connect(_on_replay_finished)
 	_wire_hud()
+	if not input_controller.input_detected.is_connected(_on_input_detected):
+		input_controller.input_detected.connect(_on_input_detected)
+	if not title_screen.transition_completed.is_connected(_on_title_transition_completed):
+		title_screen.transition_completed.connect(_on_title_transition_completed)
 	line_recorder.start_recording()
 	_base_position = position
 	_base_hud_offset = _hud_layer.offset
@@ -70,6 +82,12 @@ func _ready() -> void:
 	_base_impact_light_energy = _impact_light.energy
 	_base_impact_light_scale = _impact_light.texture_scale
 	_layout_world()
+	if skip_title_screen:
+		start_gameplay_immediately()
+	else:
+		input_controller.set_gameplay_input_enabled(false)
+		hud.set_gameplay_controls_visible(false)
+		title_screen.show_title()
 	queue_redraw()
 
 
@@ -102,6 +120,40 @@ func _wire_hud() -> void:
 	hud.target_nodes = targets
 	hud.show_touch_controls = input_controller.touch_controls_visible
 	hud.completion_card.play_again_pressed.connect(_on_play_again_pressed)
+	hud.set_gameplay_controls_visible(gameplay_started)
+
+
+func _on_input_detected(source: int) -> void:
+	if gameplay_started or not title_screen.is_active():
+		return
+	if title_screen.request_start(source):
+		initial_input_source = source
+
+
+func _on_title_transition_completed(source: int) -> void:
+	initial_input_source = source
+	_start_gameplay(initial_input_source)
+
+
+func start_gameplay_immediately() -> void:
+	## Programmatic bypass used by direct-level startup and scene tests.
+	if title_screen.is_active():
+		title_screen.skip_to_gameplay(InputController.AimSource.KEYBOARD)
+	else:
+		_start_gameplay(initial_input_source)
+
+
+func _start_gameplay(source: int) -> void:
+	if gameplay_started:
+		return
+	gameplay_started = true
+	input_controller.reset_input()
+	input_controller.set_target_position(shape_trace.get_checkpoint_position(0))
+	input_controller.set_gameplay_input_enabled(true)
+	input_controller.set_process_input(true)
+	input_controller.set_process(true)
+	hud.set_gameplay_controls_visible(true)
+	hud.show_input_prompt(source)
 
 
 func _on_stream_pulse(amplitude: float) -> void:
@@ -237,6 +289,7 @@ func reset_level() -> void:
 	stream.set_live_enabled(true)
 	input_controller.reset_input()
 	input_controller.set_target_position(shape_trace.get_checkpoint_position(0))
+	input_controller.set_gameplay_input_enabled(true)
 	input_controller.set_process_input(true)
 	input_controller.set_process(true)
 	hud.hide_completion_card()

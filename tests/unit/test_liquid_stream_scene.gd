@@ -79,3 +79,54 @@ func test_stream_pulse_drives_bloom_and_shake_feedback() -> void:
 
 	assert_almost_eq(broad_light.energy, base_energy, 0.001)
 	assert_eq(instance.position, base_position)
+
+
+func test_title_is_active_and_gameplay_is_gated_by_default() -> void:
+	var instance := SMOKE_TEST_SCENE.instantiate()
+	add_child_autofree(instance)
+	var input_controller := instance.get_node("InputController") as InputController
+	var hud := instance.get_node("HUDLayer/HUD") as StreamHUD
+	var title := instance.get_node("TitleLayer/TitleScreen") as TitleScreen
+
+	assert_true(title.is_active())
+	assert_false(input_controller.is_gameplay_input_enabled())
+	assert_false(hud.gameplay_controls_visible)
+
+
+func test_skip_title_screen_starts_directly_and_consumes_initial_input() -> void:
+	var instance := SMOKE_TEST_SCENE.instantiate() as Main
+	instance.skip_title_screen = true
+	add_child_autofree(instance)
+	var input_controller := instance.get_node("InputController") as InputController
+	var hud := instance.get_node("HUDLayer/HUD") as StreamHUD
+	var title := instance.get_node("TitleLayer/TitleScreen") as TitleScreen
+
+	assert_false(title.is_active())
+	assert_true(input_controller.is_gameplay_input_enabled())
+	assert_true(hud.gameplay_controls_visible)
+	assert_true(instance.gameplay_started)
+
+	input_controller.set_process(false)
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_SPACE
+	key.pressed = true
+	input_controller.handle_input_event(key)
+	assert_true(input_controller.is_pissing())
+
+
+func test_title_start_input_is_consumed_before_gameplay_begins() -> void:
+	var instance := SMOKE_TEST_SCENE.instantiate() as Main
+	add_child_autofree(instance)
+	var input_controller := instance.get_node("InputController") as InputController
+	var title := instance.get_node("TitleLayer/TitleScreen") as TitleScreen
+
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_SPACE
+	key.pressed = true
+	input_controller.handle_input_event(key)
+
+	assert_true(title.is_start_locked())
+	assert_false(input_controller.is_pissing())
+	await get_tree().create_timer(0.6).timeout
+	assert_true(instance.gameplay_started)
+	assert_false(input_controller.is_pissing())

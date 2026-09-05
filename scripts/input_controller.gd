@@ -9,6 +9,8 @@ class_name InputController
 
 signal aim_target_changed(position: Vector2)
 signal touch_target_changed(position: Vector2, active: bool)
+signal input_detected(source: int)
+signal input_source_changed(source: int)
 
 @export var target_move_speed := 620.0
 @export var force_pissing_after_start := true
@@ -21,6 +23,7 @@ enum AimSource { KEYBOARD, MOUSE, TOUCH, CONTROLLER }
 var target_position := Vector2.ZERO
 var input_mode := "desktop"
 var touch_controls_visible := false
+var gameplay_input_enabled := true
 
 var _touch_index := -1
 var _touch_position := Vector2.ZERO
@@ -35,8 +38,17 @@ var _controller_aim := Vector2.ZERO
 var _controller_trigger_pressed := false
 var _controller_device := -1
 var _last_aim_source := AimSource.KEYBOARD
+var _current_input_source := AimSource.KEYBOARD
 var _pissing := false
 var _has_started_pissing := false
+
+var current_input_source: int:
+	get:
+		return _current_input_source
+
+var current_source: int:
+	get:
+		return _current_input_source
 
 
 func _ready() -> void:
@@ -61,6 +73,8 @@ func _process(delta: float) -> void:
 
 
 func process_frame(delta: float) -> void:
+	if not gameplay_input_enabled:
+		return
 	var movement := Vector2.ZERO
 	match _last_aim_source:
 		AimSource.KEYBOARD:
@@ -89,14 +103,25 @@ func _input(event: InputEvent) -> void:
 
 func handle_input_event(event: InputEvent) -> void:
 	if event is InputEventKey:
-		_update_keyboard_state(event as InputEventKey)
+		var key := event as InputEventKey
+		if key.pressed and not key.echo:
+			_claim_input_source(AimSource.KEYBOARD)
+		_update_keyboard_state(key)
 	elif event is InputEventMouseMotion:
 		_update_mouse_target((event as InputEventMouseMotion).position)
 	elif event is InputEventMouseButton:
-		_update_mouse_button_state(event as InputEventMouseButton)
+		var mouse_button := event as InputEventMouseButton
+		if (
+				mouse_button.button_index == MOUSE_BUTTON_LEFT
+				and mouse_button.pressed
+				and not mouse_button.canceled
+		):
+			_claim_input_source(AimSource.MOUSE)
+		_update_mouse_button_state(mouse_button)
 	elif event is InputEventScreenTouch:
 		var touch := event as InputEventScreenTouch
 		if touch.pressed:
+			_claim_input_source(AimSource.TOUCH)
 			_claim_touch(touch.index, touch.position)
 		else:
 			_release_touch(touch.index)
@@ -104,12 +129,21 @@ func handle_input_event(event: InputEvent) -> void:
 		var drag := event as InputEventScreenDrag
 		if drag.index == _touch_index:
 			_update_touch_target(drag.position)
+	elif event is InputEventJoypadButton:
+		var button := event as InputEventJoypadButton
+		if button.pressed:
+			_claim_input_source(AimSource.CONTROLLER)
 	elif event is InputEventJoypadMotion:
-		_update_controller_motion(event as InputEventJoypadMotion)
+		var motion := event as InputEventJoypadMotion
+		if _is_meaningful_controller_motion(motion):
+			_claim_input_source(AimSource.CONTROLLER)
+		_update_controller_motion(motion)
 
 
 func _update_keyboard_state(event: InputEventKey) -> void:
 	if event.echo:
+		return
+	if not gameplay_input_enabled:
 		return
 	var key_code := event.physical_keycode if event.physical_keycode != 0 else event.keycode
 	match key_code:
@@ -135,12 +169,16 @@ func _update_keyboard_state(event: InputEventKey) -> void:
 
 
 func _update_mouse_target(position: Vector2) -> void:
+	if not gameplay_input_enabled:
+		return
 	_last_aim_source = AimSource.MOUSE
 	set_target_position(position)
 
 
 func _update_mouse_button_state(event: InputEventMouseButton) -> void:
 	if event.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if not gameplay_input_enabled:
 		return
 	if event.pressed and not event.canceled:
 		_mouse_pressed = true
@@ -152,6 +190,8 @@ func _update_mouse_button_state(event: InputEventMouseButton) -> void:
 
 
 func _update_controller_motion(event: InputEventJoypadMotion) -> void:
+	if not gameplay_input_enabled:
+		return
 	if event.axis == JOY_AXIS_LEFT_X or event.axis == JOY_AXIS_LEFT_Y:
 		if _controller_device != -1 and _controller_device != event.device:
 			return
@@ -237,13 +277,45 @@ func reset_input() -> void:
 	_move_up_pressed = false
 	_move_down_pressed = false
 	_last_aim_source = AimSource.KEYBOARD
+	_current_input_source = AimSource.KEYBOARD
 	_target_position = _default_target_position()
 	target_position = _target_position
 	aim_target_changed.emit(target_position)
 	touch_target_changed.emit(Vector2.ZERO, false)
 
 
+func set_gameplay_input_enabled(enabled: bool) -> void:
+	gameplay_input_enabled = enabled
+	if not enabled:
+		_touch_index = -1
+		_touch_position = Vector2.ZERO
+		_space_pressed = false
+		_mouse_pressed = false
+		_clear_controller_state()
+		_move_left_pressed = false
+		_move_right_pressed = false
+		_move_up_pressed = false
+		_move_down_pressed = false
+		_pissing = false
+		_has_started_pissing = false
+		touch_target_changed.emit(Vector2.ZERO, false)
+
+
+func is_gameplay_input_enabled() -> bool:
+	return gameplay_input_enabled
+
+
+func get_input_source() -> int:
+	return _current_input_source
+
+
+func get_current_input_source() -> int:
+	return _current_input_source
+
+
 func _claim_touch(index: int, position: Vector2) -> void:
+	if not gameplay_input_enabled:
+		return
 	if _touch_index != -1:
 		return
 	_touch_index = index
@@ -261,6 +333,8 @@ func _release_touch(index: int) -> void:
 
 
 func _update_touch_target(position: Vector2) -> void:
+	if not gameplay_input_enabled:
+		return
 	_last_aim_source = AimSource.TOUCH
 	_touch_position = position
 	# The reticle receives the raw pointer position, while the gameplay target
@@ -283,6 +357,29 @@ func _update_pissing() -> void:
 func _begin_pissing() -> void:
 	_pissing = true
 	_has_started_pissing = true
+
+
+func _claim_input_source(source: int) -> void:
+	if source < AimSource.KEYBOARD or source > AimSource.CONTROLLER:
+		return
+	input_detected.emit(source)
+	if _current_input_source == source:
+		return
+	_current_input_source = source
+	input_source_changed.emit(source)
+
+
+func _is_meaningful_controller_motion(event: InputEventJoypadMotion) -> bool:
+	if (
+			event.axis == JOY_AXIS_LEFT_X
+			or event.axis == JOY_AXIS_LEFT_Y
+			or event.axis == JOY_AXIS_RIGHT_X
+			or event.axis == JOY_AXIS_RIGHT_Y
+	):
+		return absf(event.axis_value) >= AIM_DEADZONE
+	if event.axis == JOY_AXIS_TRIGGER_LEFT or event.axis == JOY_AXIS_TRIGGER_RIGHT:
+		return event.axis_value >= TRIGGER_DEADZONE
+	return false
 
 
 func _default_target_position() -> Vector2:
