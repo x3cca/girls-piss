@@ -6,11 +6,13 @@ var _completion_count := 0
 func test_ordered_progress_does_not_reset_or_skip_a_checkpoint() -> void:
 	var trace := ShapeTrace.new()
 	add_child_autofree(trace)
-	trace.normalized_points = PackedVector2Array([
-		Vector2(0.25, 0.25),
-		Vector2(0.50, 0.25),
-		Vector2(0.75, 0.25),
-	])
+	trace.normalized_points = PackedVector2Array(
+		[
+			Vector2(0.25, 0.25),
+			Vector2(0.50, 0.25),
+			Vector2(0.75, 0.25),
+		],
+	)
 	var first := trace.get_checkpoint_position(0)
 	var second := trace.get_checkpoint_position(1)
 	var third := trace.get_checkpoint_position(2)
@@ -31,10 +33,12 @@ func test_ordered_progress_does_not_reset_or_skip_a_checkpoint() -> void:
 func test_segment_crossing_detects_a_checkpoint_between_endpoint_samples() -> void:
 	var trace := ShapeTrace.new()
 	add_child_autofree(trace)
-	trace.normalized_points = PackedVector2Array([
-		Vector2(0.50, 0.50),
-		Vector2(0.80, 0.80),
-	])
+	trace.normalized_points = PackedVector2Array(
+		[
+			Vector2(0.50, 0.50),
+			Vector2(0.80, 0.80),
+		],
+	)
 	var checkpoint := trace.get_checkpoint_position(0)
 	var radius := trace.get_checkpoint_radius()
 
@@ -64,20 +68,22 @@ func test_completion_emits_once_until_trace_is_reset() -> void:
 func test_checkpoint_look_ahead_one_only_shows_the_current_target() -> void:
 	var trace := ShapeTrace.new()
 	add_child_autofree(trace)
-	trace.normalized_points = PackedVector2Array([
-		Vector2(0.25, 0.25),
-		Vector2(0.50, 0.50),
-		Vector2(0.75, 0.75),
-	])
+	trace.normalized_points = PackedVector2Array(
+		[
+			Vector2(0.25, 0.25),
+			Vector2(0.50, 0.50),
+			Vector2(0.75, 0.75),
+		],
+	)
 	trace.checkpoint_look_ahead = 1
-	trace._process(0.0)
+	trace.process_frame(0.0)
 
 	assert_true(trace._targets[0].visible)
 	assert_false(trace._targets[1].visible)
 	assert_false(trace._targets[2].visible)
 
 	trace.checkpoint_look_ahead = 2
-	trace._process(0.0)
+	trace.process_frame(0.0)
 	assert_true(trace._targets[0].visible)
 	assert_true(trace._targets[1].visible)
 	assert_false(trace._targets[2].visible)
@@ -86,14 +92,16 @@ func test_checkpoint_look_ahead_one_only_shows_the_current_target() -> void:
 func test_checkpoint_look_ahead_fades_visible_future_targets() -> void:
 	var trace := ShapeTrace.new()
 	add_child_autofree(trace)
-	trace.normalized_points = PackedVector2Array([
-		Vector2(0.20, 0.20),
-		Vector2(0.35, 0.35),
-		Vector2(0.50, 0.50),
-		Vector2(0.65, 0.65),
-	])
+	trace.normalized_points = PackedVector2Array(
+		[
+			Vector2(0.20, 0.20),
+			Vector2(0.35, 0.35),
+			Vector2(0.50, 0.50),
+			Vector2(0.65, 0.65),
+		],
+	)
 	trace.checkpoint_look_ahead = 3
-	trace._process(0.0)
+	trace.process_frame(0.0)
 
 	assert_almost_eq(trace._targets[0].modulate.a, 1.0, 0.001)
 	assert_almost_eq(trace._targets[1].modulate.a, 0.25, 0.001)

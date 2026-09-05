@@ -174,6 +174,10 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+func process_frame(delta: float) -> void:
+	_process(delta)
+
+
 func set_live_enabled(enabled: bool) -> void:
 	_live_enabled = enabled
 	_set_live_visuals(enabled)
@@ -213,6 +217,10 @@ func get_current_stream_direction() -> Vector2:
 	return _current_stream_direction
 
 
+func set_current_stream_direction(direction: Vector2) -> void:
+	_current_stream_direction = direction
+
+
 func trigger_pulse(amplitude := 1.0) -> void:
 	## Starts a width pulse at the source. Music can call this once per beat.
 	var pulse_amplitude := clampf(amplitude, 0.0, 1.0)
@@ -220,7 +228,7 @@ func trigger_pulse(amplitude := 1.0) -> void:
 		{
 			"age": 0.0,
 			"amplitude": pulse_amplitude,
-		}
+		},
 	)
 	_prune_pulses()
 	pulse_triggered.emit(pulse_amplitude)
@@ -355,8 +363,9 @@ func _prune_parcel_chain(chain: Array[Dictionary]) -> void:
 	while (
 			not chain.is_empty()
 			and (
-				float(chain.back()["age"]) > float(chain.back().get("lifetime", parcel_lifetime))
-				or chain.size() > max_parcels
+					float(chain.back()["age"])
+					> float(chain.back().get("lifetime", parcel_lifetime))
+					or chain.size() > max_parcels
 			)
 	):
 		chain.pop_back()
@@ -458,7 +467,7 @@ func _build_parcel_centerline(chain: Array[Dictionary]) -> PackedVector2Array:
 func _build_parcel_samples(chain: Array[Dictionary]) -> Array[Dictionary]:
 	var samples: Array[Dictionary] = []
 	if chain.is_empty():
-		samples.append({"position": source_position, "age": 0.0})
+		samples.append({ "position": source_position, "age": 0.0 })
 		return samples
 	var point_count := mini(ribbon_points, chain.size())
 	for i in point_count:
@@ -473,7 +482,7 @@ func _build_parcel_samples(chain: Array[Dictionary]) -> Array[Dictionary]:
 			{
 				"position": parcel["position"],
 				"age": float(parcel.get("age", 0.0)),
-			}
+			},
 		)
 	return samples
 
@@ -578,6 +587,7 @@ func _travel_time_for_target(target_position: Vector2) -> float:
 		0.12,
 	)
 
+
 func _truncate_at_target(
 		points: PackedVector2Array,
 		point_ages := PackedFloat32Array(),
@@ -652,10 +662,10 @@ func _update_double_stream_meshes(
 		point_ages: PackedFloat32Array,
 ) -> void:
 	var should_render := (
-		_live_enabled
-		and _double_stream_active
-		and ribbon_alpha > 0.0
-		and points.size() >= 2
+			_live_enabled
+			and _double_stream_active
+			and ribbon_alpha > 0.0
+			and points.size() >= 2
 	)
 	_double_edge_mesh.visible = should_render
 	_double_body_mesh.visible = should_render
@@ -696,6 +706,8 @@ func _update_double_stream_meshes(
 		hit_target,
 		point_ages,
 	)
+
+
 func update_ribbon_meshes(
 		points: PackedVector2Array,
 		depth_length: float,

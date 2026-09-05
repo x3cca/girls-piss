@@ -36,9 +36,9 @@ func capture_point(position: Vector2, active: bool, elapsed: float) -> void:
 		return
 
 	var starts_new_stroke := (
-		_was_active == false
-		and not _current_stroke.is_empty()
-		and elapsed - _last_active_elapsed >= inactive_gap
+			_was_active == false
+			and not _current_stroke.is_empty()
+			and elapsed - _last_active_elapsed >= inactive_gap
 	)
 	if starts_new_stroke:
 		_finish_current_stroke()
@@ -47,14 +47,14 @@ func capture_point(position: Vector2, active: bool, elapsed: float) -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	var normalized := _normalize_position(position, viewport_size)
 	var enough_time := (
-		not _has_sample
-		or elapsed - _last_sample_elapsed >= sample_interval
+			not _has_sample
+			or elapsed - _last_sample_elapsed >= sample_interval
 	)
 	var far_enough := (
-		not _has_sample
-		or _denormalize_position(normalized, viewport_size).distance_to(
-			_denormalize_position(_current_stroke.back()["position"], viewport_size)
-		) >= minimum_point_distance
+			not _has_sample
+			or _denormalize_position(normalized, viewport_size).distance_to(
+				_denormalize_position(_current_stroke.back()["position"], viewport_size),
+			) >= minimum_point_distance
 	)
 	if enough_time and far_enough:
 		_current_stroke.append(
@@ -63,7 +63,7 @@ func capture_point(position: Vector2, active: bool, elapsed: float) -> void:
 				"timestamp": elapsed,
 				# The short alias is useful to callers that prefer time terminology.
 				"time": elapsed,
-			}
+			},
 		)
 		_has_sample = true
 		_last_sample_elapsed = elapsed

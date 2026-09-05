@@ -63,7 +63,7 @@ func test_carrot_marker_reflects_current_stream_direction_not_crosshair_target()
 	add_child_autofree(stream)
 	hud.input_controller = controller
 	hud.stream = stream
-	stream._current_stream_direction = Vector2.RIGHT
+	stream.set_current_stream_direction(Vector2.RIGHT)
 	controller.set_target_position(Vector2(80.0, 80.0))
 	hud.process_frame(0.0)
 

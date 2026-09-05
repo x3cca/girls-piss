@@ -2,6 +2,7 @@ extends GutTest
 
 const SMOKE_TEST_SCENE := preload("res://scenes/smoke_test.tscn")
 
+
 func test_liquid_stream_scene_builds_playable_nodes() -> void:
 	var scene := SMOKE_TEST_SCENE
 	assert_not_null(scene, "The portrait prototype scene should be loadable.")
@@ -73,7 +74,7 @@ func test_stream_pulse_drives_bloom_and_shake_feedback() -> void:
 	assert_true(broad_light.energy > base_energy)
 	assert_true(instance.position != base_position)
 
-	for _frame in 30:
+	for frame in 30:
 		await get_tree().process_frame
 
 	assert_almost_eq(broad_light.energy, base_energy, 0.001)

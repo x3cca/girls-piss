@@ -1,6 +1,5 @@
 extends GutTest
 
-
 func test_recorder_thins_samples_normalizes_positions_and_splits_gaps() -> void:
 	var recorder := PissLineRecorder.new()
 	add_child_autofree(recorder)
@@ -46,5 +45,13 @@ func test_normalized_points_reconstruct_in_the_current_viewport() -> void:
 	add_child_autofree(recorder)
 	var original := Vector2(123.0, 456.0)
 
-	assert_almost_eq(recorder.denormalize_position(recorder.normalize_position(original)).x, original.x, 0.001)
-	assert_almost_eq(recorder.denormalize_position(recorder.normalize_position(original)).y, original.y, 0.001)
+	assert_almost_eq(
+		recorder.denormalize_position(recorder.normalize_position(original)).x,
+		original.x,
+		0.001,
+	)
+	assert_almost_eq(
+		recorder.denormalize_position(recorder.normalize_position(original)).y,
+		original.y,
+		0.001,
+	)
