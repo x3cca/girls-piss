@@ -68,6 +68,7 @@ func _ready() -> void:
 	input_mode = "touch" if touch_controls_visible else "desktop"
 	_target_position = _default_target_position()
 	target_position = _target_position
+	_previous_input_position = _target_position
 	aim_target_changed.emit(target_position)
 	if not Input.joy_connection_changed.is_connected(_on_joy_connection_changed):
 		Input.joy_connection_changed.connect(_on_joy_connection_changed)
@@ -261,7 +262,8 @@ func _clear_controller_state() -> void:
 
 
 func set_target_position(position: Vector2) -> void:
-	_target_position = _clamp_target(position) + _music_target_offset_position
+	_previous_input_position = _clamp_target(position)
+	_target_position = _previous_input_position + _music_target_offset_position
 	if target_position == _target_position:
 		return
 	target_position = _target_position
@@ -305,6 +307,7 @@ func reset_input() -> void:
 	_last_aim_source = AimSource.KEYBOARD
 	_current_input_source = AimSource.KEYBOARD
 	_target_position = _default_target_position()
+	_previous_input_position = _target_position
 	target_position = _target_position
 	aim_target_changed.emit(target_position)
 	touch_target_changed.emit(Vector2.ZERO, false)
