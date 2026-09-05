@@ -30,6 +30,8 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 	)
 	assert_false(level.draw_neutral_canvas)
 	assert_false(level.get_node("DepthMap").debug_visualization)
+	assert_gt(level.shape_trace.z_index, level.get_node("PissToilet/Seat").z_index)
+	assert_gt(level.shape_trace.z_index, level.get_node("Level1Chrome").z_index)
 	assert_eq(
 		level.get_node("Level1Background/BackWall").texture.resource_path,
 		"res://assets/art/drive/BackWalll.png",

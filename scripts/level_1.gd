@@ -49,7 +49,10 @@ func _ready() -> void:
 	shape_trace.target_textures = TARGET_TEXTURES
 	shape_trace.use_native_target_sizes = true
 	shape_trace.native_target_scale = 0.56
-	shape_trace.z_index = 4
+	# The target sprites are gameplay markers placed over the toilet art. Keep
+	# them above every toilet layer (and the lower chrome at z=6) so the authored
+	# objects remain visible while their hit positions stay on the bowl.
+	shape_trace.z_index = 10
 	shape_trace.rebuild_targets()
 	if is_instance_valid(depth_map):
 		depth_map.debug_visualization = false
