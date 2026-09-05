@@ -33,27 +33,14 @@ func _on_play_again_pressed() -> void:
 
 
 func _layout_card() -> void:
-	var viewport_size := get_viewport_rect().size
-	var card_width := minf(520.0, maxf(viewport_size.x - 48.0, 240.0))
-	var card_height := 260.0
-	var card_position := Vector2(
-		(viewport_size.x - card_width) * 0.5,
-		(viewport_size.y - card_height) * 0.5,
-	)
-	_play_again_button.position = card_position + Vector2(card_width * 0.5 - 92.0, 154.0)
+	var card := _card_rect()
+	_play_again_button.position = card.position + Vector2(card.size.x * 0.5 - 92.0, 142.0)
 	_play_again_button.size = Vector2(184.0, 52.0)
 	queue_redraw()
 
 
 func _draw() -> void:
-	var viewport_size := get_viewport_rect().size
-	var card_width := minf(520.0, maxf(viewport_size.x - 48.0, 240.0))
-	var card_height := 260.0
-	var card := Rect2(
-		Vector2((viewport_size.x - card_width) * 0.5, (viewport_size.y - card_height) * 0.5),
-		Vector2(card_width, card_height),
-	)
-	draw_rect(Rect2(Vector2.ZERO, viewport_size), Color(0.02, 0.025, 0.07, 0.72))
+	var card := _card_rect()
 	draw_style_box(_make_box(Color("#182347"), 18), card)
 	draw_string(
 		ThemeDB.fallback_font,
@@ -73,6 +60,17 @@ func _draw() -> void:
 		14,
 		Color("#aebce0"),
 	)
+
+
+func _card_rect() -> Rect2:
+	var viewport_size := get_viewport_rect().size
+	var card_width := minf(360.0, maxf(viewport_size.x - 48.0, 220.0))
+	var card_height := 220.0
+	var card_position := Vector2(
+		maxf(viewport_size.x - card_width - 24.0, 24.0),
+		maxf(viewport_size.y - card_height - 24.0, 24.0),
+	)
+	return Rect2(card_position, Vector2(card_width, card_height))
 
 
 func _make_box(color: Color, radius: int) -> StyleBoxFlat:

@@ -7,7 +7,18 @@ signal drawing_point_updated(position: Vector2, active: bool)
 
 @export var source_position := Vector2(360.0, 1320.0)
 @export var stream_speed := 920.0
-@export var target_smoothing_speed := 8.0
+@export var target_follow_stiffness := 135.0
+@export var target_follow_damping := 17.0
+@export var target_follow_max_speed := 2500.0
+@export var bloom_radius_per_pixel := 0.36
+@export var bloom_decay_rate := 130.0
+@export var max_bloom_radius := 224.0
+@export var bloom_width_scale := 0.16
+@export var bloom_swirl_speed := 7.0
+@export var bloom_swirl_acceleration := 28.0
+@export var double_stream_start_radius := 180.0
+@export var double_stream_release_radius := 72.0
+@export var double_bloom_radius_multiplier := 3.0
 @export_range(24, 32, 1) var ribbon_points := 28
 @export var gravity := Vector2(0.0, 360.0)
 @export var parcel_lifetime := 2.25
@@ -26,26 +37,48 @@ var input_controller: InputController
 @onready var _edge_mesh: MeshInstance2D = $EdgeRibbon
 @onready var _body_mesh: MeshInstance2D = $BodyRibbon
 @onready var _highlight_mesh: MeshInstance2D = $HighlightRibbon
+@onready var _double_edge_mesh: MeshInstance2D = $DoubleEdgeRibbon
+@onready var _double_body_mesh: MeshInstance2D = $DoubleBodyRibbon
+@onready var _double_highlight_mesh: MeshInstance2D = $DoubleHighlightRibbon
 @onready var _droplets: CPUParticles2D = $Droplets
 @onready var _impact: CPUParticles2D = $ImpactBurst
 var _edge_mesh_resource := ArrayMesh.new()
 var _body_mesh_resource := ArrayMesh.new()
 var _highlight_mesh_resource := ArrayMesh.new()
+var _double_edge_mesh_resource := ArrayMesh.new()
+var _double_body_mesh_resource := ArrayMesh.new()
+var _double_highlight_mesh_resource := ArrayMesh.new()
 var _parcels: Array[Dictionary] = []
+var _double_parcels: Array[Dictionary] = []
 var _emission_accumulator := 0.0
 var _current_points := PackedVector2Array()
 var _stream_target_position := Vector2.ZERO
+var _stream_target_velocity := Vector2.ZERO
 var _stream_target_initialized := false
+var _current_stream_direction := Vector2.UP
 var _live_enabled := true
+var _last_input_target := Vector2.ZERO
+var _input_target_initialized := false
+var _aim_bloom_radius := 0.0
+var _bloom_angle := 0.0
+var _bloom_spin_velocity := 0.0
+var _bloom_offset := Vector2.ZERO
+var _double_stream_active := false
 
 
 func _ready() -> void:
 	_edge_mesh.mesh = _edge_mesh_resource
 	_body_mesh.mesh = _body_mesh_resource
 	_highlight_mesh.mesh = _highlight_mesh_resource
+	_double_edge_mesh.mesh = _double_edge_mesh_resource
+	_double_body_mesh.mesh = _double_body_mesh_resource
+	_double_highlight_mesh.mesh = _double_highlight_mesh_resource
 	_edge_mesh.modulate = Color("#493719")
 	_body_mesh.modulate = liquid_color
 	_highlight_mesh.modulate = Color("#fff3a0")
+	_double_edge_mesh.modulate = Color("#493719")
+	_double_body_mesh.modulate = liquid_color
+	_double_highlight_mesh.modulate = Color("#fff3a0")
 	_set_live_visuals(true)
 	queue_redraw()
 
@@ -61,12 +94,12 @@ func _process(delta: float) -> void:
 		return
 	var is_pissing := input_controller.is_pissing()
 	var target := input_controller.get_target_position()
+	_update_aim_bloom(target, delta)
 	if not _stream_target_initialized:
 		_stream_target_position = target
 		_stream_target_initialized = true
 	else:
-		var target_weight := 1.0 - exp(-target_smoothing_speed * delta)
-		_stream_target_position = _stream_target_position.lerp(target, target_weight)
+		_advance_stream_target(target, delta)
 	var direction := (_stream_target_position - source_position).normalized()
 	if direction == Vector2.ZERO:
 		direction = Vector2.UP
@@ -77,8 +110,17 @@ func _process(delta: float) -> void:
 		# Releasing Space/a finger closes the stream immediately. A later press
 		# starts a fresh visible jet while the crosshair keeps its position.
 		_parcels.clear()
+		_double_parcels.clear()
 		_emission_accumulator = 0.0
+	if not _double_stream_active:
+		_double_parcels.clear()
 	_current_points = build_parcel_centerline()
+	var double_points := build_double_parcel_centerline()
+	if _current_points.size() >= 2:
+		_current_stream_direction = _tangent_for_points(_current_points, 0, direction)
+	elif is_pissing:
+		_current_stream_direction = direction
+	_impact.spread = _impact_spread()
 	var hit := _truncate_at_target(_current_points)
 	var hit_target := not hit.is_empty()
 	_impact.emitting = false
@@ -92,6 +134,12 @@ func _process(delta: float) -> void:
 	update_ribbon_meshes(
 		_current_points,
 		_path_length(_current_points),
+		float(profile["ribbon_alpha"]) if is_pissing else 0.0,
+		hit_target,
+	)
+	_update_double_stream_meshes(
+		double_points,
+		_path_length(double_points),
 		float(profile["ribbon_alpha"]) if is_pissing else 0.0,
 		hit_target,
 	)
@@ -122,12 +170,46 @@ func get_stream_target_position() -> Vector2:
 	return _stream_target_position
 
 
+func get_stream_target_speed() -> float:
+	return _stream_target_velocity.length()
+
+
+func get_aim_bloom_radius() -> float:
+	return _aim_bloom_radius
+
+
+func get_aim_bloom_offset() -> Vector2:
+	return _bloom_offset
+
+
+func is_double_stream_active() -> bool:
+	return _double_stream_active
+
+
+func get_double_bloom_radius() -> float:
+	return _aim_bloom_radius * double_bloom_radius_multiplier
+
+
+func get_current_stream_direction() -> Vector2:
+	return _current_stream_direction
+
+
 func reset_stream() -> void:
 	_parcels.clear()
+	_double_parcels.clear()
 	_emission_accumulator = 0.0
 	_current_points = PackedVector2Array()
 	_stream_target_position = Vector2.ZERO
+	_stream_target_velocity = Vector2.ZERO
 	_stream_target_initialized = false
+	_current_stream_direction = Vector2.UP
+	_last_input_target = Vector2.ZERO
+	_input_target_initialized = false
+	_aim_bloom_radius = 0.0
+	_bloom_angle = 0.0
+	_bloom_spin_velocity = 0.0
+	_bloom_offset = Vector2.ZERO
+	_double_stream_active = false
 	_impact.emitting = false
 	_droplets.emitting = false
 	queue_redraw()
@@ -137,6 +219,9 @@ func _set_live_visuals(enabled: bool) -> void:
 	_edge_mesh.visible = enabled
 	_body_mesh.visible = enabled
 	_highlight_mesh.visible = enabled
+	_double_edge_mesh.visible = enabled and _double_stream_active
+	_double_body_mesh.visible = enabled and _double_stream_active
+	_double_highlight_mesh.visible = enabled and _double_stream_active
 	_droplets.visible = enabled
 	_impact.visible = enabled
 	if not enabled:
@@ -150,7 +235,12 @@ func _set_live_visuals(enabled: bool) -> void:
 func update_parcels(delta: float) -> void:
 	# Parcels are independent. Once emitted, their launch velocity never reads the
 	# input controller again; only gravity changes that parcel's velocity.
-	for parcel in _parcels:
+	_advance_parcel_chain(_parcels, delta)
+	_advance_parcel_chain(_double_parcels, delta)
+
+
+func _advance_parcel_chain(chain: Array[Dictionary], delta: float) -> void:
+	for parcel in chain:
 		var velocity: Vector2 = parcel["velocity"]
 		parcel["position"] = parcel["position"] + velocity * delta + gravity * (delta * delta * 0.5)
 		parcel["velocity"] = velocity + gravity * delta
@@ -159,6 +249,10 @@ func update_parcels(delta: float) -> void:
 
 func parcel_at(index: int) -> Dictionary:
 	return _parcels[index]
+
+
+func double_parcel_at(index: int) -> Dictionary:
+	return _double_parcels[index]
 
 
 func set_parcel_chain(parcels: Array[Dictionary]) -> void:
@@ -172,8 +266,6 @@ func emit_parcels(
 	_emission_accumulator += delta
 	var interval := 1.0 / maxf(normal_emission_rate, 1.0)
 	var emitted := 0
-	var travel_time := _travel_time_for_target(target_position)
-	var launch_velocity := _launch_velocity_for_target(target_position)
 	while _emission_accumulator >= interval and emitted < 4:
 		_emission_accumulator -= interval
 		emitted += 1
@@ -183,24 +275,54 @@ func emit_parcels(
 	emitted = maxi(emitted, 1)
 	var parcel_index := 0
 	while parcel_index < emitted:
-		_parcels.push_front(
-			{
-				"position": source_position,
-				"velocity": launch_velocity,
-				"launch_velocity": launch_velocity,
-				"age": 0.0,
-				"lifetime": minf(parcel_lifetime, travel_time),
-			},
-		)
+		var primary_offset := _bloom_offset
+		var secondary_offset := Vector2.ZERO
+		if _double_stream_active:
+			# The two branches sit on opposite sides of the same rotating bloom,
+			# giving them separate targets instead of drawing one copied ribbon.
+			primary_offset = _double_bloom_offset()
+			secondary_offset = -primary_offset
+		_emit_parcel(_parcels, target_position + primary_offset, primary_offset)
+		if _double_stream_active:
+			_emit_parcel(
+				_double_parcels,
+				target_position + secondary_offset,
+				secondary_offset,
+			)
 		parcel_index += 1
+	_prune_parcel_chain(_parcels)
+	_prune_parcel_chain(_double_parcels)
+
+
+func _emit_parcel(
+		chain: Array[Dictionary],
+		launch_target: Vector2,
+		bloom_offset: Vector2,
+) -> void:
+	var travel_time := _travel_time_for_target(launch_target)
+	var launch_velocity := _launch_velocity_for_target(launch_target)
+	chain.push_front(
+		{
+			"position": source_position,
+			"velocity": launch_velocity,
+			"launch_velocity": launch_velocity,
+			"launch_target": launch_target,
+			"bloom_offset": bloom_offset,
+			"age": 0.0,
+			"lifetime": minf(parcel_lifetime, travel_time),
+		},
+	)
+
+
+func _prune_parcel_chain(chain: Array[Dictionary]) -> void:
 	while (
-			not _parcels.is_empty()
+			not chain.is_empty()
 			and (
-				float(_parcels.back()["age"]) > float(_parcels.back().get("lifetime", parcel_lifetime))
-				or _parcels.size() > max_parcels
+				float(chain.back()["age"]) > float(chain.back().get("lifetime", parcel_lifetime))
+				or chain.size() > max_parcels
 			)
 	):
-		_parcels.pop_back()
+		chain.pop_back()
 
 
 func get_stream_profile() -> Dictionary:
@@ -241,20 +363,93 @@ func build_parcel_centerline() -> PackedVector2Array:
 	## Render the moving parcel chain. Each parcel is a committed sample of the
 	## target and gravity at the instant it was emitted, so old stream segments do
 	## not bend when the crosshair moves.
+	return _build_parcel_centerline(_parcels)
+
+
+func build_double_parcel_centerline() -> PackedVector2Array:
+	return _build_parcel_centerline(_double_parcels)
+
+
+func _build_parcel_centerline(chain: Array[Dictionary]) -> PackedVector2Array:
 	var points := PackedVector2Array()
-	if _parcels.is_empty():
+	if chain.is_empty():
 		points.append(source_position)
 		return points
-	var point_count := mini(ribbon_points, _parcels.size())
+	var point_count := mini(ribbon_points, chain.size())
 	for i in point_count:
 		var fraction := float(i) / float(maxi(point_count - 1, 1))
 		var parcel_index := clampi(
-			roundi(fraction * float(_parcels.size() - 1)),
+			roundi(fraction * float(chain.size() - 1)),
 			0,
-			_parcels.size() - 1,
+			chain.size() - 1,
 		)
-		points.append(_parcels[parcel_index]["position"])
+		points.append(chain[parcel_index]["position"])
 	return points
+
+
+func _advance_stream_target(target: Vector2, delta: float) -> void:
+	# An under-damped spring gives the stream acceleration and braking. The visible
+	# overshoot sells mass and momentum, while damping brings it back to the
+	# crosshair instead of letting a quick drag fling it away indefinitely.
+	var remaining := maxf(delta, 0.0)
+	while remaining > 0.0:
+		var step := minf(remaining, 1.0 / 60.0)
+		var displacement := target - _stream_target_position
+		var acceleration := displacement * target_follow_stiffness
+		acceleration -= _stream_target_velocity * target_follow_damping
+		_stream_target_velocity += acceleration * step
+		_stream_target_velocity = _stream_target_velocity.limit_length(target_follow_max_speed)
+		_stream_target_position += _stream_target_velocity * step
+		remaining -= step
+
+
+func _update_aim_bloom(target: Vector2, delta: float) -> void:
+	var safe_delta := maxf(delta, 0.0)
+	_aim_bloom_radius = move_toward(
+		_aim_bloom_radius,
+		0.0,
+		bloom_decay_rate * safe_delta,
+	)
+	if not _input_target_initialized:
+		_last_input_target = target
+		_input_target_initialized = true
+	else:
+		var aim_delta := target - _last_input_target
+		var movement := aim_delta.length()
+		if movement > 0.0:
+			_aim_bloom_radius = minf(
+				_aim_bloom_radius + movement * bloom_radius_per_pixel,
+				max_bloom_radius,
+			)
+			# Gently steer the bloom toward the direction of the aim change. From
+			# there it keeps orbiting instead of teleporting between landing spots.
+			_bloom_angle = lerp_angle(
+				_bloom_angle,
+				aim_delta.angle(),
+				clampf(movement / 600.0, 0.0, 0.15),
+			)
+		_last_input_target = target
+
+	var target_spin := bloom_swirl_speed if _aim_bloom_radius > 0.001 else 0.0
+	_bloom_spin_velocity = move_toward(
+		_bloom_spin_velocity,
+		target_spin,
+		bloom_swirl_acceleration * safe_delta,
+	)
+	_bloom_angle += _bloom_spin_velocity * safe_delta
+	_bloom_offset = Vector2.from_angle(_bloom_angle) * _aim_bloom_radius
+	if not _double_stream_active and _aim_bloom_radius >= double_stream_start_radius:
+		_double_stream_active = true
+	elif _double_stream_active and _aim_bloom_radius <= double_stream_release_radius:
+		_double_stream_active = false
+
+
+func _impact_spread() -> float:
+	return clampf(100.0 + _aim_bloom_radius * 0.35, 100.0, 180.0)
+
+
+func _double_bloom_offset() -> Vector2:
+	return Vector2.from_angle(_bloom_angle) * get_double_bloom_radius()
 
 
 func _path_length(points: PackedVector2Array) -> float:
@@ -329,6 +524,54 @@ func _emit_floor_impact(position: Vector2) -> void:
 	_impact.emitting = true
 
 
+func _update_double_stream_meshes(
+		points: PackedVector2Array,
+		depth_length: float,
+		ribbon_alpha: float,
+		hit_target: bool,
+) -> void:
+	var should_render := (
+		_live_enabled
+		and _double_stream_active
+		and ribbon_alpha > 0.0
+		and points.size() >= 2
+	)
+	_double_edge_mesh.visible = should_render
+	_double_body_mesh.visible = should_render
+	_double_highlight_mesh.visible = should_render
+	if not should_render:
+		_double_edge_mesh_resource.clear_surfaces()
+		_double_body_mesh_resource.clear_surfaces()
+		_double_highlight_mesh_resource.clear_surfaces()
+		return
+
+	_set_ribbon_mesh(
+		_double_edge_mesh_resource,
+		points,
+		36.0,
+		0.0,
+		depth_length,
+		ribbon_alpha,
+		hit_target,
+	)
+	_set_ribbon_mesh(
+		_double_body_mesh_resource,
+		points,
+		32.0,
+		0.0,
+		depth_length,
+		ribbon_alpha,
+		hit_target,
+	)
+	_set_ribbon_mesh(
+		_double_highlight_mesh_resource,
+		points,
+		8.0,
+		1.7,
+		depth_length,
+		ribbon_alpha,
+		hit_target,
+	)
 func update_ribbon_meshes(
 		points: PackedVector2Array,
 		depth_length: float,
@@ -377,6 +620,11 @@ func _set_ribbon_mesh(
 		var perspective_fraction := smoothstep(0.0, 1.0, depth_fraction)
 		var width_scale := lerpf(source_width_scale, distal_width_scale, perspective_fraction)
 		var width := base_width * width_scale
+		# Fast aim changes do not make the whole jet fat. They make its landing end
+		# bloom outward, keeping the source readable while showing lost control
+		# where accuracy matters.
+		var distal_bloom := smoothstep(0.25, 1.0, depth_fraction)
+		width += _aim_bloom_radius * bloom_width_scale * distal_bloom
 		var fade := 1.0
 		if not hit_target:
 			var distal_fade := smoothstep(distal_fade_start, 1.0, depth_fraction)

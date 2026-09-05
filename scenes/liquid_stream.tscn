@@ -27,6 +27,23 @@ material = ExtResource("5_boil")
 texture_filter = 1
 material = ExtResource("5_boil")
 
+[node name="DoubleEdgeRibbon" type="MeshInstance2D" parent="."]
+visible = false
+texture_filter = 1
+material = ExtResource("5_boil")
+
+[node name="DoubleBodyRibbon" type="MeshInstance2D" parent="."]
+visible = false
+texture = SubResource("CanvasTexture_stream_body")
+texture_filter = 1
+texture_repeat = 1
+material = ExtResource("5_boil")
+
+[node name="DoubleHighlightRibbon" type="MeshInstance2D" parent="."]
+visible = false
+texture_filter = 1
+material = ExtResource("5_boil")
+
 [node name="Droplets" type="CPUParticles2D" parent="."]
 amount = 7
 lifetime = 0.42
