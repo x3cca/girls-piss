@@ -19,6 +19,7 @@ signal trace_completed
 	Vector2(0.31, 0.43),
 ])
 @export var closed_path := true
+@export var show_outline := false
 ## Number of upcoming target sprites to keep visible. One means only the
 ## current checkpoint is shown as the target to hit.
 @export_range(1, 8, 1) var checkpoint_look_ahead := 1
@@ -161,7 +162,7 @@ func _draw() -> void:
 	if closed_path:
 		points.append(points[0])
 		segment_count = point_count
-	if point_count >= 2:
+	if show_outline and point_count >= 2:
 		draw_polyline(points, outline_color, outline_width, true)
 		for segment_index in range(segment_count):
 			var segment_completed := (
