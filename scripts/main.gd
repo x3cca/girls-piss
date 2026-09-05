@@ -19,6 +19,8 @@ class_name Main
 @onready var screen_overlay: ScreenOverlay = $ScreenOverlay
 
 @export var skip_title_screen := false
+@export var enable_negative_zones := true
+@export var draw_neutral_canvas := true
 
 enum State { PLAYING, REPLAYING, COMPLETE, FAILED }
 const PLAYING := State.PLAYING
@@ -92,7 +94,10 @@ func _ready() -> void:
 				collision_body.collision_layer = 0
 	stream.input_controller = input_controller
 	stream.set_depth_map(depth_map)
-	_collect_negative_zones()
+	if enable_negative_zones:
+		_collect_negative_zones()
+	else:
+		_disable_negative_zones()
 	input_controller.set_target_position(shape_trace.get_checkpoint_position(0))
 	stream.wet_target_hit.connect(_on_wet_target_hit)
 	stream.drawing_point_updated.connect(_on_drawing_point_updated)
@@ -185,7 +190,14 @@ func _wire_hud() -> void:
 	hud.stream = stream
 	hud.target_nodes = targets
 	hud.show_touch_controls = input_controller.touch_controls_visible
+	if is_instance_valid(hud.piss_meter):
+		hud.piss_meter.input_controller = input_controller
+		hud.piss_meter.stream = stream
 	hud.completion_card.play_again_pressed.connect(_on_play_again_pressed)
+	if is_instance_valid(hud.piss_meter) and not hud.piss_meter.depleted.is_connected(
+		_on_piss_meter_depleted,
+	):
+		hud.piss_meter.depleted.connect(_on_piss_meter_depleted)
 	hud.set_gameplay_controls_visible(gameplay_started)
 
 
@@ -417,12 +429,23 @@ func _negative_zone_at(position: Vector2) -> NegativeZone:
 
 
 func _collect_negative_zones_if_needed() -> void:
+	if not enable_negative_zones:
+		return
 	for node in get_tree().get_nodes_in_group("negative_zone"):
 		if node is NegativeZone and not negative_zones.has(node):
 			negative_zones.append(node)
 	for child in get_children():
 		if child is NegativeZone and not negative_zones.has(child):
 			negative_zones.append(child)
+
+
+func _disable_negative_zones() -> void:
+	negative_zones.clear()
+	for node in get_tree().get_nodes_in_group("negative_zone"):
+		if node is NegativeZone:
+			node.show_zone = false
+			node.visible = false
+			node.set_process(false)
 
 
 func _reset_negative_contact() -> void:
@@ -487,6 +510,10 @@ func _on_play_again_pressed() -> void:
 	reset_level()
 
 
+func _on_piss_meter_depleted() -> void:
+	_fail_attempt()
+
+
 func reset_level() -> void:
 	_set_state(PLAYING)
 	_reset_pulse_feedback()
@@ -502,6 +529,7 @@ func reset_level() -> void:
 	line_recorder.start_recording()
 	stream.reset_stream()
 	stream.set_live_enabled(true)
+	hud.reset_piss_meter()
 	input_controller.reset_input()
 	input_controller.set_target_position(shape_trace.get_checkpoint_position(0))
 	input_controller.set_gameplay_input_enabled(true)
@@ -544,6 +572,8 @@ func _draw() -> void:
 	# The depth texture supplies the optional visualization now; keep only the
 	# neutral canvas and ambient specks here so gameplay never depends on debug
 	# drawing.
+	if not draw_neutral_canvas:
+		return
 	draw_rect(Rect2(Vector2.ZERO, _world_size), Color("#111a35"))
 	for i in 18:
 		var x := fmod(float(i * 113 + 47), maxf(_world_size.x, 1.0))

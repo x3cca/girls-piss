@@ -16,6 +16,14 @@ func test_title_starts_active_and_uses_shared_material_for_both_images() -> void
 	assert_true(title.is_active())
 	assert_true(logo.material == BOIL_MATERIAL)
 	assert_true(start.material == BOIL_MATERIAL)
+	assert_eq(
+		logo.texture.resource_path,
+		"res://assets/art/drive/GirlsPiss-GirlsPiss-80085.png",
+	)
+	assert_eq(
+		start.texture.resource_path,
+		"res://assets/art/drive/GirlsPiss-GirlsPiss-80085-PressStart.png",
+	)
 	assert_eq(logo.texture.get_size(), Vector2(1698.0, 904.0))
 	assert_eq(start.texture.get_size(), Vector2(1789.0, 505.0))
 	assert_almost_eq(logo.position.y + logo.size.y * 0.5, viewport_size.y / 3.0, 0.001)

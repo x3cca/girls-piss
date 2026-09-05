@@ -1,18 +1,15 @@
 [gd_scene load_steps=5 format=3]
 
-[ext_resource type="Script" path="res://scripts/radial_vignette_effect.gd" id="1_effect"]
-[ext_resource type="Shader" path="res://shaders/radial_vignette.gdshader" id="2_shader"]
+[ext_resource type="Script" path="res://scripts/screen_overlay_effect.gd" id="1_effect"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/Dread vignette.png" id="2_dread"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/Dread vignette2.png" id="3_dread_two"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
-shader = ExtResource("2_shader")
-shader_parameter/vignette_color = Color(1, 0.12, 0.2, 0.78)
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_empty"]
+[sub_resource type="SpriteFrames" id="SpriteFrames_dread"]
 animations = [{
-"frames": [],
+"frames": [{"duration": 1.0, "texture": ExtResource("2_dread")}, {"duration": 1.0, "texture": ExtResource("3_dread_two")}],
 "loop": false,
 "name": &"default",
-"speed": 12.0
+"speed": 7.0
 }]
 
 [node name="StrikeVignette" type="Control"]
@@ -24,20 +21,9 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_effect")
-vignette_color = Color(1, 0.12, 0.2, 0.78)
-
-[node name="Vignette" type="ColorRect" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-material = SubResource("ShaderMaterial_vignette")
-color = Color(1, 1, 1, 1)
+sprite_frames = SubResource("SpriteFrames_dread")
+opacity = 0.9
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-visible = false
-sprite_frames = SubResource("SpriteFrames_empty")
+sprite_frames = SubResource("SpriteFrames_dread")
 animation = &"default"

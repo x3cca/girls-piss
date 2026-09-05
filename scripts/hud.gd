@@ -12,6 +12,7 @@ var safe_margin := 28.0
 @onready var completion_card: CompletionCard = $CompletionCard
 @onready var input_prompt: InputPrompt = $InputPrompt
 @onready var strike_indicator: StrikeIndicator = $StrikeIndicator
+@onready var piss_meter: PissMeter = $PissMeter
 var _wired_input_controller: InputController
 var gameplay_controls_visible := true
 var aim_zone_state := TouchReticle.ReticleState.NEUTRAL
@@ -19,6 +20,8 @@ var aim_zone_state := TouchReticle.ReticleState.NEUTRAL
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	piss_meter.input_controller = input_controller
+	piss_meter.stream = stream
 	set_process(true)
 	_layout_controls()
 
@@ -30,6 +33,9 @@ func _process(_delta: float) -> void:
 func process_frame(_delta: float) -> void:
 	if input_controller:
 		show_touch_controls = input_controller.touch_controls_visible
+	if is_instance_valid(piss_meter):
+		piss_meter.input_controller = input_controller
+		piss_meter.stream = stream
 	_wire_input_controller()
 	if is_instance_valid(aim_reticle):
 		aim_reticle.set_zone_state(aim_zone_state)
@@ -55,6 +61,10 @@ func set_gameplay_controls_visible(enabled: bool) -> void:
 		input_prompt.hide_prompt()
 	if is_instance_valid(strike_indicator):
 		strike_indicator.visible = enabled
+	if is_instance_valid(piss_meter):
+		# The meter stays on screen during the title transition, but only drains
+		# after gameplay has been released by the title gate.
+		piss_meter.set_gameplay_active(enabled)
 	queue_redraw()
 
 
@@ -81,6 +91,11 @@ func show_failure_card() -> void:
 
 func hide_completion_card() -> void:
 	completion_card.hide_card()
+
+
+func reset_piss_meter() -> void:
+	if is_instance_valid(piss_meter):
+		piss_meter.reset_meter()
 
 
 func set_strikes(value: int) -> void:

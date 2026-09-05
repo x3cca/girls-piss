@@ -42,21 +42,22 @@ is intentionally ignored for prompt source changes.
 - Web export preset targeting build/web/index.html.
 - GitHub Actions for Godot checks and HTML5/Butler deployment.
 - A local/CI test wrapper at tools/run-tests.sh with JUnit output.
-- A portrait liquid-stream sample scene with animated trace targets, lighting,
-  and a baked depth-aware environment.
+- A real Level 1 portrait scene with the authored bathroom, toilet, object
+  targets, lighting, and a baked depth-aware environment.
 - An inertial stream model where emitted flow keeps its launch velocity while
   the visible stream eases toward the crosshair target.
 - A figure-eight aim-bloom model with a temporary double-stream state for large
   aim changes.
 - Offline alpha-silhouette normal-map and environment depth-map bakers in
   `tools/`.
-- A reusable title screen and contextual input-prompt HUD built from
-  placeholder art and the shared boil material.
+- A reusable title screen and contextual input-prompt HUD that transition in
+  place over the same Level 1 scene.
 - Agent and MCP workflow notes.
 
-Open the folder in Godot 4.7.2+ and run `scenes/smoke_test.tscn` (the historical
-filename is retained so existing export presets keep working). The authored
-viewport is 720×1280; the project also uses a 540×960 desktop window override.
+Open the folder in Godot 4.7.2+ and run the project; it starts at
+`scenes/level_1.tscn`. `scenes/smoke_test.tscn` remains available as the
+debug scene with authored negative zones. The authored viewport is 720×1280;
+the project also uses a 540×960 desktop window override.
 
 For direct-level testing, enable `Main.skip_title_screen` on the root node of
 the scene. Tests and tools can use `Main.start_gameplay_immediately()` for the
@@ -112,8 +113,8 @@ girl-pisser. See docs/pipeline.md for setup details.
 
 addons/ editor plugins, scenes/ prototype and component scenes, tests/ GUT
 tests, tools/ developer scripts, assets/ project assets, .github/ automation,
-docs/ workflow notes, and skills/ AI workflow notes. `scenes/smoke_test.tscn`
-is still the main scene even though its historical filename says “smoke test”.
+docs/ workflow notes, and skills/ AI workflow notes. `scenes/level_1.tscn` is
+the main scene; `scenes/smoke_test.tscn` is retained for gameplay tests.
 
 ## Attribution
 

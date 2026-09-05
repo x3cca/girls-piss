@@ -8,13 +8,14 @@ class_name TouchReticle
 const CROSSHAIR_NEUTRAL := preload("res://assets/art/drive/Crosshair2.png")
 const CROSSHAIR_NEGATIVE := preload("res://assets/art/drive/Crosshair1.png")
 const CROSSHAIR_SUCCESS := preload("res://assets/art/drive/Crosshair3.png")
+const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
 
 enum ReticleState { NEUTRAL, NEGATIVE, SUCCESS }
 const NEUTRAL := ReticleState.NEUTRAL
 const NEGATIVE := ReticleState.NEGATIVE
 const SUCCESS := ReticleState.SUCCESS
 
-@export var reticle_size := 48.0
+@export var reticle_size := 96.0
 @export_range(0.05, 2.0, 0.01) var success_burst_duration := 0.42
 @export var neutral_texture: Texture2D = CROSSHAIR_NEUTRAL
 @export var negative_texture: Texture2D = CROSSHAIR_NEGATIVE
@@ -38,6 +39,7 @@ func _ready() -> void:
 		_sprite.name = "Sprite"
 		add_child(_sprite)
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_sprite.material = BOIL_MATERIAL
 	if _sprite.texture == null:
 		_sprite.texture = neutral_texture
 	_apply_size()
