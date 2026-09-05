@@ -80,3 +80,7 @@ The included UI sound effects are from [Case Portman Audio's Cute & Cozy UI
 Audio Free Sample](https://caseportman.itch.io/cute-cozy-ui-sfx) and are used
 under its royalty-free, attribution-required license. See
 `assets/audio/cute_cozy_ui/license.txt`.
+
+The placeholder input prompts are from [Kenney's Input Prompts
+pack](https://kenney.nl/assets/input-prompts) and are released under CC0. See
+`assets/placeholders/input_prompts/License.txt`.
