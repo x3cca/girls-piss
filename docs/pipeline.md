@@ -89,6 +89,10 @@ Actions unless a separate workflow explicitly needs it.
 
 ## Export notes
 
-The MCP and GUT addons, tests, and development scripts are excluded in
-export_presets.cfg. Keep editor-only plugins and test assets out of runtime
-builds unless the game specifically needs them.
+The Web preset exports the main scene and its dependencies instead of every
+project resource. The nine prompt icons used by `InputPrompt` are explicitly
+included and preloaded so they remain available at runtime while the rest of
+the Kenney pack stays out of the PCK. The MCP and GUT addons, tests, and
+development scripts are also excluded in export_presets.cfg. CI checks the
+resulting PCK stays below 3 MB so an accidental return to an all-resources
+export is visible.
