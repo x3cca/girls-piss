@@ -10,6 +10,7 @@ var safe_margin := 28.0
 @onready var aim_reticle: TouchReticle = $AimReticle
 @onready var carrot_marker: TextureRect = $CarrotMarker
 @onready var completion_card: CompletionCard = $CompletionCard
+@onready var input_prompt: InputPrompt = $InputPrompt
 var _wired_input_controller: InputController
 var gameplay_controls_visible := true
 
@@ -47,7 +48,20 @@ func set_gameplay_controls_visible(enabled: bool) -> void:
 		aim_reticle.set_aim_target(aim_reticle.position, enabled)
 	if is_instance_valid(carrot_marker):
 		carrot_marker.visible = enabled
+	if is_instance_valid(input_prompt) and not enabled:
+		input_prompt.hide_prompt()
 	queue_redraw()
+
+
+func show_input_prompt(source: int) -> void:
+	if not gameplay_controls_visible or not is_instance_valid(input_prompt):
+		return
+	input_prompt.show_prompt(source)
+
+
+func hide_input_prompt() -> void:
+	if is_instance_valid(input_prompt):
+		input_prompt.hide_prompt()
 
 
 func show_completion_card() -> void:
@@ -67,6 +81,10 @@ func _wire_input_controller() -> void:
 			_on_touch_target_changed,
 		):
 			_wired_input_controller.touch_target_changed.disconnect(_on_touch_target_changed)
+		if _wired_input_controller.input_source_changed.is_connected(
+			_on_input_source_changed,
+		):
+			_wired_input_controller.input_source_changed.disconnect(_on_input_source_changed)
 	_wired_input_controller = input_controller
 	if not is_instance_valid(_wired_input_controller):
 		return
@@ -74,11 +92,20 @@ func _wire_input_controller() -> void:
 		_on_touch_target_changed,
 	):
 		_wired_input_controller.touch_target_changed.connect(_on_touch_target_changed)
+	if not _wired_input_controller.input_source_changed.is_connected(
+		_on_input_source_changed,
+	):
+		_wired_input_controller.input_source_changed.connect(_on_input_source_changed)
 
 
 func _on_touch_target_changed(position: Vector2, active: bool) -> void:
 	if gameplay_controls_visible and active:
 		aim_reticle.set_aim_target(position, true)
+
+
+func _on_input_source_changed(source: int) -> void:
+	if gameplay_controls_visible:
+		show_input_prompt(source)
 
 
 func _layout_controls() -> void:

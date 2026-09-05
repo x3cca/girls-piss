@@ -358,3 +358,97 @@ func test_input_map_declares_keyboard_mouse_and_controller_bindings() -> void:
 			has_trigger = true
 	assert_true(has_mouse)
 	assert_true(has_trigger)
+
+
+func test_meaningful_input_reports_each_source() -> void:
+	var controller := InputController.new()
+	add_child_autofree(controller)
+	controller.set_process(false)
+	var detected: Array[int] = []
+	var changed: Array[int] = []
+	controller.input_detected.connect(func(source: int): detected.append(source))
+	controller.input_source_changed.connect(func(source: int): changed.append(source))
+
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_W
+	key.pressed = true
+	controller.handle_input_event(key)
+	var mouse := InputEventMouseButton.new()
+	mouse.button_index = MOUSE_BUTTON_LEFT
+	mouse.pressed = true
+	controller.handle_input_event(mouse)
+	var touch := InputEventScreenTouch.new()
+	touch.index = 2
+	touch.position = Vector2(200.0, 300.0)
+	touch.pressed = true
+	controller.handle_input_event(touch)
+	var button := InputEventJoypadButton.new()
+	button.button_index = JOY_BUTTON_A
+	button.pressed = true
+	controller.handle_input_event(button)
+	var stick := InputEventJoypadMotion.new()
+	stick.axis = JOY_AXIS_LEFT_X
+	stick.axis_value = 0.75
+	controller.handle_input_event(stick)
+
+	assert_eq(detected, [
+		InputController.AimSource.KEYBOARD,
+		InputController.AimSource.MOUSE,
+		InputController.AimSource.TOUCH,
+		InputController.AimSource.CONTROLLER,
+		InputController.AimSource.CONTROLLER,
+	])
+	assert_eq(changed, [
+		InputController.AimSource.MOUSE,
+		InputController.AimSource.TOUCH,
+		InputController.AimSource.CONTROLLER,
+	])
+	assert_eq(controller.get_current_input_source(), InputController.AimSource.CONTROLLER)
+
+
+func test_mouse_motion_does_not_change_detected_input_source() -> void:
+	var controller := InputController.new()
+	add_child_autofree(controller)
+	controller.set_process(false)
+	var changed: Array[int] = []
+	controller.input_source_changed.connect(func(source: int): changed.append(source))
+
+	var mouse_motion := InputEventMouseMotion.new()
+	mouse_motion.position = Vector2(180.0, 420.0)
+	controller.handle_input_event(mouse_motion)
+	assert_eq(controller.current_input_source, InputController.AimSource.KEYBOARD)
+	assert_eq(changed.size(), 0)
+
+	var mouse_button := InputEventMouseButton.new()
+	mouse_button.button_index = MOUSE_BUTTON_LEFT
+	mouse_button.pressed = true
+	controller.handle_input_event(mouse_button)
+	controller.handle_input_event(mouse_motion)
+	assert_eq(controller.current_input_source, InputController.AimSource.MOUSE)
+	assert_eq(changed, [InputController.AimSource.MOUSE])
+
+
+func test_title_input_is_detected_without_affecting_gameplay_state() -> void:
+	var controller := InputController.new()
+	add_child_autofree(controller)
+	controller.set_process(false)
+	controller.set_gameplay_input_enabled(false)
+	var target_before := controller.get_target_position()
+
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_SPACE
+	key.pressed = true
+	controller.handle_input_event(key)
+	var mouse := InputEventMouseButton.new()
+	mouse.button_index = MOUSE_BUTTON_LEFT
+	mouse.pressed = true
+	controller.handle_input_event(mouse)
+	var touch := InputEventScreenTouch.new()
+	touch.index = 1
+	touch.position = Vector2(200.0, 300.0)
+	touch.pressed = true
+	controller.handle_input_event(touch)
+
+	assert_false(controller.is_pissing())
+	assert_eq(controller.get_target_position(), target_before)
+	assert_eq(controller.current_input_source, InputController.AimSource.TOUCH)
