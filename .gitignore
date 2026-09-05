@@ -10,6 +10,12 @@ dist/
 *.pck
 *.zip
 
+# Local Python asset-sync state
+.cache/drive-assets/
+.venv/
+venv/
+__pycache__/
+
 # Mono/editor files
 .mono/
 data_*/

@@ -1,5 +1,57 @@
 # Build and deploy pipeline
 
+## Google Drive artwork sync
+
+`tools/sync_drive_assets.py` mirrors raster artwork from the public `Girlspiss`
+Drive folder into `assets/art/drive/`. It recursively lists the folder through
+[`gdown`](https://github.com/wkentaro/gdown), downloads PNG, JPEG, and WebP
+files, trims only fully transparent pixels at the outer edge, and writes
+lossless PNGs. Nested Drive folders are retained in the output path.
+
+Set up the optional local Python environment from the repository root:
+
+```sh
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements.txt
+```
+
+Inspect the folder without downloading or changing project assets:
+
+```sh
+python3 tools/sync_drive_assets.py --check
+```
+
+Download new or changed files:
+
+```sh
+python3 tools/sync_drive_assets.py --sync
+```
+
+The default source is
+`REDACTED`.
+Use `--source URL` or set `DRIVE_ASSETS_URL` when the folder changes.
+`--output` and `--cache-dir` are also available for local experiments and
+tests.
+
+The ignored `.cache/drive-assets/` directory contains the source manifest and
+temporary raw downloads. The manifest uses Drive file IDs plus listing and
+HTTP metadata (when available) to recognize unchanged files. Drive files
+removed from the source are reported but their local PNGs are never deleted.
+
+Unsupported files are listed as skipped and do not fail the run. A failed
+download, image decode, output write, or manifest write prints an error and
+returns status 1; successful files from the same run remain usable. Output
+PNGs and the manifest are replaced atomically, so an interrupted write cannot
+leave a partial destination file.
+
+Offline tests for cropping, format conversion, manifest change detection, path
+collisions, idempotence, removal reporting, and failures can be run with:
+
+```sh
+python3 -m unittest tests.test_sync_drive_assets
+```
+
 ## Checks and tests
 
 `gdchecks.yml` runs the Godot headless project check and a separate `GUT unit

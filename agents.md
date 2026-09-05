@@ -33,6 +33,9 @@ you need a more specific placeholder, ask the user to add it under
 When adding new input types, make new actions in the InputMap on the project
 settings. Keep action names semantic.
 
+To fetch Drive artwork, install `requirements.txt`, then run
+`python3 tools/sync_drive_assets.py --sync`; use `--check` to preview changes.
+
 ## Testing
 
 Run these before committing:
