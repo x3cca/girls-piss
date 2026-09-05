@@ -4,13 +4,14 @@ class_name InputController
 
 ## Unified desktop/touch input for the portrait prototype.
 ## WASD moves one crosshair target, a single touch places that target directly,
-## and Space/holding a touch gates the stream. The stream owns the easing from
+## and Space/touch/left mouse starts the stream. The stream owns the easing from
 ## this target to the actual shot endpoint.
 
 signal aim_target_changed(position: Vector2)
 signal touch_target_changed(position: Vector2, active: bool)
 
 @export var target_move_speed := 620.0
+@export var force_pissing_after_start := true
 
 var target_position := Vector2.ZERO
 var input_mode := "desktop"
@@ -24,7 +25,9 @@ var _move_right_pressed := false
 var _move_up_pressed := false
 var _move_down_pressed := false
 var _space_pressed := false
+var _mouse_pressed := false
 var _pissing := false
+var _has_started_pissing := false
 
 
 func _ready() -> void:
@@ -42,7 +45,7 @@ func _process(delta: float) -> void:
 
 
 func process_frame(delta: float) -> void:
-	if _touch_index == -1:
+	if _touch_index == -1 and not _mouse_pressed:
 		var movement := Vector2(
 			float(_move_right_pressed) - float(_move_left_pressed),
 			float(_move_down_pressed) - float(_move_up_pressed),
@@ -77,6 +80,17 @@ func handle_input_event(event: InputEvent) -> void:
 		var drag := event as InputEventScreenDrag
 		if drag.index == _touch_index:
 			_update_touch_target(drag.position)
+	elif event is InputEventMouseButton:
+		var mouse_button := event as InputEventMouseButton
+		if mouse_button.button_index != MOUSE_BUTTON_LEFT:
+			return
+		if mouse_button.pressed:
+			_claim_mouse(mouse_button.position)
+		else:
+			_release_mouse()
+	elif event is InputEventMouseMotion and _mouse_pressed:
+		var mouse_motion := event as InputEventMouseMotion
+		_update_mouse_target(mouse_motion.position)
 
 
 func _update_keyboard_state(event: InputEventKey) -> void:
@@ -110,13 +124,15 @@ func get_target_position() -> Vector2:
 
 
 func is_pissing() -> bool:
-	return _pissing
+	return _has_started_pissing if force_pissing_after_start else _pissing
 
 
 func reset_input() -> void:
 	_touch_index = -1
 	_touch_position = Vector2.ZERO
+	_mouse_pressed = false
 	_space_pressed = false
+	_has_started_pissing = false
 	_pissing = false
 	_move_left_pressed = false
 	_move_right_pressed = false
@@ -129,10 +145,10 @@ func reset_input() -> void:
 
 
 func _claim_touch(index: int, position: Vector2) -> void:
-	if _touch_index != -1:
+	if _touch_index != -1 or _mouse_pressed:
 		return
 	_touch_index = index
-	_pissing = true
+	_begin_pissing()
 	_update_touch_target(position)
 
 
@@ -153,8 +169,32 @@ func _update_touch_target(position: Vector2) -> void:
 	set_target_position(position)
 
 
+func _claim_mouse(position: Vector2) -> void:
+	if _touch_index != -1 or _mouse_pressed:
+		return
+	_mouse_pressed = true
+	_begin_pissing()
+	_update_mouse_target(position)
+
+
+func _release_mouse() -> void:
+	_mouse_pressed = false
+	_update_pissing()
+
+
+func _update_mouse_target(position: Vector2) -> void:
+	set_target_position(position)
+
+
+func _begin_pissing() -> void:
+	_pissing = true
+	_has_started_pissing = true
+
+
 func _update_pissing() -> void:
 	_pissing = _space_pressed or _touch_index != -1
+	if _pissing:
+		_has_started_pissing = true
 
 
 func _default_target_position() -> Vector2:

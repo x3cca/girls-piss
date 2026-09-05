@@ -14,11 +14,18 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 	assert_not_null(instance.get_node_or_null("InputController"))
 	assert_not_null(instance.get_node_or_null("LiquidStream"))
 	assert_not_null(instance.get_node_or_null("HUDLayer/HUD"))
+	var input_controller := instance.get_node_or_null("InputController") as InputController
 	var shape_trace := instance.get_node_or_null("ShapeTrace") as ShapeTrace
 	assert_not_null(shape_trace)
+	assert_not_null(input_controller)
 	if shape_trace:
 		assert_false(shape_trace.show_outline)
 		assert_eq(shape_trace.target_size, 144.0)
+	if shape_trace and input_controller:
+		assert_eq(
+			input_controller.get_target_position(),
+			shape_trace.get_checkpoint_position(0),
+		)
 	var hud := instance.get_node_or_null("HUDLayer/HUD")
 	var aim_reticle := hud.get_node_or_null("AimReticle") if hud else null
 	assert_true(aim_reticle is TouchReticle)

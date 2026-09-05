@@ -56,6 +56,7 @@ func _ready() -> void:
 			if collision_body:
 				collision_body.collision_layer = 0
 	stream.input_controller = input_controller
+	input_controller.set_target_position(shape_trace.get_checkpoint_position(0))
 	stream.wet_target_hit.connect(_on_wet_target_hit)
 	stream.drawing_point_updated.connect(_on_drawing_point_updated)
 	stream.pulse_triggered.connect(_on_stream_pulse)
@@ -240,6 +241,7 @@ func reset_level() -> void:
 	stream.reset_stream()
 	stream.set_live_enabled(true)
 	input_controller.reset_input()
+	input_controller.set_target_position(shape_trace.get_checkpoint_position(0))
 	input_controller.set_process_input(true)
 	input_controller.set_process(true)
 	hud.hide_completion_card()
