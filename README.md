@@ -84,3 +84,7 @@ under its royalty-free, attribution-required license. See
 The placeholder input prompts are from [Kenney's Input Prompts
 pack](https://kenney.nl/assets/input-prompts) and are released under CC0. See
 `assets/placeholders/input_prompts/License.txt`.
+
+The placeholder cursor art is from [Kenney's Cursor Pixel
+Pack](https://kenney.nl/assets/cursor-pixel-pack) and is released under CC0.
+See `assets/placeholders/cursor_pixel_pack/License.txt`.
