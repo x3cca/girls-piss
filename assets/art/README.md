@@ -26,8 +26,14 @@ crosshair/trace-target sprite. It follows the current keyboard or touch target;
 it is also used by trace targets. Replace it with authored 2D target art; these
 sprites receive the shared boil shader at runtime.
 
-Title and contextual-prompt placeholders live outside this directory under
-`assets/placeholders/`: `logo.png`, `start.png`, and the prompt action labels
-`aim.png` and `piss.png`. They are referenced by `scenes/title_screen.tscn` and
-`scenes/input_prompt.tscn` and receive the shared boil material where the scene
-defines it.
+Artwork pulled from the shared Google Drive lives under `drive/`. Use
+`tools/sync_drive_assets.py --check` to inspect new source files and
+`tools/sync_drive_assets.py --sync` to download them, trim transparent borders,
+and convert them to lossless PNGs. The title uses the separate transparent
+layers in `drive/` through `scenes/title_composition.tscn`; keep their authored
+1080x1920 placements when composing them.
+
+The contextual prompt still uses temporary labels under
+`assets/placeholders/`: `aim.png` and `piss.png`. Keep those rows separate until
+final descriptive assets replace them. The old title placeholders are retained
+for development history but are not referenced by the title scene.

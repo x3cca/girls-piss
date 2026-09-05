@@ -10,13 +10,13 @@ debug scene with authored negative zones.
 behind the high-layer `TitleScreen` CanvasLayer, but gameplay input and the
 gameplay HUD are disabled until the title transition finishes.
 
-The title uses the authored `GirlsPiss 80085` logo and `Press Start` artwork
-stored as `assets/art/drive/GirlsPiss-GirlsPiss-80085.png` and
-`assets/art/drive/GirlsPiss-GirlsPiss-80085-PressStart.png`, both with
-`resources/materials/boil_effect.tres`. The logo is centered around one-third
-down from the top of the viewport (two-thirds up from the bottom), and the
-press-start image sits lower in the frame. The elements slide into place on
-entry and slide out on the first recognized input.
+The title uses the transparent `TitleComposition` scene over the Level 1
+scene. It layers `GirlsTitle.png` and `PissTitle.png` over the three title
+flares, then swaps the matching `StartBacker1`/`Start1` and
+`StartBacker2`/`Start2` pairs as a small press-start treatment. The authored
+layers retain their 1080x1920 reference positions and receive the shared boil
+material. `StartMenuExample.png` remains a visual reference only. The title
+composition fades out on the first recognized input.
 
 The first input is handled by `InputController`, starts the title exit, and is
 consumed. Duplicate requests are ignored while the exit tween is running. Once
