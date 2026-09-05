@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/screen_overlay.tscn" id="7_overlay"]
 [ext_resource type="PackedScene" path="res://scenes/shape_trace.tscn" id="8_trace"]
 [ext_resource type="PackedScene" path="res://scenes/piss_line_recorder.tscn" id="9_recorder"]
+[ext_resource type="AudioStream" uid="uid://r3a1f5062i1i" path="res://assets/audio/Bloopin.mp3" id="10_h3nus"]
 [ext_resource type="PackedScene" path="res://scenes/piss_line_replay.tscn" id="10_replay"]
 [ext_resource type="PackedScene" path="res://scenes/title_screen.tscn" id="11_title"]
 
@@ -65,3 +66,7 @@ texture_scale = 0.82
 [node name="TitleLayer" type="Node" parent="." unique_id=1894128963]
 
 [node name="TitleScreen" parent="TitleLayer" unique_id=2068530869 instance=ExtResource("11_title")]
+
+[node name="BackgroundMusic" type="AudioStreamPlayer" parent="." unique_id=1311718434]
+stream = ExtResource("10_h3nus")
+autoplay = true

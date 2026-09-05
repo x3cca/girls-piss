@@ -13,7 +13,11 @@ signal input_detected(source: int)
 signal input_source_changed(source: int)
 
 @export var target_move_speed := 620.0
+@export var music_target_offset_max := 200.0
+@export var music_target_offset_angle_increment := 45.0
+@export var music_target_offset_power := 3
 @export var force_pissing_after_start := true
+@export var bus_name: String = "Master"
 
 const AIM_DEADZONE := 0.2
 const TRIGGER_DEADZONE := 0.5
@@ -24,7 +28,11 @@ var target_position := Vector2.ZERO
 var input_mode := "desktop"
 var touch_controls_visible := false
 var gameplay_input_enabled := true
+var music_target_offset_angle_current := 0.0
+var music_direction_toggle := 1
+var bus_index := 0
 
+var _previous_input_position := Vector2.ZERO
 var _touch_index := -1
 var _touch_position := Vector2.ZERO
 var _target_position := Vector2.ZERO
@@ -41,6 +49,7 @@ var _last_aim_source := AimSource.KEYBOARD
 var _current_input_source := AimSource.KEYBOARD
 var _pissing := false
 var _has_started_pissing := false
+var _music_target_offset_position := Vector2.ZERO
 
 var current_input_source: int:
 	get:
@@ -61,6 +70,9 @@ func _ready() -> void:
 	aim_target_changed.emit(target_position)
 	if not Input.joy_connection_changed.is_connected(_on_joy_connection_changed):
 		Input.joy_connection_changed.connect(_on_joy_connection_changed)
+		
+	# Get the index of the audio bus and the first effect (index 0) on it
+	bus_index = AudioServer.get_bus_index(bus_name)
 
 
 func _exit_tree() -> void:
@@ -87,14 +99,20 @@ func process_frame(delta: float) -> void:
 		AimSource.CONTROLLER:
 			movement = _controller_aim
 	if movement.length_squared() > 0.0:
-		set_target_position(_target_position + movement * target_move_speed * delta)
-
-	var clamped_target := _clamp_target(_target_position)
-	if clamped_target != _target_position:
-		_target_position = clamped_target
-	if target_position != _target_position:
-		target_position = _target_position
-		aim_target_changed.emit(target_position)
+		_previous_input_position += movement * target_move_speed * delta
+	
+	# Make the aiming target jiggle from the music
+	# make it so that the offset jiggles back and forth every frame
+	# and that it spins slowly over time
+	music_direction_toggle = -music_direction_toggle
+	music_target_offset_angle_current += music_target_offset_angle_increment * delta
+	var _db = _get_music_amplitutde()
+	var _music_target_offset_value = pow(_db, music_target_offset_power) * music_target_offset_max * music_direction_toggle
+	_music_target_offset_position = Vector2.RIGHT.rotated(deg_to_rad(music_target_offset_angle_current)) * _music_target_offset_value
+	# _target_position += _music_target_offset_position
+	
+	set_target_position(_previous_input_position)
+		
 
 
 func _input(event: InputEvent) -> void:
@@ -172,6 +190,7 @@ func _update_mouse_target(position: Vector2) -> void:
 	if not gameplay_input_enabled:
 		return
 	_last_aim_source = AimSource.MOUSE
+	_previous_input_position = position
 	set_target_position(position)
 
 
@@ -241,7 +260,7 @@ func _clear_controller_state() -> void:
 
 
 func set_target_position(position: Vector2) -> void:
-	_target_position = _clamp_target(position)
+	_target_position = _clamp_target(position) + _music_target_offset_position
 	if target_position == _target_position:
 		return
 	target_position = _target_position
@@ -340,6 +359,7 @@ func _update_touch_target(position: Vector2) -> void:
 	# The reticle receives the raw pointer position, while the gameplay target
 	# only clamps to the viewport so touching near an edge remains one-to-one.
 	touch_target_changed.emit(position, true)
+	_previous_input_position = position
 	set_target_position(position)
 
 
@@ -397,3 +417,16 @@ func _clamp_target(position: Vector2) -> Vector2:
 		clampf(position.x, 0.0, viewport_size.x),
 		clampf(position.y, 0.0, viewport_size.y),
 	)
+
+
+func _get_music_amplitutde() -> float:
+	# Get peak decibels for left and right channels on the Master bus (index 0)
+	var peak_left = AudioServer.get_bus_peak_volume_left_db(bus_index, 0)
+	var peak_right = AudioServer.get_bus_peak_volume_right_db(bus_index, 0)
+	
+	# Average them out or use one channel
+	var current_db = (peak_left + peak_right) / 2.0
+	var linear_vol = db_to_linear(current_db)
+	# print("Volume DB: " + str(linear_vol))
+	
+	return linear_vol
