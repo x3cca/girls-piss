@@ -12,7 +12,7 @@ config_version=5
 
 config/name="girl-pisser"
 config/description="A portrait-first liquid-stream game prototype."
-run/main_scene="res://scenes/smoke_test.tscn"
+run/main_scene="res://scenes/level_1.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://assets/icon.svg"
 

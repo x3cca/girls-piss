@@ -14,6 +14,7 @@
 [ext_resource type="Texture2D" uid="uid://m44oqg56v0ay" path="res://resources/depth_map_baked.png" id="13_depth_texture"]
 [ext_resource type="PackedScene" path="res://scenes/depth_environment.tscn" id="14_depth_environment"]
 [ext_resource type="PackedScene" path="res://scenes/negative_zone.tscn" id="15_negative_zone"]
+[ext_resource type="PackedScene" path="res://scenes/piss_toilet.tscn" id="16_piss_toilet"]
 
 [sub_resource type="Gradient" id="Gradient_light"]
 colors = PackedColorArray(1, 1, 1, 0.95, 1, 1, 1, 0)
@@ -39,6 +40,10 @@ depth_texture = ExtResource("13_depth_texture")
 debug_visualization = true
 
 [node name="DepthEnvironment" parent="." unique_id=1742420002 instance=ExtResource("14_depth_environment")]
+
+[node name="PissToilet" parent="." unique_id=1742420003 instance=ExtResource("16_piss_toilet")]
+position = Vector2(360, 640)
+scale = Vector2(0.45, 0.45)
 
 [node name="LiquidStream" parent="." unique_id=1204969384 instance=ExtResource("2_stream")]
 

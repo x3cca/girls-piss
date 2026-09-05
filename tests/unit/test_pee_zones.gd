@@ -2,6 +2,7 @@ extends GutTest
 
 const LEVEL_SCENE := preload("res://scenes/smoke_test.tscn")
 const ZONE_SCENE := preload("res://scenes/negative_zone.tscn")
+const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
 
 
 func test_negative_zone_uses_normalized_polygon_geometry() -> void:
@@ -140,6 +141,20 @@ func test_reticle_uses_neutral_negative_and_success_textures() -> void:
 	assert_eq(reticle.get_node("Sprite").texture, TouchReticle.CROSSHAIR_SUCCESS)
 
 
+func test_reticle_is_double_sized_and_uses_the_boil_material() -> void:
+	var reticle := TouchReticle.new()
+	add_child_autofree(reticle)
+	var sprite := reticle.get_node("Sprite") as Sprite2D
+
+	assert_eq(reticle.reticle_size, 96.0)
+	assert_eq(sprite.material, BOIL_MATERIAL)
+	assert_almost_eq(
+		sprite.scale.x,
+		reticle.reticle_size / float(sprite.texture.get_width()),
+		0.001,
+	)
+
+
 func test_live_stream_signal_reaches_a_negative_zone() -> void:
 	var level := LEVEL_SCENE.instantiate() as Main
 	level.skip_title_screen = true
@@ -147,7 +162,8 @@ func test_live_stream_signal_reaches_a_negative_zone() -> void:
 	level.set_process(false)
 	level.get_node("LiquidStream").set_process(false)
 	var controller := level.input_controller
-	controller.set_target_position(Vector2(120.0, 220.0))
+	var bad_position := Vector2(120.0, 220.0)
+	controller.set_target_position(bad_position)
 	var space_down := InputEventKey.new()
 	space_down.physical_keycode = KEY_SPACE
 	space_down.pressed = true

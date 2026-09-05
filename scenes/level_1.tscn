@@ -1,0 +1,15 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/smoke_test.tscn" id="1_smoke_test"]
+[ext_resource type="Script" path="res://scripts/level_1.gd" id="2_level_1"]
+[ext_resource type="PackedScene" path="res://scenes/level_1_background.tscn" id="3_background"]
+[ext_resource type="PackedScene" path="res://scenes/level_1_chrome.tscn" id="4_chrome"]
+
+[node name="Level1" instance=ExtResource("1_smoke_test")]
+script = ExtResource("2_level_1")
+enable_negative_zones = false
+draw_neutral_canvas = false
+
+[node name="Level1Background" parent="." instance=ExtResource("3_background")]
+
+[node name="Level1Chrome" parent="." instance=ExtResource("4_chrome")]
