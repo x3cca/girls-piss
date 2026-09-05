@@ -10,7 +10,7 @@ signal drawing_point_updated(position: Vector2, active: bool)
 @export var target_follow_stiffness := 135.0
 @export var target_follow_damping := 17.0
 @export var target_follow_max_speed := 2500.0
-@export var bloom_radius_per_pixel := 0.36
+@export var bloom_radius_per_pixel := 0.54
 @export var bloom_decay_rate := 130.0
 @export var max_bloom_radius := 224.0
 @export var bloom_width_scale := 0.16
