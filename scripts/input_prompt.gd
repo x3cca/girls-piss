@@ -34,6 +34,35 @@ const ICON_PATHS := {
 		"res://assets/placeholders/input_prompts/Generic/Default/generic_button_trigger_a.png",
 	],
 }
+const ICON_TEXTURES := {
+	"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_w.png": preload(
+		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_w.png",
+	),
+	"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_a.png": preload(
+		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_a.png",
+	),
+	"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_s.png": preload(
+		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_s.png",
+	),
+	"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_d.png": preload(
+		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_d.png",
+	),
+	"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_space.png": preload(
+		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_space.png",
+	),
+	"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/mouse_left.png": preload(
+		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/mouse_left.png",
+	),
+	"res://assets/placeholders/input_prompts/Touch/Default/touch_tap.png": preload(
+		"res://assets/placeholders/input_prompts/Touch/Default/touch_tap.png",
+	),
+	"res://assets/placeholders/input_prompts/Generic/Default/generic_joystick.png": preload(
+		"res://assets/placeholders/input_prompts/Generic/Default/generic_joystick.png",
+	),
+	"res://assets/placeholders/input_prompts/Generic/Default/generic_button_trigger_a.png": preload(
+		"res://assets/placeholders/input_prompts/Generic/Default/generic_button_trigger_a.png",
+	),
+}
 const AIM_ICON_PATHS := {
 	PromptSource.KEYBOARD: [
 		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_w.png",
@@ -197,7 +226,10 @@ func _set_icons(row: HBoxContainer, paths: Array[String]) -> void:
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.texture = load(path) as Texture2D
+		var texture := ICON_TEXTURES.get(path) as Texture2D
+		if texture == null:
+			texture = load(path) as Texture2D
+		icon.texture = texture
 		icon.material = BOIL_MATERIAL
 		row.add_child(icon)
 

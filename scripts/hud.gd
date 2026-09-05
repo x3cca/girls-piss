@@ -11,8 +11,10 @@ var safe_margin := 28.0
 @onready var carrot_marker: TextureRect = $CarrotMarker
 @onready var completion_card: CompletionCard = $CompletionCard
 @onready var input_prompt: InputPrompt = $InputPrompt
+@onready var strike_indicator: StrikeIndicator = $StrikeIndicator
 var _wired_input_controller: InputController
 var gameplay_controls_visible := true
+var aim_zone_state := TouchReticle.ReticleState.NEUTRAL
 
 
 func _ready() -> void:
@@ -30,6 +32,7 @@ func process_frame(_delta: float) -> void:
 		show_touch_controls = input_controller.touch_controls_visible
 	_wire_input_controller()
 	if is_instance_valid(aim_reticle):
+		aim_reticle.set_zone_state(aim_zone_state)
 		aim_reticle.set_aim_target(
 			input_controller.get_target_position() if input_controller else Vector2.ZERO,
 			gameplay_controls_visible,
@@ -50,6 +53,8 @@ func set_gameplay_controls_visible(enabled: bool) -> void:
 		carrot_marker.visible = enabled
 	if is_instance_valid(input_prompt) and not enabled:
 		input_prompt.hide_prompt()
+	if is_instance_valid(strike_indicator):
+		strike_indicator.visible = enabled
 	queue_redraw()
 
 
@@ -69,8 +74,33 @@ func show_completion_card() -> void:
 	completion_card.show_card()
 
 
+func show_failure_card() -> void:
+	set_gameplay_controls_visible(false)
+	completion_card.show_failure_card()
+
+
 func hide_completion_card() -> void:
 	completion_card.hide_card()
+
+
+func set_strikes(value: int) -> void:
+	if is_instance_valid(strike_indicator):
+		strike_indicator.set_strikes(value)
+
+
+func set_aim_zone_state(next_state: int) -> void:
+	aim_zone_state = next_state
+	if is_instance_valid(aim_reticle):
+		aim_reticle.set_zone_state(next_state)
+
+
+func set_reticle_state(next_state: int) -> void:
+	set_aim_zone_state(next_state)
+
+
+func play_success_burst() -> void:
+	if is_instance_valid(aim_reticle):
+		aim_reticle.play_success_burst()
 
 
 func _wire_input_controller() -> void:

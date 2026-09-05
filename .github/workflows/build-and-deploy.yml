@@ -32,11 +32,20 @@ jobs:
       - name: Import assets
         run: godot --headless --editor --quit --import .
 
-      - name: Build HTML5
+      - name: Build optimized HTML5
         run: |
+          rm -rf build/web
           mkdir -v -p build/web
           EXPORT_DIR="$(readlink -f build)"
           godot --headless --verbose --export-release "Web" "$EXPORT_DIR/web/index.html"
+
+      - name: Verify optimized Web bundle
+        run: |
+          test -s build/web/index.wasm
+          test -s build/web/index.pck
+          PCK_SIZE="$(stat -c '%s' build/web/index.pck)"
+          echo "Web PCK size: ${PCK_SIZE} bytes"
+          test "$PCK_SIZE" -lt 3000000
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

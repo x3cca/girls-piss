@@ -9,6 +9,7 @@ class_name InputController
 
 signal aim_target_changed(position: Vector2)
 signal touch_target_changed(position: Vector2, active: bool)
+signal stream_hold_changed(active: bool)
 signal input_detected(source: int)
 signal input_source_changed(source: int)
 
@@ -275,6 +276,12 @@ func is_pissing() -> bool:
 	return _has_started_pissing if force_pissing_after_start else _pissing
 
 
+func is_stream_input_held() -> bool:
+	## Raw hold state, before force_pissing_after_start is applied. Gameplay
+	## contact rules use this boundary instead of the persistent visual stream.
+	return _pissing
+
+
 func is_touch_active() -> bool:
 	return _touch_index != -1
 
@@ -290,7 +297,7 @@ func reset_input() -> void:
 	_mouse_pressed = false
 	_clear_controller_state()
 	_has_started_pissing = false
-	_pissing = false
+	_set_stream_input_held(false)
 	_move_left_pressed = false
 	_move_right_pressed = false
 	_move_up_pressed = false
@@ -315,7 +322,7 @@ func set_gameplay_input_enabled(enabled: bool) -> void:
 		_move_right_pressed = false
 		_move_up_pressed = false
 		_move_down_pressed = false
-		_pissing = false
+		_set_stream_input_held(false)
 		_has_started_pissing = false
 		touch_target_changed.emit(Vector2.ZERO, false)
 
@@ -364,19 +371,28 @@ func _update_touch_target(position: Vector2) -> void:
 
 
 func _update_pissing() -> void:
-	_pissing = (
+	var next_pissing := (
 			_space_pressed
 			or _mouse_pressed
 			or _touch_index != -1
 			or _controller_trigger_pressed
 	)
-	if _pissing:
-		_has_started_pissing = true
+	_set_stream_input_held(next_pissing)
 
 
 func _begin_pissing() -> void:
-	_pissing = true
-	_has_started_pissing = true
+	_set_stream_input_held(true)
+
+
+func _set_stream_input_held(held: bool) -> void:
+	if _pissing == held:
+		if held:
+			_has_started_pissing = true
+		return
+	_pissing = held
+	if held:
+		_has_started_pissing = true
+	stream_hold_changed.emit(held)
 
 
 func _claim_input_source(source: int) -> void:
