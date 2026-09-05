@@ -9,6 +9,7 @@ signal pulse_triggered(amplitude: float)
 const COLLISION_TARGET_HIT := "target_hit"
 const COLLISION_IN_BOUNDS_MISS := "in_bounds_miss"
 const COLLISION_OUT_OF_BOUNDS_MISS := "out_of_bounds_miss"
+const STRIKE_FLASH_DURATION := 0.24
 const TARGET_HIT := COLLISION_TARGET_HIT
 const IN_BOUNDS_MISS := COLLISION_IN_BOUNDS_MISS
 const OUT_OF_BOUNDS_MISS := COLLISION_OUT_OF_BOUNDS_MISS
@@ -72,6 +73,7 @@ var _parcels: Array[Dictionary] = []
 var _double_parcels: Array[Dictionary] = []
 var _emission_accumulator := 0.0
 var _current_points := PackedVector2Array()
+var _current_point_depths := PackedFloat32Array()
 var _stream_target_position := Vector2.ZERO
 var _stream_target_velocity := Vector2.ZERO
 var _stream_target_initialized := false
@@ -85,11 +87,14 @@ var _bloom_spin_velocity := 0.0
 var _bloom_offset := Vector2.ZERO
 var _double_stream_active := false
 var _current_point_ages := PackedFloat32Array()
+var _double_point_depths := PackedFloat32Array()
 var _double_point_ages := PackedFloat32Array()
 var _preview_beat_elapsed := 0.0
 var _pulses: Array[Dictionary] = []
 var _depth_band_nodes: Dictionary = {}
 var _depth_band_resources: Dictionary = {}
+var _stream_hold_was_active := false
+var _strike_flash_remaining := 0.0
 
 
 func _ready() -> void:
@@ -160,15 +165,21 @@ func get_depth_band_at(world_position: Vector2) -> int:
 func _process(delta: float) -> void:
 	if input_controller == null:
 		return
+	_advance_strike_flash(delta)
 	if not _live_enabled:
 		# Replay owns the only visible path after tracing completes. Keep the
 		# physics chain untouched until the level is reset, but do not advance or
 		# render it while the replay is on screen.
 		drawing_point_updated.emit(Vector2.ZERO, false)
 		return
-	var is_pissing := input_controller.is_pissing()
+	# The input controller keeps its public visual-start state persistent for
+	# compatibility, but gameplay streams are hold-based. A release must clear
+	# the old parcel chain so the next hold gets a fresh endpoint path.
+	var is_pissing := input_controller.is_stream_input_held()
 	var target := input_controller.get_target_position()
 	_update_aim_bloom(target, delta)
+	if is_pissing and not _stream_hold_was_active:
+		_start_stream_hold(target)
 	if not _stream_target_initialized:
 		_stream_target_position = target
 		_stream_target_initialized = true
@@ -178,35 +189,43 @@ func _process(delta: float) -> void:
 	if direction == Vector2.ZERO:
 		direction = Vector2.UP
 	if is_pissing:
+		_stream_hold_was_active = true
 		update_parcels(delta)
 		_update_preview_pulses(delta)
 		emit_parcels(_stream_target_position, delta)
 	else:
 		# Releasing Space/a finger closes the stream immediately. A later press
-		# starts a fresh visible jet while the crosshair keeps its position.
-		_parcels.clear()
-		_double_parcels.clear()
-		_emission_accumulator = 0.0
-		_preview_beat_elapsed = 0.0
-		_pulses.clear()
+		# starts a fresh visible jet while the crosshair keeps its position. Reset
+		# the inertial target too; otherwise the next endpoint inherits the prior
+		# hold's momentum and can skip a checkpoint.
+		if _stream_hold_was_active:
+			reset_stream()
+		_stream_hold_was_active = false
 	if not _double_stream_active:
 		_double_parcels.clear()
 	var current_samples := _build_parcel_samples(_parcels)
 	_current_points = _positions_from_samples(current_samples)
+	_current_point_depths = _depths_from_samples(current_samples)
 	_current_point_ages = _ages_from_samples(current_samples)
 	var double_samples := _build_parcel_samples(_double_parcels)
 	var double_points := _positions_from_samples(double_samples)
+	_double_point_depths = _depths_from_samples(double_samples)
 	_double_point_ages = _ages_from_samples(double_samples)
 	if _current_points.size() >= 2:
 		_current_stream_direction = _tangent_for_points(_current_points, 0, direction)
 	elif is_pissing:
 		_current_stream_direction = direction
 	_impact.spread = _impact_spread()
-	var hit := _truncate_at_target(_current_points, _current_point_ages)
+	var hit := _truncate_at_target(
+		_current_points,
+		_current_point_ages,
+		_current_point_depths,
+	)
 	var hit_target: bool = hit.get("classification", "") == COLLISION_TARGET_HIT
 	_impact.emitting = false
 	if is_pissing and not hit.is_empty():
 		_current_points = hit.points
+		_current_point_depths = hit.depths
 		_current_point_ages = hit.ages
 		if hit_target:
 			_emit_hit(hit, delta)
@@ -222,6 +241,7 @@ func _process(delta: float) -> void:
 		float(profile["ribbon_alpha"]) if is_pissing else 0.0,
 		hit_target,
 		_current_point_ages,
+		_current_point_depths,
 	)
 	_update_double_stream_meshes(
 		double_points,
@@ -229,6 +249,7 @@ func _process(delta: float) -> void:
 		float(profile["ribbon_alpha"]) if is_pissing else 0.0,
 		hit_target,
 		_double_point_ages,
+		_double_point_depths,
 	)
 	var droplet_index := mini(8, _current_points.size() - 2)
 	_droplets.position = _current_points[droplet_index] if droplet_index >= 0 else source_position
@@ -260,6 +281,21 @@ func is_live_enabled() -> bool:
 
 func get_stream_target_position() -> Vector2:
 	return _stream_target_position
+
+
+func get_current_stream_endpoint() -> Vector2:
+	if _current_points.size() < 2:
+		return Vector2.ZERO
+	return _current_points[_current_points.size() - 1]
+
+
+func has_active_stream_endpoint() -> bool:
+	return (
+			_live_enabled
+			and input_controller != null
+			and input_controller.is_stream_input_held()
+			and _current_points.size() >= 2
+	)
 
 
 func get_stream_target_speed() -> float:
@@ -304,11 +340,16 @@ func trigger_pulse(amplitude := 1.0) -> void:
 
 
 func reset_stream() -> void:
+	_stream_hold_was_active = false
+	_strike_flash_remaining = 0.0
+	modulate = Color.WHITE
 	_parcels.clear()
 	_double_parcels.clear()
 	_emission_accumulator = 0.0
 	_current_points = PackedVector2Array()
+	_current_point_depths = PackedFloat32Array()
 	_current_point_ages = PackedFloat32Array()
+	_double_point_depths = PackedFloat32Array()
 	_double_point_ages = PackedFloat32Array()
 	_preview_beat_elapsed = 0.0
 	_pulses.clear()
@@ -326,6 +367,61 @@ func reset_stream() -> void:
 	_impact.emitting = false
 	_droplets.emitting = false
 	queue_redraw()
+
+
+func _start_stream_hold(target: Vector2) -> void:
+	# The first parcel of a hold must begin at the aim position that caused the
+	# hold. Do not carry idle cursor easing or aim bloom into the first shot.
+	_stream_target_position = target
+	_stream_target_velocity = Vector2.ZERO
+	_stream_target_initialized = true
+	_aim_bloom_radius = 0.0
+	_bloom_angle = 0.0
+	_bloom_spin_velocity = 0.0
+	_bloom_offset = Vector2.ZERO
+	_double_stream_active = false
+	_last_input_target = target
+	_input_target_initialized = true
+
+
+func play_strike_flash() -> void:
+	_strike_flash_remaining = STRIKE_FLASH_DURATION
+	_apply_strike_flash()
+
+
+func is_strike_flash_active() -> bool:
+	return _strike_flash_remaining > 0.0
+
+
+func _advance_strike_flash(delta: float) -> void:
+	if _strike_flash_remaining <= 0.0:
+		modulate = Color.WHITE
+		return
+	_strike_flash_remaining = move_toward(
+		_strike_flash_remaining,
+		0.0,
+		maxf(delta, 0.0),
+	)
+	_apply_strike_flash()
+	if _strike_flash_remaining <= 0.0:
+		modulate = Color.WHITE
+
+
+func _apply_strike_flash() -> void:
+	var progress := clampf(
+		_strike_flash_remaining / STRIKE_FLASH_DURATION,
+		0.0,
+		1.0,
+	)
+	var envelope := sin(progress * PI)
+	# CanvasItem modulation is multiplicative, so values above 1 briefly
+	# brighten every ribbon and depth-band copy of the stream.
+	modulate = Color(
+		1.0 + 0.8 * envelope,
+		1.0 + 0.35 * envelope,
+		1.0 + 0.08 * envelope,
+		1.0,
+	)
 
 
 func _set_live_visuals(enabled: bool) -> void:
@@ -363,6 +459,7 @@ func _advance_parcel_chain(chain: Array[Dictionary], delta: float) -> void:
 		parcel["position"] = parcel["position"] + velocity * delta + gravity * (delta * delta * 0.5)
 		parcel["velocity"] = velocity + gravity * delta
 		parcel["age"] = float(parcel["age"]) + delta
+		parcel["depth"] = _parcel_depth(parcel)
 
 
 func parcel_at(index: int) -> Dictionary:
@@ -432,6 +529,7 @@ func _emit_parcel(
 			"bloom_offset": bloom_offset,
 			"launch_depth": launch_depth,
 			"target_depth": target_depth,
+			"depth": launch_depth,
 			"flight_time": travel_time,
 			"age": 0.0,
 			# A parcel must live through the calculated flight, but it should be
@@ -636,16 +734,26 @@ func _set_depth_base_visibility() -> void:
 	_double_highlight_mesh.visible = _live_enabled and _double_stream_active and not use_bands
 
 
-func _depth_band_points(points: PackedVector2Array) -> Array:
+func _depth_band_points(
+		points: PackedVector2Array,
+		point_depths := PackedFloat32Array(),
+) -> Dictionary:
 	var band_points: Array = []
-	var band_ages: Array = []
+	var band_depths: Array = []
 	for band in depth_band_count:
 		band_points.append(PackedVector2Array())
-		band_ages.append(PackedFloat32Array())
+		band_depths.append(PackedFloat32Array())
 	var previous_band := -1
 	var previous_point := Vector2.ZERO
+	var previous_depth := 0.0
 	for index in points.size():
-		var band := get_depth_band_at(points[index])
+		var point_depth := -1.0
+		if index < point_depths.size():
+			point_depth = point_depths[index]
+		var sample := sample_stream_position(points[index])
+		if point_depth < 0.0:
+			point_depth = float(sample.get("depth", 0.0))
+		var band := _get_render_depth_band(points[index], point_depth)
 		if band < 0:
 			previous_band = -1
 			continue
@@ -655,16 +763,37 @@ func _depth_band_points(points: PackedVector2Array) -> Array:
 			var old_points: PackedVector2Array = band_points[previous_band]
 			old_points.append(points[index])
 			band_points[previous_band] = old_points
+			var old_depths: PackedFloat32Array = band_depths[previous_band]
+			old_depths.append(point_depth)
+			band_depths[previous_band] = old_depths
 			var new_points: PackedVector2Array = band_points[band]
 			new_points.append(previous_point)
 			band_points[band] = new_points
+			var new_depths: PackedFloat32Array = band_depths[band]
+			new_depths.append(previous_depth)
+			band_depths[band] = new_depths
 		var current_points: PackedVector2Array = band_points[band]
 		if current_points.is_empty() or current_points[current_points.size() - 1] != points[index]:
 			current_points.append(points[index])
 		band_points[band] = current_points
+		var current_depths: PackedFloat32Array = band_depths[band]
+		if current_depths.is_empty() or current_points.size() > current_depths.size():
+			current_depths.append(point_depth)
+		band_depths[band] = current_depths
 		previous_band = band
 		previous_point = points[index]
-	return band_points
+		previous_depth = point_depth
+	return {"points": band_points, "depths": band_depths}
+
+
+func _get_render_depth_band(world_position: Vector2, committed_depth := -1.0) -> int:
+	if depth_map == null:
+		return 0
+	var sample := sample_stream_position(world_position)
+	if not bool(sample.get("valid", false)):
+		return -1
+	var depth := float(sample.get("depth", 0.0)) if committed_depth < 0.0 else committed_depth
+	return depth_map.get_depth_band(depth, depth_band_count)
 
 
 func _update_depth_banded_ribbons(
@@ -674,14 +803,17 @@ func _update_depth_banded_ribbons(
 		ribbon_alpha: float,
 		hit_target: bool,
 		point_ages: PackedFloat32Array,
+		point_depths := PackedFloat32Array(),
 ) -> void:
 	var style_specs := [
 		{"key": "%sedge" % prefix, "width": 36.0, "offset": 0.0},
 		{"key": "%sbody" % prefix, "width": 32.0, "offset": 0.0},
 		{"key": "%shighlight" % prefix, "width": 8.0, "offset": 1.7},
 	]
-	var split_points := _depth_band_points(points)
-	var render_metrics := _depth_render_metrics(points, depth_length)
+	var split_data := _depth_band_points(points, point_depths)
+	var split_points: Array = split_data["points"]
+	var split_depths: Array = split_data["depths"]
+	var render_metrics := _depth_render_metrics(points, depth_length, point_depths)
 	for spec in style_specs:
 		var key: String = spec["key"]
 		if not _depth_band_resources.has(key):
@@ -696,6 +828,7 @@ func _update_depth_banded_ribbons(
 			band_node.self_modulate = base_node.self_modulate
 			band_mesh.clear_surfaces()
 			var band_path: PackedVector2Array = split_points[band]
+			var band_path_depths: PackedFloat32Array = split_depths[band]
 			if band_path.size() < 2:
 				band_node.visible = false
 				continue
@@ -719,6 +852,7 @@ func _update_depth_banded_ribbons(
 				band_distance_offset,
 				float(render_metrics["depth_origin"]),
 				float(render_metrics["effective_length"]),
+				band_path_depths,
 			)
 			band_node.z_index = depth_map.get_render_z_index(
 				float(band) / float(maxi(depth_band_count - 1, 1)),
@@ -764,7 +898,7 @@ func _build_parcel_centerline(chain: Array[Dictionary]) -> PackedVector2Array:
 func _build_parcel_samples(chain: Array[Dictionary]) -> Array[Dictionary]:
 	var samples: Array[Dictionary] = []
 	if chain.is_empty():
-		samples.append({ "position": source_position, "age": 0.0 })
+		samples.append({ "position": source_position, "age": 0.0, "depth": 0.0 })
 		return samples
 	var point_count := mini(ribbon_points, chain.size())
 	for i in point_count:
@@ -779,9 +913,20 @@ func _build_parcel_samples(chain: Array[Dictionary]) -> Array[Dictionary]:
 			{
 				"position": parcel["position"],
 				"age": float(parcel.get("age", 0.0)),
+				"depth": _parcel_depth(parcel),
 			},
 		)
 	return samples
+
+
+func _parcel_depth(parcel: Dictionary) -> float:
+	if not parcel.has("launch_depth") and not parcel.has("target_depth"):
+		return clampf(float(parcel.get("depth", 0.0)), 0.0, 1.0)
+	var launch_depth := float(parcel.get("launch_depth", 0.0))
+	var target_depth := float(parcel.get("target_depth", launch_depth))
+	var flight_time := maxf(float(parcel.get("flight_time", parcel_lifetime)), 0.001)
+	var progress := clampf(float(parcel.get("age", 0.0)) / flight_time, 0.0, 1.0)
+	return clampf(lerpf(launch_depth, target_depth, progress), 0.0, 1.0)
 
 
 func _positions_from_samples(samples: Array[Dictionary]) -> PackedVector2Array:
@@ -796,6 +941,13 @@ func _ages_from_samples(samples: Array[Dictionary]) -> PackedFloat32Array:
 	for sample in samples:
 		ages.append(float(sample["age"]))
 	return ages
+
+
+func _depths_from_samples(samples: Array[Dictionary]) -> PackedFloat32Array:
+	var depths := PackedFloat32Array()
+	for sample in samples:
+		depths.append(clampf(float(sample.get("depth", 0.0)), 0.0, 1.0))
+	return depths
 
 
 func _advance_stream_target(target: Vector2, delta: float) -> void:
@@ -897,13 +1049,25 @@ func _sample_depth_for_stream_effects(world_position: Vector2) -> Dictionary:
 	return sample
 
 
-func _depth_render_metrics(points: PackedVector2Array, depth_length: float) -> Dictionary:
+func _depth_render_metrics(
+		points: PackedVector2Array,
+		depth_length: float,
+		point_depths := PackedFloat32Array(),
+) -> Dictionary:
 	var origin := 0.0
 	var effective_length := maxf(depth_length, 1.0)
 	if depth_map == null or points.is_empty():
 		return {
 			"depth_origin": origin,
 			"effective_length": effective_length,
+		}
+	if point_depths.size() >= points.size():
+		origin = clampf(float(point_depths[0]), 0.0, 1.0)
+		var target_depth := clampf(float(point_depths[points.size() - 1]), 0.0, 1.0)
+		effective_length += absf(target_depth - origin) * maxf(depth_distance_scale, 0.0)
+		return {
+			"depth_origin": origin,
+			"effective_length": maxf(effective_length, 1.0),
 		}
 	var origin_sample := _sample_depth_for_stream_effects(points[0])
 	var target_sample := _sample_depth_for_stream_effects(points[points.size() - 1])
@@ -968,6 +1132,7 @@ func get_parcel_flight_time(parcel: Dictionary) -> float:
 func _truncate_at_target(
 		points: PackedVector2Array,
 		point_ages := PackedFloat32Array(),
+		point_depths := PackedFloat32Array(),
 ) -> Dictionary:
 	if points.size() < 2:
 		return { }
@@ -987,10 +1152,16 @@ func _truncate_at_target(
 			continue
 		var clipped := PackedVector2Array()
 		var clipped_ages := PackedFloat32Array()
+		var clipped_depths := PackedFloat32Array()
 		for j in range(i + 1):
 			clipped.append(points[j])
 			clipped_ages.append(
 				point_ages[j] if j < point_ages.size() else 0.0,
+			)
+			clipped_depths.append(
+				point_depths[j]
+				if j < point_depths.size()
+				else float(sample_stream_position(points[j]).get("depth", 0.0)),
 			)
 		var segment_length := points[i].distance_to(points[i + 1])
 		var segment_fraction := 0.0
@@ -998,12 +1169,24 @@ func _truncate_at_target(
 			segment_fraction = points[i].distance_to(result.position) / segment_length
 		var start_age := point_ages[i] if i < point_ages.size() else 0.0
 		var end_age := point_ages[i + 1] if i + 1 < point_ages.size() else start_age
+		var start_depth := (
+			point_depths[i]
+			if i < point_depths.size()
+			else float(sample_stream_position(points[i]).get("depth", 0.0))
+		)
+		var end_depth := (
+			point_depths[i + 1]
+			if i + 1 < point_depths.size()
+			else start_depth
+		)
 		clipped.append(result.position)
 		clipped_ages.append(lerpf(start_age, end_age, clampf(segment_fraction, 0.0, 1.0)))
+		clipped_depths.append(lerpf(start_depth, end_depth, clampf(segment_fraction, 0.0, 1.0)))
 		var classification := classify_stream_result(result.position, target)
 		return {
 			"points": clipped,
 			"ages": clipped_ages,
+			"depths": clipped_depths,
 			"target": target,
 			"position": result.position,
 			"normal": result.normal,
@@ -1044,6 +1227,7 @@ func _update_double_stream_meshes(
 		ribbon_alpha: float,
 		hit_target: bool,
 		point_ages: PackedFloat32Array,
+		point_depths := PackedFloat32Array(),
 ) -> void:
 	var should_render := (
 			_live_enabled
@@ -1061,9 +1245,9 @@ func _update_double_stream_meshes(
 		_hide_depth_band_group("double_")
 		return
 	if depth_map != null:
-		_set_ribbon_mesh(_double_edge_mesh_resource, points, 36.0, 0.0, depth_length, ribbon_alpha, hit_target, point_ages)
-		_set_ribbon_mesh(_double_body_mesh_resource, points, 32.0, 0.0, depth_length, ribbon_alpha, hit_target, point_ages)
-		_set_ribbon_mesh(_double_highlight_mesh_resource, points, 8.0, 1.7, depth_length, ribbon_alpha, hit_target, point_ages)
+		_set_ribbon_mesh(_double_edge_mesh_resource, points, 36.0, 0.0, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
+		_set_ribbon_mesh(_double_body_mesh_resource, points, 32.0, 0.0, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
+		_set_ribbon_mesh(_double_highlight_mesh_resource, points, 8.0, 1.7, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
 		_update_depth_banded_ribbons(
 			"double_",
 			points,
@@ -1071,6 +1255,7 @@ func _update_double_stream_meshes(
 			ribbon_alpha,
 			hit_target,
 			point_ages,
+			point_depths,
 		)
 		return
 
@@ -1112,11 +1297,12 @@ func update_ribbon_meshes(
 		ribbon_alpha: float,
 		hit_target: bool,
 		point_ages := PackedFloat32Array(),
+		point_depths := PackedFloat32Array(),
 ) -> void:
 	if depth_map != null:
-		_set_ribbon_mesh(_edge_mesh_resource, points, 36.0, 0.0, depth_length, ribbon_alpha, hit_target, point_ages)
-		_set_ribbon_mesh(_body_mesh_resource, points, 32.0, 0.0, depth_length, ribbon_alpha, hit_target, point_ages)
-		_set_ribbon_mesh(_highlight_mesh_resource, points, 8.0, 1.7, depth_length, ribbon_alpha, hit_target, point_ages)
+		_set_ribbon_mesh(_edge_mesh_resource, points, 36.0, 0.0, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
+		_set_ribbon_mesh(_body_mesh_resource, points, 32.0, 0.0, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
+		_set_ribbon_mesh(_highlight_mesh_resource, points, 8.0, 1.7, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
 		_update_depth_banded_ribbons(
 			"",
 			points,
@@ -1124,6 +1310,7 @@ func update_ribbon_meshes(
 			ribbon_alpha,
 			hit_target,
 			point_ages,
+			point_depths,
 		)
 		return
 	_set_ribbon_mesh(
@@ -1170,6 +1357,7 @@ func _set_ribbon_mesh(
 		global_distance_offset := 0.0,
 		depth_origin := -1.0,
 		effective_depth_length := -1.0,
+		point_depths := PackedFloat32Array(),
 ) -> void:
 	mesh.clear_surfaces()
 	if points.size() < 2:
@@ -1184,7 +1372,7 @@ func _set_ribbon_mesh(
 	var render_depth_origin := depth_origin
 	var render_length := effective_depth_length
 	if depth_map != null:
-		var render_metrics := _depth_render_metrics(points, depth_length)
+		var render_metrics := _depth_render_metrics(points, depth_length, point_depths)
 		if render_depth_origin < 0.0:
 			render_depth_origin = float(render_metrics["depth_origin"])
 		if render_length <= 0.0:
@@ -1197,8 +1385,12 @@ func _set_ribbon_mesh(
 		var normal := Vector2(-tangent.y, tangent.x)
 		var effective_distance := distance + global_distance_offset
 		if depth_map != null:
-			var point_sample := _sample_depth_for_stream_effects(points[i])
-			var point_depth := float(point_sample.get("depth", render_depth_origin))
+			var point_depth := render_depth_origin
+			if i < point_depths.size():
+				point_depth = point_depths[i]
+			else:
+				var point_sample := _sample_depth_for_stream_effects(points[i])
+				point_depth = float(point_sample.get("depth", render_depth_origin))
 			effective_distance += absf(point_depth - render_depth_origin) * maxf(depth_distance_scale, 0.0)
 		var depth_fraction := clampf(
 			effective_distance / maxf(render_length if depth_map != null else depth_length, 1.0),

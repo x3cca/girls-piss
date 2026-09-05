@@ -62,6 +62,37 @@ func test_stream_target_eases_when_crosshair_moves() -> void:
 	assert_true(eased_target.distance_to(second_target) < first_target.distance_to(second_target))
 
 
+func test_stream_starts_at_the_aim_position_when_hold_begins() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+	var controller := InputController.new()
+	add_child_autofree(controller)
+	controller.set_process(false)
+	stream.set_process(false)
+	stream.input_controller = controller
+	stream.source_position = Vector2(360.0, 1328.0)
+	var idle_target := Vector2(240.0, 500.0)
+	var start_target := Vector2(600.0, 260.0)
+	controller.set_target_position(idle_target)
+	stream.process_frame(0.1)
+	controller.set_target_position(start_target)
+	# Let the idle follower lag behind the new aim, reproducing the inaccurate
+	# first-shot condition without starting the stream yet.
+	stream.process_frame(0.1)
+	assert_true(stream.get_stream_target_position() != start_target)
+
+	var space_down := InputEventKey.new()
+	space_down.physical_keycode = KEY_SPACE
+	space_down.pressed = true
+	controller.handle_input_event(space_down)
+	stream.process_frame(1.0 / 60.0)
+
+	assert_eq(stream.get_stream_target_position(), start_target)
+	assert_eq(stream.get_aim_bloom_radius(), 0.0)
+	assert_eq(stream.get_aim_bloom_offset(), Vector2.ZERO)
+	assert_eq(stream.parcel_at(0)["launch_target"], start_target)
+
+
 func test_stream_follow_has_a_small_overshoot_and_settles() -> void:
 	var stream := STREAM_SCENE.instantiate() as LiquidStream
 	add_child_autofree(stream)

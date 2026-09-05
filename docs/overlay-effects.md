@@ -35,3 +35,7 @@ $ScreenOverlay.start_timeline()
 
 Effects can also be started immediately with
 `$ScreenOverlay.play_effect(effect_scene)`.
+
+The gameplay layer also exposes `play_strike_feedback()` and
+`play_success_feedback()`. These use the reusable procedural red and green
+radial vignette scenes for bad-zone strikes and checkpoint completions.

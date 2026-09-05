@@ -1,11 +1,16 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/touch_reticle.gd" id="1_touch_reticle"]
-[ext_resource type="Texture2D" path="res://assets/art/aimer_placeholder.png" id="2_texture"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/Crosshair2.png" id="2_texture"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/Crosshair1.png" id="4_negative"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/Crosshair3.png" id="5_success"]
 [ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="3_boil"]
 
 [node name="TouchReticle" type="Node2D"]
 script = ExtResource("1_touch_reticle")
+neutral_texture = ExtResource("2_texture")
+negative_texture = ExtResource("4_negative")
+success_texture = ExtResource("5_success")
 
 [node name="Sprite" type="Sprite2D" parent="."]
 texture_filter = 1

@@ -2,6 +2,9 @@ extends CanvasLayer
 
 class_name ScreenOverlay
 
+const STRIKE_VIGNETTE_SCENE := preload("res://scenes/strike_vignette.tscn")
+const SUCCESS_VIGNETTE_SCENE := preload("res://scenes/success_vignette.tscn")
+
 ## Timeline-driven layer for full-screen animated sprite effects.
 ##
 ## Add [ScreenOverlayCue] resources to [member timeline_cues] in the inspector,
@@ -86,6 +89,14 @@ func play_effect(effect_scene: PackedScene, cue: ScreenOverlayCue = null) -> Scr
 	effect_started.emit(effect, cue)
 	effect.play()
 	return effect
+
+
+func play_strike_feedback() -> ScreenOverlayEffect:
+	return play_effect(STRIKE_VIGNETTE_SCENE)
+
+
+func play_success_feedback() -> ScreenOverlayEffect:
+	return play_effect(SUCCESS_VIGNETTE_SCENE)
 
 
 func stop_all_effects() -> void:

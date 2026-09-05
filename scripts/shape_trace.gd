@@ -9,6 +9,7 @@ const TRACE_TARGET_SCENE := preload("res://scenes/trace_target.tscn")
 ## remains useful when the portrait viewport is resized.
 
 signal trace_completed
+signal checkpoint_completed(index: int)
 
 @export var normalized_points := PackedVector2Array(
 	[
@@ -30,6 +31,7 @@ signal trace_completed
 @export_range(0.0, 1.0, 0.05) var look_ahead_opacity := 0.25
 @export_range(0.1, 1.0, 0.05) var look_ahead_opacity_falloff := 0.5
 @export_range(0.01, 0.25, 0.005) var checkpoint_radius_fraction := 0.06
+@export_range(0.01, 2.0, 0.01) var checkpoint_contact_duration := 0.35
 @export var outline_color := Color(0.83, 0.78, 0.38, 0.24)
 @export var completed_color := Color(1.0, 0.91, 0.35, 0.92)
 @export var checkpoint_color := Color(1.0, 0.93, 0.54, 0.34)
@@ -49,6 +51,8 @@ var _has_previous_endpoint := false
 var _previous_endpoint := Vector2.ZERO
 var _completion_emitted := false
 var _targets: Array[TraceTarget] = []
+var _checkpoint_contact_elapsed := 0.0
+var _contact_checkpoint := -1
 
 
 func _ready() -> void:
@@ -78,21 +82,36 @@ func reset_trace() -> void:
 	_has_previous_endpoint = false
 	_previous_endpoint = Vector2.ZERO
 	_completion_emitted = false
+	_reset_checkpoint_contact()
 	for target in _targets:
 		target.reset_target()
 	_update_target_visibility()
 	queue_redraw()
 
 
-func observe_drawing_point(position: Vector2, active: bool) -> void:
+func observe_drawing_point(
+		position: Vector2,
+		active: bool,
+		contact_delta := -1.0,
+) -> void:
 	## Observe the stream endpoint without requiring the endpoint to land exactly
-	## on a checkpoint. Inactive frames intentionally break the segment so a new
-	## stream cannot jump across the shape after a pause.
+	## on a checkpoint. Gameplay passes a non-negative delta and requires sustained
+	## contact. A negative delta retains the original immediate observation mode for
+	## tools and older direct callers that do not simulate time.
 	_sync_target_sprites()
 	if not active or normalized_points.is_empty() or completed_steps >= total_steps:
 		_has_previous_endpoint = false
+		_reset_checkpoint_contact()
 		return
 
+	if contact_delta >= 0.0:
+		_observe_sustained_contact(position, contact_delta)
+		_previous_endpoint = position
+		_has_previous_endpoint = true
+		queue_redraw()
+		return
+
+	# Legacy immediate mode also keeps segment crossing useful for editor tools.
 	var checkpoint_position := get_checkpoint_position(completed_steps)
 	var radius := get_checkpoint_radius()
 	var reached := position.distance_to(checkpoint_position) <= radius
@@ -104,17 +123,62 @@ func observe_drawing_point(position: Vector2, active: bool) -> void:
 			radius,
 		)
 	if reached:
-		if completed_steps < _targets.size():
-			_targets[completed_steps].trigger_hit(_get_target_center())
-		completed_steps += 1
-		if completed_steps >= total_steps and not _completion_emitted:
-			_completion_emitted = true
-			trace_completed.emit()
-		_update_target_visibility()
+		complete_current_checkpoint()
 
 	_previous_endpoint = position
 	_has_previous_endpoint = true
 	queue_redraw()
+
+
+func is_point_in_current_checkpoint(position: Vector2) -> bool:
+	if normalized_points.is_empty() or completed_steps >= total_steps:
+		return false
+	return position.distance_to(get_checkpoint_position(completed_steps)) <= get_checkpoint_radius()
+
+
+func get_checkpoint_contact_elapsed() -> float:
+	return _checkpoint_contact_elapsed
+
+
+func get_checkpoint_contact_progress() -> float:
+	return clampf(
+		_checkpoint_contact_elapsed / maxf(checkpoint_contact_duration, 0.001),
+		0.0,
+		1.0,
+	)
+
+
+func complete_current_checkpoint() -> bool:
+	if normalized_points.is_empty() or completed_steps >= total_steps:
+		return false
+	var completed_index := completed_steps
+	if completed_index < _targets.size():
+		_targets[completed_index].trigger_hit(_get_target_center())
+	completed_steps += 1
+	_reset_checkpoint_contact()
+	checkpoint_completed.emit(completed_index)
+	if completed_steps >= total_steps and not _completion_emitted:
+		_completion_emitted = true
+		trace_completed.emit()
+	_update_target_visibility()
+	return true
+
+
+func _observe_sustained_contact(position: Vector2, delta: float) -> void:
+	if not is_point_in_current_checkpoint(position):
+		_reset_checkpoint_contact()
+		return
+	if _contact_checkpoint != completed_steps:
+		_contact_checkpoint = completed_steps
+		_checkpoint_contact_elapsed = 0.0
+	_checkpoint_contact_elapsed += maxf(delta, 0.0)
+	if _checkpoint_contact_elapsed >= maxf(checkpoint_contact_duration, 0.0):
+		complete_current_checkpoint()
+
+
+func _reset_checkpoint_contact() -> void:
+	_checkpoint_contact_elapsed = 0.0
+	_contact_checkpoint = -1
 
 
 func get_checkpoint_position(index: int) -> Vector2:
@@ -187,19 +251,6 @@ func _draw() -> void:
 					completed_width,
 					true,
 				)
-
-	var font := ThemeDB.fallback_font
-	var viewport_size := get_viewport().get_visible_rect().size
-	draw_string(
-		font,
-		Vector2(0.0, viewport_size.y * 0.16),
-		"STEP %d / %d" % [completed_steps, point_count],
-		HORIZONTAL_ALIGNMENT_CENTER,
-		viewport_size.x,
-		20,
-		completed_color if completed_steps > 0 else outline_color.lightened(0.25),
-	)
-
 
 func _sync_target_sprites() -> void:
 	if _targets.size() == normalized_points.size():

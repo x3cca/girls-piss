@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/input_prompt.tscn" id="6_prompt"]
 [ext_resource type="Texture2D" path="res://assets/art/carrot_aim_placeholder.png" id="6_carrot"]
 [ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="7_boil"]
+[ext_resource type="Script" path="res://scripts/strike_indicator.gd" id="8_strikes"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_button"]
 bg_color = Color(0.945, 0.827, 0.329, 1)
@@ -54,6 +55,15 @@ expand_mode = 1
 stretch_mode = 2
 
 [node name="InputPrompt" parent="." instance=ExtResource("6_prompt")]
+
+[node name="StrikeIndicator" type="Control" parent="."]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 112.0
+offset_bottom = 48.0
+mouse_filter = 2
+script = ExtResource("8_strikes")
 
 [node name="CompletionCard" type="Control" parent="."]
 layout_mode = 1
