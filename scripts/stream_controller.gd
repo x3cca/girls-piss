@@ -4,6 +4,7 @@ class_name LiquidStream
 
 signal wet_target_hit(target: WettableTarget, amount: float, position: Vector2, normal: Vector2)
 signal drawing_point_updated(position: Vector2, active: bool)
+signal pulse_triggered(amplitude: float)
 
 @export var source_position := Vector2(360.0, 1320.0)
 @export var stream_speed := 920.0
@@ -31,6 +32,10 @@ signal drawing_point_updated(position: Vector2, active: bool)
 @export var distal_fade_start := 0.78
 @export_range(0.1, 1.0, 0.01) var distal_end_alpha := 0.5
 @export var normal_emission_rate := 60.0
+@export var pulse_preview_enabled := true
+@export_range(30.0, 240.0, 1.0) var pulse_preview_bpm := 120.0
+@export_range(1.0, 3.0, 0.01) var pulse_width_multiplier := 2.0
+@export_range(0.01, 0.2, 0.005) var pulse_width_seconds := 0.06
 
 var input_controller: InputController
 
@@ -64,6 +69,10 @@ var _bloom_angle := 0.0
 var _bloom_spin_velocity := 0.0
 var _bloom_offset := Vector2.ZERO
 var _double_stream_active := false
+var _current_point_ages := PackedFloat32Array()
+var _double_point_ages := PackedFloat32Array()
+var _preview_beat_elapsed := 0.0
+var _pulses: Array[Dictionary] = []
 
 
 func _ready() -> void:
@@ -105,6 +114,7 @@ func _process(delta: float) -> void:
 		direction = Vector2.UP
 	if is_pissing:
 		update_parcels(delta)
+		_update_preview_pulses(delta)
 		emit_parcels(_stream_target_position, delta)
 	else:
 		# Releasing Space/a finger closes the stream immediately. A later press
@@ -112,20 +122,27 @@ func _process(delta: float) -> void:
 		_parcels.clear()
 		_double_parcels.clear()
 		_emission_accumulator = 0.0
+		_preview_beat_elapsed = 0.0
+		_pulses.clear()
 	if not _double_stream_active:
 		_double_parcels.clear()
-	_current_points = build_parcel_centerline()
-	var double_points := build_double_parcel_centerline()
+	var current_samples := _build_parcel_samples(_parcels)
+	_current_points = _positions_from_samples(current_samples)
+	_current_point_ages = _ages_from_samples(current_samples)
+	var double_samples := _build_parcel_samples(_double_parcels)
+	var double_points := _positions_from_samples(double_samples)
+	_double_point_ages = _ages_from_samples(double_samples)
 	if _current_points.size() >= 2:
 		_current_stream_direction = _tangent_for_points(_current_points, 0, direction)
 	elif is_pissing:
 		_current_stream_direction = direction
 	_impact.spread = _impact_spread()
-	var hit := _truncate_at_target(_current_points)
+	var hit := _truncate_at_target(_current_points, _current_point_ages)
 	var hit_target := not hit.is_empty()
 	_impact.emitting = false
 	if is_pissing and not hit.is_empty():
 		_current_points = hit.points
+		_current_point_ages = hit.ages
 		_emit_hit(hit, delta)
 	elif is_pissing and _current_points.size() >= 2:
 		_emit_floor_impact(_current_points[_current_points.size() - 1])
@@ -136,12 +153,14 @@ func _process(delta: float) -> void:
 		_path_length(_current_points),
 		float(profile["ribbon_alpha"]) if is_pissing else 0.0,
 		hit_target,
+		_current_point_ages,
 	)
 	_update_double_stream_meshes(
 		double_points,
 		_path_length(double_points),
 		float(profile["ribbon_alpha"]) if is_pissing else 0.0,
 		hit_target,
+		_double_point_ages,
 	)
 	var droplet_index := mini(8, _current_points.size() - 2)
 	_droplets.position = _current_points[droplet_index] if droplet_index >= 0 else source_position
@@ -194,11 +213,28 @@ func get_current_stream_direction() -> Vector2:
 	return _current_stream_direction
 
 
+func trigger_pulse(amplitude := 1.0) -> void:
+	## Starts a width pulse at the source. Music can call this once per beat.
+	var pulse_amplitude := clampf(amplitude, 0.0, 1.0)
+	_pulses.append(
+		{
+			"age": 0.0,
+			"amplitude": pulse_amplitude,
+		}
+	)
+	_prune_pulses()
+	pulse_triggered.emit(pulse_amplitude)
+
+
 func reset_stream() -> void:
 	_parcels.clear()
 	_double_parcels.clear()
 	_emission_accumulator = 0.0
 	_current_points = PackedVector2Array()
+	_current_point_ages = PackedFloat32Array()
+	_double_point_ages = PackedFloat32Array()
+	_preview_beat_elapsed = 0.0
+	_pulses.clear()
 	_stream_target_position = Vector2.ZERO
 	_stream_target_velocity = Vector2.ZERO
 	_stream_target_initialized = false
@@ -237,6 +273,7 @@ func update_parcels(delta: float) -> void:
 	# input controller again; only gravity changes that parcel's velocity.
 	_advance_parcel_chain(_parcels, delta)
 	_advance_parcel_chain(_double_parcels, delta)
+	_advance_pulses(delta)
 
 
 func _advance_parcel_chain(chain: Array[Dictionary], delta: float) -> void:
@@ -325,6 +362,50 @@ func _prune_parcel_chain(chain: Array[Dictionary]) -> void:
 		chain.pop_back()
 
 
+func _update_preview_pulses(delta: float) -> void:
+	if not pulse_preview_enabled:
+		return
+	var interval := 60.0 / maxf(pulse_preview_bpm, 1.0)
+	_preview_beat_elapsed += maxf(delta, 0.0)
+	while _preview_beat_elapsed >= interval:
+		_preview_beat_elapsed -= interval
+		trigger_pulse()
+
+
+func _prune_pulses() -> void:
+	var pulse_lifetime := parcel_lifetime + pulse_width_seconds * 3.0
+	while (
+			not _pulses.is_empty()
+			and float(_pulses[0]["age"]) > pulse_lifetime
+	):
+		_pulses.pop_front()
+
+
+func _advance_pulses(delta: float) -> void:
+	var safe_delta := maxf(delta, 0.0)
+	for pulse in _pulses:
+		pulse["age"] = float(pulse["age"]) + safe_delta
+	_prune_pulses()
+
+
+func _pulse_width_multiplier_for_age(age: float) -> float:
+	if _pulses.is_empty():
+		return 1.0
+	var width := maxf(pulse_width_seconds, 0.001)
+	var multiplier := 1.0
+	for pulse in _pulses:
+		var pulse_age := float(pulse["age"])
+		var distance_from_peak := (age - pulse_age) / width
+		var influence := exp(-0.5 * distance_from_peak * distance_from_peak)
+		var pulse_multiplier := lerpf(
+			1.0,
+			pulse_width_multiplier,
+			influence * float(pulse["amplitude"]),
+		)
+		multiplier = maxf(multiplier, pulse_multiplier)
+	return multiplier
+
+
 func get_stream_profile() -> Dictionary:
 	## Every active stream has the same continuous output. The crosshair controls
 	## the target position, never a separate pressure mode.
@@ -371,10 +452,14 @@ func build_double_parcel_centerline() -> PackedVector2Array:
 
 
 func _build_parcel_centerline(chain: Array[Dictionary]) -> PackedVector2Array:
-	var points := PackedVector2Array()
+	return _positions_from_samples(_build_parcel_samples(chain))
+
+
+func _build_parcel_samples(chain: Array[Dictionary]) -> Array[Dictionary]:
+	var samples: Array[Dictionary] = []
 	if chain.is_empty():
-		points.append(source_position)
-		return points
+		samples.append({"position": source_position, "age": 0.0})
+		return samples
 	var point_count := mini(ribbon_points, chain.size())
 	for i in point_count:
 		var fraction := float(i) / float(maxi(point_count - 1, 1))
@@ -383,8 +468,28 @@ func _build_parcel_centerline(chain: Array[Dictionary]) -> PackedVector2Array:
 			0,
 			chain.size() - 1,
 		)
-		points.append(chain[parcel_index]["position"])
+		var parcel: Dictionary = chain[parcel_index]
+		samples.append(
+			{
+				"position": parcel["position"],
+				"age": float(parcel.get("age", 0.0)),
+			}
+		)
+	return samples
+
+
+func _positions_from_samples(samples: Array[Dictionary]) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for sample in samples:
+		points.append(sample["position"])
 	return points
+
+
+func _ages_from_samples(samples: Array[Dictionary]) -> PackedFloat32Array:
+	var ages := PackedFloat32Array()
+	for sample in samples:
+		ages.append(float(sample["age"]))
+	return ages
 
 
 func _advance_stream_target(target: Vector2, delta: float) -> void:
@@ -473,7 +578,10 @@ func _travel_time_for_target(target_position: Vector2) -> float:
 		0.12,
 	)
 
-func _truncate_at_target(points: PackedVector2Array) -> Dictionary:
+func _truncate_at_target(
+		points: PackedVector2Array,
+		point_ages := PackedFloat32Array(),
+) -> Dictionary:
 	if points.size() < 2:
 		return { }
 	var space := get_world_2d().direct_space_state
@@ -491,11 +599,23 @@ func _truncate_at_target(points: PackedVector2Array) -> Dictionary:
 		if target == null:
 			continue
 		var clipped := PackedVector2Array()
+		var clipped_ages := PackedFloat32Array()
 		for j in range(i + 1):
 			clipped.append(points[j])
+			clipped_ages.append(
+				point_ages[j] if j < point_ages.size() else 0.0,
+			)
+		var segment_length := points[i].distance_to(points[i + 1])
+		var segment_fraction := 0.0
+		if segment_length > 0.001:
+			segment_fraction = points[i].distance_to(result.position) / segment_length
+		var start_age := point_ages[i] if i < point_ages.size() else 0.0
+		var end_age := point_ages[i + 1] if i + 1 < point_ages.size() else start_age
 		clipped.append(result.position)
+		clipped_ages.append(lerpf(start_age, end_age, clampf(segment_fraction, 0.0, 1.0)))
 		return {
 			"points": clipped,
+			"ages": clipped_ages,
 			"target": target,
 			"position": result.position,
 			"normal": result.normal,
@@ -529,6 +649,7 @@ func _update_double_stream_meshes(
 		depth_length: float,
 		ribbon_alpha: float,
 		hit_target: bool,
+		point_ages: PackedFloat32Array,
 ) -> void:
 	var should_render := (
 		_live_enabled
@@ -553,6 +674,7 @@ func _update_double_stream_meshes(
 		depth_length,
 		ribbon_alpha,
 		hit_target,
+		point_ages,
 	)
 	_set_ribbon_mesh(
 		_double_body_mesh_resource,
@@ -562,6 +684,7 @@ func _update_double_stream_meshes(
 		depth_length,
 		ribbon_alpha,
 		hit_target,
+		point_ages,
 	)
 	_set_ribbon_mesh(
 		_double_highlight_mesh_resource,
@@ -571,15 +694,35 @@ func _update_double_stream_meshes(
 		depth_length,
 		ribbon_alpha,
 		hit_target,
+		point_ages,
 	)
 func update_ribbon_meshes(
 		points: PackedVector2Array,
 		depth_length: float,
 		ribbon_alpha: float,
 		hit_target: bool,
+		point_ages := PackedFloat32Array(),
 ) -> void:
-	_set_ribbon_mesh(_edge_mesh_resource, points, 36.0, 0.0, depth_length, ribbon_alpha, hit_target)
-	_set_ribbon_mesh(_body_mesh_resource, points, 32.0, 0.0, depth_length, ribbon_alpha, hit_target)
+	_set_ribbon_mesh(
+		_edge_mesh_resource,
+		points,
+		36.0,
+		0.0,
+		depth_length,
+		ribbon_alpha,
+		hit_target,
+		point_ages,
+	)
+	_set_ribbon_mesh(
+		_body_mesh_resource,
+		points,
+		32.0,
+		0.0,
+		depth_length,
+		ribbon_alpha,
+		hit_target,
+		point_ages,
+	)
 	_set_ribbon_mesh(
 		_highlight_mesh_resource,
 		points,
@@ -588,6 +731,7 @@ func update_ribbon_meshes(
 		depth_length,
 		ribbon_alpha,
 		hit_target,
+		point_ages,
 	)
 
 
@@ -599,6 +743,7 @@ func _set_ribbon_mesh(
 		depth_length: float,
 		ribbon_alpha: float,
 		hit_target: bool,
+		point_ages: PackedFloat32Array = PackedFloat32Array(),
 ) -> void:
 	mesh.clear_surfaces()
 	if points.size() < 2:
@@ -625,6 +770,8 @@ func _set_ribbon_mesh(
 		# where accuracy matters.
 		var distal_bloom := smoothstep(0.25, 1.0, depth_fraction)
 		width += _aim_bloom_radius * bloom_width_scale * distal_bloom
+		if i < point_ages.size():
+			width *= _pulse_width_multiplier_for_age(point_ages[i])
 		var fade := 1.0
 		if not hit_target:
 			var distal_fade := smoothstep(distal_fade_start, 1.0, depth_fraction)
