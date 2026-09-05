@@ -1,7 +1,9 @@
 extends GutTest
 
+const SMOKE_TEST_SCENE := preload("res://scenes/smoke_test.tscn")
+
 func test_liquid_stream_scene_builds_playable_nodes() -> void:
-	var scene := load("res://scenes/smoke_test.tscn") as PackedScene
+	var scene := SMOKE_TEST_SCENE
 	assert_not_null(scene, "The portrait prototype scene should be loadable.")
 
 	var instance := scene.instantiate()
@@ -46,3 +48,26 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 	if impact:
 		assert_false(impact.one_shot)
 		assert_not_null(impact.texture)
+
+
+func test_stream_pulse_drives_bloom_and_shake_feedback() -> void:
+	var scene := SMOKE_TEST_SCENE
+	var instance := scene.instantiate()
+	add_child_autofree(instance)
+	var stream := instance.get_node("LiquidStream") as LiquidStream
+	var broad_light := instance.get_node("BroadMoonLight") as PointLight2D
+	var base_energy := broad_light.energy
+	var base_position: Vector2 = instance.position
+
+	stream.trigger_pulse()
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	assert_true(broad_light.energy > base_energy)
+	assert_true(instance.position != base_position)
+
+	for _frame in 30:
+		await get_tree().process_frame
+
+	assert_almost_eq(broad_light.energy, base_energy, 0.001)
+	assert_eq(instance.position, base_position)

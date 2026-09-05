@@ -224,3 +224,89 @@ func test_custom_mesh_tapers_and_fades_at_distal_end() -> void:
 	assert_true(colors[0].a > colors[4].a)
 	assert_true(colors[4].a > 0.0)
 	assert_almost_eq(colors[4].a, stream.distal_end_alpha, 0.01)
+
+
+func test_beat_pulse_travels_with_parcel_age() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+	stream.pulse_width_seconds = 0.025
+	stream.trigger_pulse()
+	var points := PackedVector2Array(
+		[Vector2(0.0, 0.0), Vector2(0.0, -100.0), Vector2(0.0, -200.0)],
+	)
+	var ages := PackedFloat32Array([0.0, 0.1, 0.2])
+
+	stream.update_ribbon_meshes(points, 200.0, 1.0, false, ages)
+	var body_mesh := stream.get_node("BodyRibbon") as MeshInstance2D
+	var initial_vertices: PackedVector3Array = (
+		(body_mesh.mesh as ArrayMesh).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	)
+	var initial_widths := _mesh_widths(initial_vertices)
+
+	stream.update_parcels(0.1)
+	stream.update_ribbon_meshes(points, 200.0, 1.0, false, ages)
+	var traveled_vertices: PackedVector3Array = (
+		(body_mesh.mesh as ArrayMesh).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	)
+	var traveled_widths := _mesh_widths(traveled_vertices)
+
+	assert_true(initial_widths[0] > initial_widths[1])
+	assert_true(traveled_widths[1] > traveled_widths[0])
+	assert_true(traveled_widths[1] > traveled_widths[2])
+	assert_true(initial_widths[0] > initial_widths[2])
+
+
+func test_beat_pulse_affects_all_live_ribbon_layers() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+	stream.trigger_pulse()
+	var points := PackedVector2Array(
+		[Vector2(0.0, 0.0), Vector2(0.0, -100.0), Vector2(0.0, -200.0)],
+	)
+	var ages := PackedFloat32Array([0.0, 0.1, 0.2])
+	stream.update_ribbon_meshes(points, 200.0, 1.0, false, ages)
+
+	for node_path in ["EdgeRibbon", "BodyRibbon", "HighlightRibbon"]:
+		var mesh := stream.get_node(node_path).mesh as ArrayMesh
+		var vertices: PackedVector3Array = mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		var widths := _mesh_widths(vertices)
+		assert_true(widths[0] > widths[2], "%s should carry the pulse." % node_path)
+
+
+func test_reset_stream_clears_beat_pulses() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+	stream.trigger_pulse()
+	var points := PackedVector2Array(
+		[Vector2(0.0, 0.0), Vector2(0.0, -100.0)],
+	)
+	var ages := PackedFloat32Array([0.0, 0.2])
+	stream.update_ribbon_meshes(points, 100.0, 1.0, false, ages)
+	var pulsed_vertices: PackedVector3Array = (
+		(stream.get_node("BodyRibbon").mesh as ArrayMesh).surface_get_arrays(0)[
+			Mesh.ARRAY_VERTEX
+		]
+	)
+	var pulsed_width := _mesh_widths(pulsed_vertices)[0]
+
+	stream.reset_stream()
+	stream.update_ribbon_meshes(points, 100.0, 1.0, false, ages)
+	var reset_vertices: PackedVector3Array = (
+		(stream.get_node("BodyRibbon").mesh as ArrayMesh).surface_get_arrays(0)[
+			Mesh.ARRAY_VERTEX
+		]
+	)
+	var reset_width := _mesh_widths(reset_vertices)[0]
+
+	assert_true(pulsed_width > reset_width)
+
+
+func _mesh_widths(vertices: PackedVector3Array) -> PackedFloat32Array:
+	var widths := PackedFloat32Array()
+	for index in range(0, vertices.size(), 2):
+		widths.append(
+			Vector2(vertices[index].x, vertices[index].y).distance_to(
+				Vector2(vertices[index + 1].x, vertices[index + 1].y),
+			)
+		)
+	return widths
