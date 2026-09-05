@@ -132,6 +132,18 @@ func test_large_aim_delta_blooms_and_staying_still_restores_accuracy() -> void:
 	assert_almost_eq(stream.get_aim_bloom_radius(), 0.0, 0.01)
 
 
+func test_bloom_offset_traces_a_figure_eight() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+
+	var offset := stream._figure_eight_offset(PI / 4.0, 100.0)
+
+	assert_almost_eq(offset.x, 70.7107, 0.01)
+	assert_almost_eq(offset.y, 50.0, 0.01)
+	assert_eq(stream._figure_eight_offset(0.0, 100.0), Vector2.ZERO)
+	assert_eq(stream._figure_eight_offset(PI, 100.0), Vector2.ZERO)
+
+
 func test_small_aim_delta_creates_less_bloom_than_a_large_delta() -> void:
 	var stream := STREAM_SCENE.instantiate() as LiquidStream
 	add_child_autofree(stream)

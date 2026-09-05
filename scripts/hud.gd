@@ -120,38 +120,3 @@ func _layout_controls() -> void:
 		viewport.get_center().x - carrot_marker.size.x * 0.5,
 		safe.end.y - 32.0 - carrot_marker.size.y,
 	)
-
-
-func _draw() -> void:
-	if not gameplay_controls_visible:
-		return
-	var viewport := get_viewport_rect()
-	var safe := viewport.grow(-minf(safe_margin, minf(viewport.size.x, viewport.size.y) * 0.04))
-	var font := ThemeDB.fallback_font
-	draw_string(
-		font,
-		safe.position + Vector2(0, 24),
-		"PISSER",
-		HORIZONTAL_ALIGNMENT_LEFT,
-		-1,
-		22,
-		Color("#fff0a0"),
-	)
-	draw_string(
-		font,
-		safe.position + Vector2(0, 48),
-		"crosshair aim",
-		HORIZONTAL_ALIGNMENT_LEFT,
-		-1,
-		16,
-		Color("#b2a77a"),
-	)
-	draw_string(
-		font,
-		safe.position + Vector2(0, 78),
-		"WASD / MOUSE / STICK / TOUCH  AIM     SPACE / CLICK / RT / TOUCH  START",
-		HORIZONTAL_ALIGNMENT_LEFT,
-		-1,
-		16,
-		Color("#b2a77a"),
-	)

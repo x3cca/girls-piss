@@ -551,7 +551,7 @@ func _update_aim_bloom(target: Vector2, delta: float) -> void:
 		bloom_swirl_acceleration * safe_delta,
 	)
 	_bloom_angle += _bloom_spin_velocity * safe_delta
-	_bloom_offset = Vector2.from_angle(_bloom_angle) * _aim_bloom_radius
+	_bloom_offset = _figure_eight_offset(_bloom_angle, _aim_bloom_radius)
 	if not _double_stream_active and _aim_bloom_radius >= double_stream_start_radius:
 		_double_stream_active = true
 	elif _double_stream_active and _aim_bloom_radius <= double_stream_release_radius:
@@ -563,7 +563,15 @@ func _impact_spread() -> float:
 
 
 func _double_bloom_offset() -> Vector2:
-	return Vector2.from_angle(_bloom_angle) * get_double_bloom_radius()
+	return _figure_eight_offset(_bloom_angle, get_double_bloom_radius())
+
+
+func _figure_eight_offset(phase: float, radius: float) -> Vector2:
+	# Gerono's lemniscate traces a horizontal figure eight. Keeping the vertical
+	# component at half height preserves the configured radius at the widest
+	# points while the two lobes cross cleanly through the aim point.
+	var horizontal := sin(phase)
+	return Vector2(horizontal, horizontal * cos(phase)) * radius
 
 
 func _path_length(points: PackedVector2Array) -> float:
