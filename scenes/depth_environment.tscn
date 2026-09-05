@@ -1,0 +1,38 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/depth_tagged_sprite.gd" id="1_tagged"]
+[ext_resource type="Texture2D" path="res://assets/art/depth_geo_placeholder.png" id="2_section"]
+
+[node name="DepthEnvironment" type="Node2D"]
+
+[node name="ShallowSection" type="Sprite2D" parent="."]
+position = Vector2(360, 160)
+texture = ExtResource("2_section")
+script = ExtResource("1_tagged")
+depth = 0.0
+render_base_z_index = -15
+modulate = Color(1, 1, 1, 0.42)
+
+[node name="MiddleSection" type="Sprite2D" parent="."]
+position = Vector2(360, 480)
+texture = ExtResource("2_section")
+script = ExtResource("1_tagged")
+depth = 0.333
+render_base_z_index = -15
+modulate = Color(0.82, 0.82, 0.82, 0.42)
+
+[node name="DeepSection" type="Sprite2D" parent="."]
+position = Vector2(360, 800)
+texture = ExtResource("2_section")
+script = ExtResource("1_tagged")
+depth = 0.666
+render_base_z_index = -15
+modulate = Color(0.64, 0.64, 0.64, 0.42)
+
+[node name="DeepestSection" type="Sprite2D" parent="."]
+position = Vector2(360, 1120)
+texture = ExtResource("2_section")
+script = ExtResource("1_tagged")
+depth = 1.0
+render_base_z_index = -15
+modulate = Color(0.48, 0.48, 0.48, 0.42)

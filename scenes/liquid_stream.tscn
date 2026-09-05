@@ -5,6 +5,7 @@
 [ext_resource type="Texture2D" path="res://assets/art/stream_body_placeholder_normal.png" id="3_normal"]
 [ext_resource type="Texture2D" path="res://assets/art/stream_particle_placeholder.png" id="4_particle"]
 [ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="5_boil"]
+[ext_resource type="Script" path="res://scripts/depth_particle_emitter.gd" id="6_depth_particles"]
 
 [sub_resource type="CanvasTexture" id="CanvasTexture_stream_body"]
 diffuse_texture = ExtResource("2_body")
@@ -45,6 +46,7 @@ texture_filter = 1
 material = ExtResource("5_boil")
 
 [node name="Droplets" type="CPUParticles2D" parent="."]
+script = ExtResource("6_depth_particles")
 amount = 7
 lifetime = 0.42
 randomness = 0.55
@@ -61,6 +63,7 @@ material = ExtResource("5_boil")
 emitting = true
 
 [node name="ImpactBurst" type="CPUParticles2D" parent="."]
+script = ExtResource("6_depth_particles")
 amount = 18
 lifetime = 0.33
 direction = Vector2(0, 1)

@@ -9,6 +9,9 @@
 [ext_resource type="PackedScene" path="res://scenes/piss_line_recorder.tscn" id="9_recorder"]
 [ext_resource type="PackedScene" path="res://scenes/piss_line_replay.tscn" id="10_replay"]
 [ext_resource type="PackedScene" path="res://scenes/title_screen.tscn" id="11_title"]
+[ext_resource type="Script" uid="uid://7hyf0kirxip1" path="res://scripts/depth_map.gd" id="12_depth_map"]
+[ext_resource type="Texture2D" uid="uid://m44oqg56v0ay" path="res://resources/depth_map_baked.png" id="13_depth_texture"]
+[ext_resource type="PackedScene" path="res://scenes/depth_environment.tscn" id="14_depth_environment"]
 
 [sub_resource type="Gradient" id="Gradient_light"]
 colors = PackedColorArray(1, 1, 1, 0.95, 1, 1, 1, 0)
@@ -26,6 +29,14 @@ script = ExtResource("1_main")
 
 [node name="InputController" type="Node" parent="." unique_id=2026477760]
 script = ExtResource("5_input")
+
+[node name="DepthMap" type="Node2D" parent="." unique_id=1742420001]
+z_index = -20
+script = ExtResource("12_depth_map")
+depth_texture = ExtResource("13_depth_texture")
+debug_visualization = true
+
+[node name="DepthEnvironment" parent="." unique_id=1742420002 instance=ExtResource("14_depth_environment")]
 
 [node name="LiquidStream" parent="." unique_id=1204969384 instance=ExtResource("2_stream")]
 
