@@ -30,7 +30,6 @@ var targets: Array[WettableTarget] = []
 var _world_size := Vector2(720.0, 1280.0)
 var _layout_signature := Vector2.ZERO
 var _elapsed := 0.0
-var _first_target_hit_elapsed := -1.0
 var _base_position := Vector2.ZERO
 var _base_hud_offset := Vector2.ZERO
 var _base_broad_light_energy := 0.0
@@ -197,10 +196,7 @@ func _on_drawing_point_updated(position: Vector2, active: bool) -> void:
 	# Record before observing the shape: trace_completed is synchronous, so the
 	# final endpoint must be part of the replay before the state changes.
 	line_recorder.capture_point(position, active, _elapsed)
-	var completed_steps_before := shape_trace.completed_steps
 	shape_trace.observe_drawing_point(position, active)
-	if completed_steps_before == 0 and shape_trace.completed_steps > 0:
-		_first_target_hit_elapsed = _elapsed
 
 
 func _on_trace_completed() -> void:
@@ -215,7 +211,7 @@ func _on_trace_completed() -> void:
 	shape_trace.set_trace_visible(false)
 	hud.set_gameplay_controls_visible(false)
 	_impact_light.enabled = false
-	line_replay.play(line_recorder.get_strokes(), _first_target_hit_elapsed)
+	line_replay.play(line_recorder.get_strokes())
 
 
 func _on_replay_finished() -> void:
@@ -233,7 +229,6 @@ func reset_level() -> void:
 	_set_state(PLAYING)
 	_reset_pulse_feedback()
 	_elapsed = 0.0
-	_first_target_hit_elapsed = -1.0
 	shape_trace.reset_trace()
 	shape_trace.set_trace_visible(true)
 	line_replay.stop()

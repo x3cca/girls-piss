@@ -4,7 +4,8 @@ class_name PissLineReplay
 
 signal replay_finished
 
-@export_range(0.1, 10.0, 0.1) var speed_multiplier := 3.0
+@export_range(1.0, 30.0, 0.5) var replay_duration := 10.0
+@export_range(1.0, 10.0, 0.1) var max_speed_multiplier := 3.0
 @export var line_color := Color(1.0, 0.88, 0.34, 0.95)
 @export var line_width := 7.0
 
@@ -15,6 +16,8 @@ var revealed_strokes: Array = []
 var _strokes: Array = []
 var _start_timestamp := 0.0
 var _final_timestamp := 0.0
+var _playback_rate := 1.0
+var _playback_duration := 0.0
 var _finished_emitted := false
 
 
@@ -25,7 +28,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if not playing:
 		return
-	playback_time += delta * speed_multiplier
+	playback_time += delta * _playback_rate
 	if playback_time >= _final_timestamp:
 		playback_time = _final_timestamp
 		_update_revealed_strokes()
@@ -42,20 +45,22 @@ func process_frame(delta: float) -> void:
 	_process(delta)
 
 
-func play(strokes: Array, start_timestamp := -1.0) -> void:
+func play(strokes: Array) -> void:
 	_strokes = strokes.duplicate(true)
 	revealed_strokes = []
 	_final_timestamp = _find_final_timestamp(_strokes)
-	_start_timestamp = _find_start_timestamp(_strokes, start_timestamp)
+	_start_timestamp = _find_first_timestamp(_strokes)
+	var source_duration := maxf(_final_timestamp - _start_timestamp, 0.0)
+	_playback_rate = minf(
+		source_duration / maxf(replay_duration, 0.001),
+		maxf(max_speed_multiplier, 0.001),
+	)
+	_playback_duration = source_duration / maxf(_playback_rate, 0.001)
 	playback_time = _start_timestamp
 	_finished_emitted = false
 	visible = true
-	if start_timestamp >= 0.0:
-		# The prefix that existed before the replay origin is already complete when
-		# playback begins; only the time after the first target hit is animated.
-		_update_revealed_strokes()
+	_update_revealed_strokes()
 	if _strokes.is_empty() or _final_timestamp <= _start_timestamp:
-		_update_revealed_strokes()
 		playing = false
 		_finished_emitted = true
 		queue_redraw()
@@ -73,6 +78,8 @@ func stop() -> void:
 	playback_time = 0.0
 	_start_timestamp = 0.0
 	_final_timestamp = 0.0
+	_playback_rate = 1.0
+	_playback_duration = 0.0
 	_finished_emitted = false
 	queue_redraw()
 
@@ -82,7 +89,7 @@ func is_replaying() -> bool:
 
 
 func get_duration() -> float:
-	return maxf(_final_timestamp - _start_timestamp, 0.0) / maxf(speed_multiplier, 0.001)
+	return _playback_duration
 
 
 func _find_final_timestamp(strokes: Array) -> float:
@@ -93,9 +100,7 @@ func _find_final_timestamp(strokes: Array) -> float:
 	return final_timestamp
 
 
-func _find_start_timestamp(strokes: Array, requested_start: float) -> float:
-	if requested_start >= 0.0:
-		return clampf(requested_start, 0.0, _find_final_timestamp(strokes))
+func _find_first_timestamp(strokes: Array) -> float:
 	var first_timestamp := INF
 	for stroke in strokes:
 		for point in stroke:
