@@ -25,3 +25,9 @@ visual-only sprite now; the circular aimer owns all aiming input.
 crosshair/trace-target sprite. It follows the current keyboard or touch target;
 it is also used by trace targets. Replace it with authored 2D target art; these
 sprites receive the shared boil shader at runtime.
+
+Title and contextual-prompt placeholders live outside this directory under
+`assets/placeholders/`: `logo.png`, `start.png`, and the prompt action labels
+`aim.png` and `piss.png`. They are referenced by `scenes/title_screen.tscn` and
+`scenes/input_prompt.tscn` and receive the shared boil material where the scene
+defines it.
