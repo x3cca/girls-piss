@@ -33,8 +33,11 @@ you need a more specific placeholder, ask the user to add it under
 When adding new input types, make new actions in the InputMap on the project
 settings. Keep action names semantic.
 
-To fetch Drive artwork, install `requirements.txt`, then run
-`python3 tools/sync_drive_assets.py --sync`; use `--check` to preview changes.
+To fetch new Drive artwork, install `requirements.txt`, run
+`python3 tools/sync_drive_assets.py --check` to inspect the remote listing,
+then `python3 tools/sync_drive_assets.py --sync` to download and trim it into
+`assets/art/drive/`. Read `docs/pipeline.md` for the cache, naming, and review
+workflow before wiring an asset into a scene.
 
 ## Testing
 
@@ -108,9 +111,10 @@ When a sprite is authored for the game, apply the shared boil shader where it
 fits the visual treatment. Keep the gameplay-facing scene/script interfaces
 stable so placeholder art can be replaced without rewriting the mechanic.
 
-The current aimer, trace-target, title, and contextual-prompt PNGs are
-placeholders. Replace them with final art as those features are illustrated,
-while preserving transparency, the relevant pivot/scale behavior, and the
-existing input or hit signals. The prompt's `aim.png` and `piss.png` labels are
-known temporary art: keep aim and stream instructions as separate stacked rows
-until final descriptive assets replace them.
+The current aimer, trace-target, and contextual-prompt PNGs are placeholders.
+Replace them with final art as those features are illustrated, while preserving
+transparency, the relevant pivot/scale behavior, and the existing input or hit
+signals. The title uses the transparent Drive layers documented above. The
+prompt's `aim.png` and `piss.png` labels are known temporary art: keep aim and
+stream instructions as separate stacked rows until final descriptive assets
+replace them.

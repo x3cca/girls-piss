@@ -45,6 +45,18 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 	)
 
 
+func test_title_composition_keeps_level_1_visible_underneath() -> void:
+	var level := LEVEL_SCENE.instantiate() as Level1
+	add_child_autofree(level)
+
+	var title := level.get_node("TitleLayer/TitleScreen") as TitleScreen
+	var composition := title.get_node("Overlay/TitleComposition") as TitleComposition
+	assert_true(title.is_active())
+	assert_true(composition.visible)
+	assert_true(level.get_node("Level1Background").visible)
+	assert_eq(title.layer, 20)
+
+
 func test_piss_meter_has_a_five_minute_continuous_stream_budget() -> void:
 	var meter := METER_SCENE.instantiate() as PissMeter
 	var controller := InputController.new()
