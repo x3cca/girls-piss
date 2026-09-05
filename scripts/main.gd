@@ -8,6 +8,7 @@ class_name Main
 ## jet, never a visible wand or nozzle.
 
 @onready var input_controller: InputController = $InputController
+@onready var depth_map: DepthMap2D = $DepthMap
 @onready var stream: LiquidStream = $LiquidStream
 @onready var shape_trace: ShapeTrace = $ShapeTrace
 @onready var line_recorder: PissLineRecorder = $PissLineRecorder
@@ -63,6 +64,7 @@ func _ready() -> void:
 			if collision_body:
 				collision_body.collision_layer = 0
 	stream.input_controller = input_controller
+	stream.set_depth_map(depth_map)
 	input_controller.set_target_position(shape_trace.get_checkpoint_position(0))
 	stream.wet_target_hit.connect(_on_wet_target_hit)
 	stream.drawing_point_updated.connect(_on_drawing_point_updated)
@@ -106,6 +108,7 @@ func _layout_world() -> void:
 		return
 	# The source stays just below the visible rectangle; only the jet enters frame.
 	stream.source_position = Vector2(_world_size.x * 0.5, _world_size.y + 48.0)
+	depth_map.world_rect = Rect2(Vector2.ZERO, _world_size)
 	if _layout_signature != _world_size:
 		_layout_signature = _world_size
 		if _broad_light:
@@ -167,7 +170,10 @@ func _on_stream_pulse(amplitude: float) -> void:
 
 
 func _advance_pulse_feedback(delta: float) -> void:
-	var safe_delta := maxf(delta, 0.0)
+	# A first frame can be long while a scene/imported texture is settling. Keep
+	# a pulse visible for at least one rendered frame instead of consuming the
+	# entire shake envelope in a single hitch.
+	var safe_delta := clampf(delta, 0.0, 1.0 / 30.0)
 	_pulse_bloom_remaining = move_toward(
 		_pulse_bloom_remaining,
 		0.0,
@@ -314,12 +320,10 @@ func _on_wet_target_hit(
 
 
 func _draw() -> void:
-	# Low-contrast bands give the stream readable depth without painted textures.
+	# The depth texture supplies the optional visualization now; keep only the
+	# neutral canvas and ambient specks here so gameplay never depends on debug
+	# drawing.
 	draw_rect(Rect2(Vector2.ZERO, _world_size), Color("#111a35"))
-	for band in 8:
-		var top := float(band) / 8.0 * _world_size.y
-		var color := Color(0.08 + band * 0.006, 0.11 + band * 0.007, 0.22 + band * 0.012, 1.0)
-		draw_rect(Rect2(0.0, top, _world_size.x, _world_size.y / 8.0 + 1.0), color)
 	for i in 18:
 		var x := fmod(float(i * 113 + 47), maxf(_world_size.x, 1.0))
 		var y := fmod(float(i * 71 + 31), maxf(_world_size.y * 0.72, 1.0))
