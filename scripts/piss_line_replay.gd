@@ -38,6 +38,10 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
+func process_frame(delta: float) -> void:
+	_process(delta)
+
+
 func play(strokes: Array, start_timestamp := -1.0) -> void:
 	_strokes = strokes.duplicate(true)
 	revealed_strokes = []
@@ -127,10 +131,13 @@ func _prefix_for_stroke(stroke: Array, time: float) -> Array:
 			var current_position: Vector2 = point["position"]
 			prefix.append(
 				{
-					"position": previous_position.lerp(current_position, clampf(fraction, 0.0, 1.0)),
+					"position": previous_position.lerp(
+						current_position,
+						clampf(fraction, 0.0, 1.0),
+					),
 					"timestamp": time,
 					"time": time,
-				}
+				},
 			)
 		break
 	return prefix

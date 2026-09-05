@@ -106,6 +106,10 @@ func _process(delta: float) -> void:
 	scale = _base_scale * (1.0 + bob_wave * scale_amplitude)
 
 
+func process_frame(delta: float) -> void:
+	_process(delta)
+
+
 func _advance_hit(delta: float) -> void:
 	_hit_elapsed += delta
 	var progress := clampf(_hit_elapsed / maxf(hit_duration, 0.001), 0.0, 1.0)

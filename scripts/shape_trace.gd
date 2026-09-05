@@ -10,14 +10,16 @@ const TRACE_TARGET_SCENE := preload("res://scenes/trace_target.tscn")
 
 signal trace_completed
 
-@export var normalized_points := PackedVector2Array([
-	Vector2(0.50, 0.34),
-	Vector2(0.69, 0.43),
-	Vector2(0.69, 0.62),
-	Vector2(0.50, 0.72),
-	Vector2(0.31, 0.62),
-	Vector2(0.31, 0.43),
-])
+@export var normalized_points := PackedVector2Array(
+	[
+		Vector2(0.50, 0.34),
+		Vector2(0.69, 0.43),
+		Vector2(0.69, 0.62),
+		Vector2(0.50, 0.72),
+		Vector2(0.31, 0.62),
+		Vector2(0.31, 0.43),
+	],
+)
 @export var closed_path := true
 @export var show_outline := false
 ## Number of upcoming target sprites to keep visible. One means only the
@@ -64,6 +66,10 @@ func _process(_delta: float) -> void:
 		_targets[index].set_anchor_position(get_checkpoint_position(index))
 		_targets[index].set_center_position(center)
 	_update_target_visibility()
+
+
+func process_frame(delta: float) -> void:
+	_process(delta)
 
 
 func reset_trace() -> void:
@@ -166,12 +172,12 @@ func _draw() -> void:
 		draw_polyline(points, outline_color, outline_width, true)
 		for segment_index in range(segment_count):
 			var segment_completed := (
-				segment_index < completed_steps - 1
-				or (
-					closed_path
-					and completed_steps >= point_count
-					and segment_index == point_count - 1
-				)
+					segment_index < completed_steps - 1
+					or (
+							closed_path
+							and completed_steps >= point_count
+							and segment_index == point_count - 1
+					)
 			)
 			if segment_completed:
 				draw_line(

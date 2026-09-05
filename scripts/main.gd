@@ -138,16 +138,16 @@ func _advance_pulse_feedback(delta: float) -> void:
 	var bloom_envelope := smoothstep(0.0, 1.0, bloom_progress)
 	var bloom_amount := bloom_envelope * _pulse_bloom_amplitude
 	_broad_light.energy = _base_broad_light_energy * (
-		1.0 + pulse_bloom_energy_punch * bloom_amount
+			1.0 + pulse_bloom_energy_punch * bloom_amount
 	)
 	_broad_light.texture_scale = _base_broad_light_scale * (
-		1.0 + pulse_bloom_scale_punch * bloom_amount
+			1.0 + pulse_bloom_scale_punch * bloom_amount
 	)
 	_impact_light.energy = _base_impact_light_energy * (
-		1.0 + pulse_bloom_energy_punch * 1.35 * bloom_amount
+			1.0 + pulse_bloom_energy_punch * 1.35 * bloom_amount
 	)
 	_impact_light.texture_scale = _base_impact_light_scale * (
-		1.0 + pulse_bloom_scale_punch * 1.35 * bloom_amount
+			1.0 + pulse_bloom_scale_punch * 1.35 * bloom_amount
 	)
 
 	var shake_offset := Vector2.ZERO
@@ -160,13 +160,13 @@ func _advance_pulse_feedback(delta: float) -> void:
 		var shake_envelope := smoothstep(0.0, 1.0, shake_progress)
 		var shake_time := _pulse_shake_elapsed
 		var jitter := Vector2(
-			 sin(shake_time * 78.0 + _pulse_shake_phase) * 0.75
-				+ sin(shake_time * 131.0 + _pulse_shake_phase * 1.7) * 0.25,
-			 cos(shake_time * 91.0 + _pulse_shake_phase * 0.7) * 0.75
-				+ cos(shake_time * 147.0 + _pulse_shake_phase * 1.3) * 0.25,
+			sin(shake_time * 78.0 + _pulse_shake_phase) * 0.75
+			+ sin(shake_time * 131.0 + _pulse_shake_phase * 1.7) * 0.25,
+			cos(shake_time * 91.0 + _pulse_shake_phase * 0.7) * 0.75
+			+ cos(shake_time * 147.0 + _pulse_shake_phase * 1.3) * 0.25,
 		)
 		shake_offset = (
-			jitter * pulse_shake_strength * _pulse_shake_amplitude * shake_envelope
+				jitter * pulse_shake_strength * _pulse_shake_amplitude * shake_envelope
 		)
 	position = _base_position + shake_offset
 	_hud_layer.offset = _base_hud_offset + shake_offset
