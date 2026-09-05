@@ -10,7 +10,6 @@ const TARGET_TEXTURES: Array[Texture2D] = [
 	preload("res://assets/art/drive/Lollipop.png"),
 	preload("res://assets/art/drive/Condom.png"),
 	preload("res://assets/art/drive/Bandaid.png"),
-	preload("res://assets/art/drive/Toilet paper.png"),
 	preload("res://assets/art/drive/Fly.png"),
 	preload("res://assets/art/drive/Straw.png"),
 	preload("res://assets/art/drive/Tampon.png"),
@@ -18,17 +17,18 @@ const TARGET_TEXTURES: Array[Texture2D] = [
 
 var target_points := PackedVector2Array(
 	[
-		Vector2(0.19, 0.40),
-		Vector2(0.34, 0.40),
-		Vector2(0.51, 0.40),
-		Vector2(0.72, 0.49),
-		Vector2(0.27, 0.55),
-		Vector2(0.62, 0.55),
-		Vector2(0.30, 0.63),
-		Vector2(0.52, 0.64),
-		Vector2(0.76, 0.65),
-		Vector2(0.50, 0.73),
-		Vector2(0.36, 0.76),
+		# Centers match the objects in Example of play Screen.png, in the
+		# same order as TARGET_TEXTURES, on the 1080x1920 reference canvas.
+		Vector2(0.27, 0.53), # RedTicket
+		Vector2(0.34, 0.40), # Floss
+		Vector2(0.43, 0.41), # Gum
+		Vector2(0.70, 0.52), # Cigarette
+		Vector2(0.46, 0.80), # Lollipop
+		Vector2(0.61, 0.43), # Condom
+		Vector2(0.64, 0.74), # Bandaid
+		Vector2(0.69, 0.61), # Fly
+		Vector2(0.52, 0.59), # Straw
+		Vector2(0.28, 0.65), # Tampon
 	]
 )
 
@@ -48,7 +48,9 @@ func _ready() -> void:
 	shape_trace.target_texture = TARGET_TEXTURES[0]
 	shape_trace.target_textures = TARGET_TEXTURES
 	shape_trace.use_native_target_sizes = true
-	shape_trace.native_target_scale = 0.56
+	# These crops are already authored at the size used by the play-screen
+	# reference. Scaling them only by the viewport keeps their visual weight.
+	shape_trace.native_target_scale = 1.0
 	# The target sprites are gameplay markers placed over the toilet art. Keep
 	# them above every toilet layer (and the lower chrome at z=6) so the authored
 	# objects remain visible while their hit positions stay on the bowl.

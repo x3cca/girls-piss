@@ -11,8 +11,8 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 	level.skip_title_screen = true
 	add_child_autofree(level)
 
-	assert_eq(level.shape_trace.normalized_points.size(), 11)
-	assert_eq(level.shape_trace.target_textures.size(), 11)
+	assert_eq(level.shape_trace.normalized_points.size(), 10)
+	assert_eq(level.shape_trace.target_textures.size(), 10)
 	assert_eq(level.shape_trace.checkpoint_look_ahead, 3)
 	assert_almost_eq(level.shape_trace.look_ahead_opacity, 0.25, 0.001)
 	assert_almost_eq(level.shape_trace.look_ahead_opacity_falloff, 0.5, 0.001)
@@ -25,8 +25,26 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 		"res://assets/art/drive/RedTicket.png",
 	)
 	assert_eq(
-		level.shape_trace.target_textures[10].resource_path,
+		level.shape_trace.target_textures[9].resource_path,
 		"res://assets/art/drive/Tampon.png",
+	)
+	assert_almost_eq(level.shape_trace.native_target_scale, 1.0, 0.001)
+	assert_eq(
+		level.target_points,
+		PackedVector2Array(
+			[
+				Vector2(0.27, 0.53),
+				Vector2(0.34, 0.40),
+				Vector2(0.43, 0.41),
+				Vector2(0.70, 0.52),
+				Vector2(0.46, 0.80),
+				Vector2(0.61, 0.43),
+				Vector2(0.64, 0.74),
+				Vector2(0.69, 0.61),
+				Vector2(0.52, 0.59),
+				Vector2(0.28, 0.65),
+			],
+		),
 	)
 	assert_false(level.draw_neutral_canvas)
 	assert_false(level.get_node("DepthMap").debug_visualization)
@@ -53,6 +71,18 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 	assert_true(level.shape_trace._targets[1].visible)
 	assert_true(level.shape_trace._targets[2].visible)
 	assert_false(level.shape_trace._targets[3].visible)
+	assert_eq(
+		level.shape_trace._targets[0].get_node("Sprite").texture.resource_path,
+		"res://assets/art/drive/RedTicket.png",
+	)
+	assert_eq(
+		level.shape_trace._targets[1].get_node("Sprite").texture.resource_path,
+		"res://assets/art/drive/Floss.png",
+	)
+	assert_eq(
+		level.shape_trace._targets[2].get_node("Sprite").texture.resource_path,
+		"res://assets/art/drive/Gum.png",
+	)
 	assert_almost_eq(level.shape_trace._targets[0].modulate.a, 1.0, 0.001)
 	assert_almost_eq(level.shape_trace._targets[1].modulate.a, 0.25, 0.001)
 	assert_almost_eq(level.shape_trace._targets[2].modulate.a, 0.125, 0.001)
