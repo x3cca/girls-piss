@@ -70,9 +70,9 @@ toward the current target. Completing the path stops live input, replays the
 recorded line as a time-lapse, and then shows the completion card.
 
 Level 1 uses the small bathroom-object sprites as its ordered checkpoint
-targets. Open space is neutral; the smoke-test scene retains authored
-`NegativeZone` polygon/area nodes for validating bad-region behavior. The
-reticle uses
+targets. The authored floor is a bad region, while the wall, tank, and seat
+remain neutral; the smoke-test scene retains its separate `NegativeZone`
+polygon/area nodes for validating bad-region behavior. The reticle uses
 `Crosshair2.png` for neutral space, `Crosshair1.png` over a bad region, and
 `Crosshair3.png` for the short success burst. Actual contact is evaluated from
 the stream endpoint rather than the requested reticle position.

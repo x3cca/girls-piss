@@ -3,7 +3,7 @@ extends GutTest
 var _completion_count := 0
 
 
-func test_replay_starts_at_the_first_point_and_scales_to_ten_seconds() -> void:
+func test_replay_starts_at_the_first_point_and_scales_to_five_seconds() -> void:
 	var replay := PissLineReplay.new()
 	add_child_autofree(replay)
 	var strokes: Array = [
@@ -15,11 +15,11 @@ func test_replay_starts_at_the_first_point_and_scales_to_ten_seconds() -> void:
 
 	replay.play(strokes)
 	assert_true(replay.is_replaying())
-	assert_almost_eq(replay.get_duration(), 10.0, 0.001)
+	assert_almost_eq(replay.get_duration(), 5.0, 0.001)
 	assert_eq(replay.revealed_strokes.size(), 1)
 	assert_eq(replay.revealed_strokes[0].size(), 1)
 
-	replay.process_frame(5.0)
+	replay.process_frame(2.5)
 	assert_eq(replay.revealed_strokes.size(), 1)
 	assert_eq(replay.revealed_strokes[0].size(), 2)
 	assert_almost_eq(
@@ -28,7 +28,7 @@ func test_replay_starts_at_the_first_point_and_scales_to_ten_seconds() -> void:
 		0.001,
 	)
 
-	replay.process_frame(5.0)
+	replay.process_frame(2.5)
 	assert_false(replay.is_replaying())
 	assert_eq(replay.revealed_strokes[0].size(), 2)
 

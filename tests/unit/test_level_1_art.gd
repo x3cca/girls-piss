@@ -48,8 +48,10 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 	)
 	assert_false(level.draw_neutral_canvas)
 	assert_false(level.get_node("DepthMap").debug_visualization)
-	assert_gt(level.shape_trace.z_index, level.get_node("PissToilet/Seat").z_index)
-	assert_gt(level.shape_trace.z_index, level.get_node("Level1Chrome").z_index)
+	assert_gt(level.shape_trace.z_index, level.get_node("PissToilet/Bowl").z_index)
+	assert_lt(level.shape_trace.z_index, level.get_node("PissToilet/Seat").z_index)
+	assert_gt(level.line_replay.z_index, level.get_node("Level1Chrome").z_index)
+	assert_gt(level.line_replay.z_index, level.shape_trace.z_index)
 	assert_eq(
 		level.get_node("Level1Background/BackWall").texture.resource_path,
 		"res://assets/art/drive/BackWalll.png",
@@ -91,6 +93,27 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 			level.shape_trace._targets[index].position,
 			level.shape_trace.get_checkpoint_position(index),
 		)
+
+
+func test_level_1_floor_is_bad_but_toilet_and_wall_are_neutral() -> void:
+	var level := LEVEL_SCENE.instantiate() as Level1
+	level.skip_title_screen = true
+	add_child_autofree(level)
+	level.set_process(false)
+	level.get_node("LiquidStream").set_process(false)
+
+	var wall_position := Vector2(360.0, 200.0)
+	var tank_position := Vector2(360.0, 300.0)
+	var seat_position := Vector2(360.0, 700.0)
+	var floor_position := Vector2(360.0, 1240.0)
+
+	level.evaluate_stream_endpoint(wall_position, true, 0.35)
+	level.evaluate_stream_endpoint(tank_position, true, 0.35)
+	level.evaluate_stream_endpoint(seat_position, true, 0.35)
+	assert_eq(level.get_strikes(), 0)
+
+	level.evaluate_stream_endpoint(floor_position, true, 0.35)
+	assert_eq(level.get_strikes(), 1)
 
 
 func test_title_composition_keeps_level_1_visible_underneath() -> void:

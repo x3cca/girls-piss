@@ -1,15 +1,30 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://dbxlwr2krp5iq"]
 
-[ext_resource type="PackedScene" path="res://scenes/smoke_test.tscn" id="1_smoke_test"]
-[ext_resource type="Script" path="res://scripts/level_1.gd" id="2_level_1"]
+[ext_resource type="PackedScene" uid="uid://kjxwgld7c0f2" path="res://scenes/smoke_test.tscn" id="1_smoke_test"]
+[ext_resource type="Script" uid="uid://fgyvif5s28u4" path="res://scripts/level_1.gd" id="2_level_1"]
 [ext_resource type="PackedScene" path="res://scenes/level_1_background.tscn" id="3_background"]
 [ext_resource type="PackedScene" path="res://scenes/level_1_chrome.tscn" id="4_chrome"]
+[ext_resource type="PackedScene" path="res://scenes/negative_zone.tscn" id="5_floor_zone"]
 
-[node name="Level1" instance=ExtResource("1_smoke_test")]
+[node name="Level1" unique_id=166442537 instance=ExtResource("1_smoke_test")]
 script = ExtResource("2_level_1")
-enable_negative_zones = false
 draw_neutral_canvas = false
 
-[node name="Level1Background" parent="." instance=ExtResource("3_background")]
+[node name="NegativeZone01" parent="." index="6" unique_id=2103637511]
+visible = false
+normalized_points = PackedVector2Array()
+show_zone = false
 
-[node name="Level1Chrome" parent="." instance=ExtResource("4_chrome")]
+[node name="NegativeZone02" parent="." index="7" unique_id=776967907]
+visible = false
+normalized_points = PackedVector2Array()
+show_zone = false
+
+[node name="Level1Background" parent="." index="16" unique_id=980382921 instance=ExtResource("3_background")]
+
+[node name="Level1Chrome" parent="." index="17" unique_id=912865229 instance=ExtResource("4_chrome")]
+
+[node name="FloorNegativeZone" parent="." index="18" unique_id=633917642 instance=ExtResource("5_floor_zone")]
+normalized_points = PackedVector2Array(0, 0.33, 1, 0.33, 1, 1, 0, 1)
+excluded_normalized_points = PackedVector2Array(0.5, 0.322, 0.72, 0.335, 0.88, 0.39, 0.97, 0.5, 0.99, 0.66, 0.96, 0.81, 0.84, 0.9, 0.68, 0.93, 0.5, 0.935, 0.31, 0.93, 0.16, 0.89, 0.06, 0.8, 0.02, 0.66, 0.03, 0.5, 0.11, 0.39, 0.27, 0.335)
+show_zone = false

@@ -46,8 +46,9 @@ func test_level_1_starts_with_the_toilet_without_test_zone_gameplay() -> void:
 	var level := LEVEL_1_SCENE.instantiate() as Main
 	add_child_autofree(level)
 
-	assert_false(level.enable_negative_zones)
-	assert_true(level.negative_zones.is_empty())
+	assert_true(level.enable_negative_zones)
+	assert_gt(level.negative_zones.size(), 0)
 	assert_not_null(level.get_node_or_null("PissToilet"))
 	assert_false(level.get_node("NegativeZone01").visible)
 	assert_false(level.get_node("NegativeZone02").visible)
+	assert_not_null(level.get_node_or_null("FloorNegativeZone"))

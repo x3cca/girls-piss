@@ -12,7 +12,7 @@ active, a contextual prompt shows the current input scheme.
 
 The level traces an authored loop with a continuous inertial stream entering
 from below the bottom-center of the frame, then replays the recorded line in a
-roughly ten-second time-lapse, capped at 3× speed for very long demos. The
+roughly five-second time-lapse, capped at 3× speed for very long demos. The
 stream's aim bloom follows a horizontal figure-eight path, and large aim jumps
 can briefly produce a second stream while the bloom settles. The crosshair
 starts at the first trace point.

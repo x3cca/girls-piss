@@ -35,9 +35,12 @@ var target_points := PackedVector2Array(
 
 func _ready() -> void:
 	# Configure generated target nodes before Main starts input and chooses the
-	# first checkpoint. The test zones remain authored in smoke_test, but Level 1
-	# intentionally starts with the open space around the toilet neutral.
+	# first checkpoint. Level 1 uses the authored floor zone; the two inherited
+	# smoke-test zones are cleared below so they remain available to that test
+	# scene without affecting the real level.
 	draw_neutral_canvas = false
+	enable_negative_zones = true
+	_clear_inherited_test_zones()
 	shape_trace.normalized_points = target_points
 	shape_trace.closed_path = false
 	shape_trace.show_outline = false
@@ -51,10 +54,12 @@ func _ready() -> void:
 	# These crops are already authored at the size used by the play-screen
 	# reference. Scaling them only by the viewport keeps their visual weight.
 	shape_trace.native_target_scale = 1.0
-	# The target sprites are gameplay markers placed over the toilet art. Keep
-	# them above every toilet layer (and the lower chrome at z=6) so the authored
-	# objects remain visible while their hit positions stay on the bowl.
-	shape_trace.z_index = 10
+	# The target sprites sit inside the toilet: above the bowl (z=1) but below
+	# the seat/lid (z=3), so the authored seat edge can naturally overlap them.
+	shape_trace.z_index = 2
+	# The replay line is also world-space artwork. Keep it above the toilet and
+	# targets so the recorded path remains visible during the completion pause.
+	line_replay.z_index = 11
 	shape_trace.rebuild_targets()
 	if is_instance_valid(depth_map):
 		depth_map.debug_visualization = false
@@ -63,6 +68,16 @@ func _ready() -> void:
 		depth_environment.visible = false
 	super._ready()
 	_layout_level1()
+
+
+func _clear_inherited_test_zones() -> void:
+	for zone_name in [&"NegativeZone01", &"NegativeZone02"]:
+		var test_zone := get_node_or_null(NodePath(String(zone_name))) as NegativeZone
+		if not test_zone:
+			continue
+		test_zone.normalized_points = PackedVector2Array()
+		test_zone.show_zone = false
+		test_zone.visible = false
 
 
 func _process(delta: float) -> void:
