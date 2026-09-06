@@ -51,7 +51,7 @@ jobs:
           grep -aFq 'res://scripts/trace_target.gdc' build/web/index.pck
           grep -aFq 'res://assets/art/drive/Pissbowl.png' build/web/index.pck
           ! grep -aFq 'res://tests/' build/web/index.pck
-          ! grep -aFq 'res://addons/godot_mcp/' build/web/index.pck
+          ! grep -aFq 'res://addons/godot_mcp/mcp/' build/web/index.pck
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
