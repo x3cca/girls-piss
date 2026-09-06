@@ -17,10 +17,10 @@ const CURSOR_TEXTURE: Texture2D = preload(
 )
 
 @export var autoplay := true
-@export_range(0.1, 2.0, 0.05) var entry_duration := 0.75
-@export_range(0.0, 2.0, 0.05) var title_entry_delay := 1.0
-@export_range(0.0, 1.0, 0.05) var start_delay := 0.2
-@export_range(0.1, 1.5, 0.05) var exit_duration := 0.5
+@export_range(0.1, 2.0, 0.05) var entry_duration := 0.35
+@export_range(0.0, 2.0, 0.05) var title_entry_delay := 0.35
+@export_range(0.0, 1.0, 0.05) var start_delay := 0.5
+@export_range(0.1, 1.5, 0.05) var exit_duration := 0.25
 
 @onready var _overlay: Control = $Overlay
 @onready var _composition: TitleComposition = $Overlay/TitleComposition

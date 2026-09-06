@@ -7,17 +7,14 @@ class_name TitleComposition
 ## the title and leaves the small start animation easy to replace later.
 
 const REFERENCE_SIZE := Vector2(1080.0, 1920.0)
-const ENTRY_MARGIN := 192.0
-const START_ENTRY_OFFSET := 1024.0
 
 @export_range(0.05, 2.0, 0.05) var frame_duration := 0.5
-@export_range(0.0, 2.0, 0.05) var intro_delay := 1.0
-@export_range(0.1, 2.0, 0.05) var background_entry_duration := 0.85
-@export_range(0.0, 1.0, 0.05) var background_entry_stagger := 0.1
-@export_range(0.1, 2.0, 0.05) var title_entry_duration := 0.75
-@export_range(0.0, 1.0, 0.05) var title_entry_stagger := 0.12
-@export_range(0.0, 1.0, 0.05) var start_entry_delay := 0.2
-@export_range(0.1, 2.0, 0.05) var start_entry_duration := 0.65
+@export_range(0.0, 2.0, 0.05) var intro_delay := 0.35
+@export_range(0.1, 2.0, 0.05) var background_entry_duration := 0.35
+@export_range(0.0, 1.0, 0.05) var background_to_title_delay := 0.25
+@export_range(0.1, 2.0, 0.05) var title_entry_duration := 0.35
+@export_range(0.0, 1.0, 0.05) var start_entry_delay := 0.5
+@export_range(0.1, 2.0, 0.05) var start_entry_duration := 0.25
 
 var _frame := 0
 var _frame_elapsed := 0.0
@@ -74,6 +71,7 @@ func show_title() -> void:
 	_frame_elapsed = 0.0
 	_set_frame(0)
 	_reset_entry_state()
+	modulate.a = 1.0
 	visible = true
 	_start_intro()
 
@@ -114,6 +112,7 @@ func _layout() -> void:
 		viewport_size.y / REFERENCE_SIZE.y,
 	)
 	position = Vector2.ZERO
+	_center_start_frames_in_title_gap()
 
 
 func _start_intro() -> void:
@@ -130,86 +129,36 @@ func _on_intro_delay_finished(intro_id: int) -> void:
 		return
 	var entry_duration := maxf(background_entry_duration, 0.01)
 	_title_entry_tween = create_tween().set_parallel(true)
-	_title_entry_tween.tween_property(
-		_title_flare_left,
-		"offset",
-		Vector2.ZERO,
-		entry_duration,
-	).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
-	_title_entry_tween.tween_property(
-		_title_flare_left,
-		"rotation",
-		_title_flare_left_rest_rotation,
-		entry_duration,
-	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	_title_entry_tween.tween_property(
-		_title_flare_right,
-		"offset",
-		Vector2.ZERO,
-		entry_duration,
-	).set_delay(title_entry_stagger * 0.5).set_trans(Tween.TRANS_BOUNCE).set_ease(
-		Tween.EASE_OUT,
-	)
-	_title_entry_tween.tween_property(
-		_title_flare_right,
-		"rotation",
-		_title_flare_right_rest_rotation,
-		entry_duration,
-	).set_delay(background_entry_stagger).set_trans(Tween.TRANS_QUAD).set_ease(
-		Tween.EASE_OUT,
-	)
-	_title_entry_tween.tween_property(
-		_title_flare_bottom,
-		"offset",
-		Vector2.ZERO,
-		entry_duration,
-	).set_delay(title_entry_stagger).set_trans(Tween.TRANS_BOUNCE).set_ease(
-		Tween.EASE_OUT,
-	)
-	_title_entry_tween.tween_property(
-		_title_flare_bottom,
-		"rotation",
-		_title_flare_bottom_rest_rotation,
-		entry_duration,
-	).set_delay(background_entry_stagger * 2.0).set_trans(Tween.TRANS_QUAD).set_ease(
-		Tween.EASE_OUT,
-	)
+	for background_layer in [_title_flare_left, _title_flare_right, _title_flare_bottom]:
+		_title_entry_tween.tween_property(
+			background_layer,
+			"modulate:a",
+			1.0,
+			entry_duration,
+		).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_title_entry_tween.finished.connect(_on_background_entry_finished.bind(intro_id))
 
 
 func _on_background_entry_finished(intro_id: int) -> void:
 	if not _title_active or intro_id != _intro_id:
 		return
+	_title_entry_tween = create_tween()
+	_title_entry_tween.tween_interval(maxf(background_to_title_delay, 0.0))
+	_title_entry_tween.finished.connect(_on_foreground_delay_finished.bind(intro_id))
+
+
+func _on_foreground_delay_finished(intro_id: int) -> void:
+	if not _title_active or intro_id != _intro_id:
+		return
 	var entry_duration := maxf(title_entry_duration, 0.01)
 	_title_entry_tween = create_tween().set_parallel(true)
-	_title_entry_tween.tween_property(
-		_girls_title,
-		"offset",
-		Vector2.ZERO,
-		entry_duration,
-	).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_title_entry_tween.tween_property(
-		_girls_title,
-		"rotation",
-		_girls_title_rest_rotation,
-		entry_duration,
-	).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_title_entry_tween.tween_property(
-		_piss_title,
-		"offset",
-		Vector2.ZERO,
-		entry_duration,
-	).set_delay(title_entry_stagger).set_trans(Tween.TRANS_BOUNCE).set_ease(
-		Tween.EASE_OUT,
-	)
-	_title_entry_tween.tween_property(
-		_piss_title,
-		"rotation",
-		_piss_title_rest_rotation,
-		entry_duration,
-	).set_delay(title_entry_stagger).set_trans(Tween.TRANS_BACK).set_ease(
-		Tween.EASE_OUT,
-	)
+	for foreground_layer in [_girls_title, _piss_title]:
+		_title_entry_tween.tween_property(
+			foreground_layer,
+			"modulate:a",
+			1.0,
+			entry_duration,
+		).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_title_entry_tween.finished.connect(_on_title_entry_finished.bind(intro_id))
 
 
@@ -229,49 +178,80 @@ func _on_start_entry_delay_finished(intro_id: int) -> void:
 	_start_entry_tween = create_tween().set_parallel(true)
 	_start_entry_tween.tween_property(
 		_start_frame_1,
-		"position",
-		_start_frame_1_rest_position,
+		"modulate:a",
+		1.0,
 		entry_duration,
-	).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_start_entry_tween.tween_property(
 		_start_frame_2,
-		"position",
-		_start_frame_2_rest_position,
+		"modulate:a",
+		1.0,
 		entry_duration,
-	).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
 func _reset_entry_state() -> void:
-	# Offset animates the artwork while preserving the authored sprite positions.
-	# This keeps the 1080x1920 composition stable across viewport resizes.
-	_title_flare_left.rotation = _title_flare_left_rest_rotation + TAU * 1.15 - 0.35
-	_title_flare_right.rotation = _title_flare_right_rest_rotation - TAU * 0.95 + 0.45
-	_title_flare_bottom.rotation = _title_flare_bottom_rest_rotation + TAU * 1.35 - 0.25
-	_set_offscreen_offset(_title_flare_left, Vector2.LEFT)
-	_set_offscreen_offset(_title_flare_right, Vector2.RIGHT)
-	_set_offscreen_offset(_title_flare_bottom, Vector2.DOWN)
-	_girls_title.rotation = _girls_title_rest_rotation - 0.08
-	_piss_title.rotation = _piss_title_rest_rotation + 0.1
-	_set_offscreen_offset(_girls_title, Vector2.LEFT)
-	_set_offscreen_offset(_piss_title, Vector2.RIGHT)
-	# The two title layers arrive from opposite sides before the start prompt
-	# rises into its authored position from below the reference canvas.
-	_start_frame_1.position = _start_frame_1_rest_position + Vector2(0.0, START_ENTRY_OFFSET)
-	_start_frame_2.position = _start_frame_2_rest_position + Vector2(0.0, START_ENTRY_OFFSET)
+	# Keep every title layer at its authored position. The transition is an
+	# opacity change, which eases the eye in without making the composition feel
+	# like a comic-book entrance.
+	_title_flare_left.offset = Vector2.ZERO
+	_title_flare_right.offset = Vector2.ZERO
+	_title_flare_bottom.offset = Vector2.ZERO
+	_title_flare_left.rotation = _title_flare_left_rest_rotation
+	_title_flare_right.rotation = _title_flare_right_rest_rotation
+	_title_flare_bottom.rotation = _title_flare_bottom_rest_rotation
+	_girls_title.offset = Vector2.ZERO
+	_piss_title.offset = Vector2.ZERO
+	_girls_title.rotation = _girls_title_rest_rotation
+	_piss_title.rotation = _piss_title_rest_rotation
+	_start_frame_1.position = _start_frame_1_rest_position
+	_start_frame_2.position = _start_frame_2_rest_position
+	_title_flare_left.modulate.a = 0.0
+	_title_flare_right.modulate.a = 0.0
+	_title_flare_bottom.modulate.a = 0.0
+	_girls_title.modulate.a = 0.0
+	_piss_title.modulate.a = 0.0
+	_start_frame_1.modulate.a = 0.0
+	_start_frame_2.modulate.a = 0.0
 
 
-func _set_offscreen_offset(sprite: Sprite2D, direction: Vector2) -> void:
-	# Offset is local to the rotated sprite. Aim the offset in screen space so
-	# even a spinning layer's furthest corner stays outside the viewport.
-	var texture_radius := Vector2(sprite.texture.get_size()).length()
-	var distance := 0.0
-	if direction.x < -0.5:
-		distance = sprite.position.x + texture_radius + ENTRY_MARGIN
-	elif direction.x > 0.5:
-		distance = REFERENCE_SIZE.x - sprite.position.x + texture_radius + ENTRY_MARGIN
-	else:
-		distance = REFERENCE_SIZE.y - sprite.position.y + texture_radius + ENTRY_MARGIN
-	sprite.offset = (direction.normalized() * distance).rotated(-sprite.rotation)
+func _center_start_frames_in_title_gap() -> void:
+	var title_bounds := _sprite_vertical_bounds(_piss_title)
+	var gap_center := (title_bounds.y + REFERENCE_SIZE.y) * 0.5
+	var frame_1_bounds := _frame_vertical_bounds(_start_frame_1)
+	var frame_2_bounds := _frame_vertical_bounds(_start_frame_2)
+	_start_frame_1_rest_position = Vector2(
+		_start_frame_1_rest_position.x,
+		gap_center - (frame_1_bounds.x + frame_1_bounds.y) * 0.5,
+	)
+	_start_frame_2_rest_position = Vector2(
+		_start_frame_2_rest_position.x,
+		gap_center - (frame_2_bounds.x + frame_2_bounds.y) * 0.5,
+	)
+	_start_frame_1.position = _start_frame_1_rest_position
+	_start_frame_2.position = _start_frame_2_rest_position
+
+
+func _frame_vertical_bounds(frame: Node2D) -> Vector2:
+	var top := INF
+	var bottom := -INF
+	for child in frame.get_children():
+		if not child is Sprite2D:
+			continue
+		var bounds := _sprite_vertical_bounds(child as Sprite2D)
+		top = minf(top, bounds.x)
+		bottom = maxf(bottom, bounds.y)
+	return Vector2(top, bottom)
+
+
+func _sprite_vertical_bounds(sprite: Sprite2D) -> Vector2:
+	if sprite.texture == null:
+		return Vector2(sprite.position.y, sprite.position.y)
+	var texture_size := sprite.texture.get_size() * sprite.scale.abs()
+	var origin_y := sprite.position.y + sprite.offset.y
+	if sprite.centered:
+		origin_y -= texture_size.y * 0.5
+	return Vector2(origin_y, origin_y + texture_size.y)
 
 
 func _stop_intro_tweens() -> void:

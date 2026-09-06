@@ -33,6 +33,19 @@ func test_title_uses_the_authored_transparent_layer_composition() -> void:
 	assert_lt(composition.get_node("PissTitle").z_index, composition.get_node("StartFrame1").z_index)
 	assert_true(composition.get_node("StartFrame1").visible)
 	assert_false(composition.get_node("StartFrame2").visible)
+	assert_eq(composition.modulate.a, 1.0)
+	for layer_name in [
+		"TitleFlareLeft",
+		"TitleFlareRight",
+		"TitleFlare3",
+		"GirlsTitle",
+		"PissTitle",
+	]:
+		var layer := composition.get_node(layer_name) as Sprite2D
+		assert_eq(layer.offset, Vector2.ZERO)
+		assert_eq(layer.rotation, 0.0)
+	assert_almost_eq(composition.get_node("StartFrame1").position.y, 152.5, 0.001)
+	assert_almost_eq(composition.get_node("StartFrame2").position.y, 157.5, 0.001)
 
 	composition._process(composition.frame_duration)
 	assert_eq(composition.get_frame(), 1)
