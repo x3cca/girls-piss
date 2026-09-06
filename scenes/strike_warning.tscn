@@ -26,12 +26,12 @@ script = ExtResource("1_warning")
 
 [node name="LightPounds" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("5_light_pounds")
-bus = &"Game"
+bus = &"Master"
 
 [node name="MediumPounds" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("6_medium_pounds")
-bus = &"Game"
+bus = &"Master"
 
 [node name="HeavyPounds" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("7_heavy_pounds")
-bus = &"Game"
+bus = &"Master"

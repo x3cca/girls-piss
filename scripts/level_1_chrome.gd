@@ -10,7 +10,6 @@ const VOLUME_LEVELS := [1.0 / 3.0, 2.0 / 3.0, 1.0]
 const VOLUME_PITCH_SCALES := [0.0, 1.0, 1.122462, 1.259921]
 const MUTED_VOLUME_SOUND_DB := -18.0
 const MUTED_VOLUME_PITCH_SCALE := 0.5
-const GAME_AUDIO_BUS := &"Game"
 const VOLUME_HITBOX_POSITION := Vector2(875.0, 16.0)
 const VOLUME_HITBOX_SIZE := Vector2(242.0, 181.0)
 const CURSOR_TEXTURE: Texture2D = preload(
@@ -34,14 +33,13 @@ signal volume_pointer_changed(active: bool)
 @onready var _volume_hitbox: Control = $VolumeHitbox
 var _layout_signature := Vector2.ZERO
 var _volume_level := MAX_VOLUME_LEVEL
-var _game_bus_index := -1
+var _master_bus_index := -1
 var _wobble_tween: Tween
 var _volume_pointer_active := false
 
 
 func _ready() -> void:
-	_game_bus_index = _ensure_game_audio_bus()
-	_route_game_audio_players()
+	_master_bus_index = AudioServer.get_bus_index(&"Master")
 	_volume_hitbox.gui_input.connect(_on_volume_hitbox_gui_input)
 	_volume_hitbox.mouse_entered.connect(_on_volume_hitbox_mouse_entered)
 	_volume_hitbox.mouse_exited.connect(_on_volume_hitbox_mouse_exited)
@@ -116,11 +114,11 @@ func _apply_volume() -> void:
 	for index in _volume_sprites.size():
 		_volume_sprites[index].visible = not is_muted() and index == _volume_level - 1
 	_mute_volume.visible = is_muted()
-	if _game_bus_index >= 0:
-		AudioServer.set_bus_mute(_game_bus_index, is_muted())
+	if _master_bus_index >= 0:
+		AudioServer.set_bus_mute(_master_bus_index, is_muted())
 		if not is_muted():
 			AudioServer.set_bus_volume_db(
-				_game_bus_index,
+				_master_bus_index,
 				linear_to_db(VOLUME_LEVELS[_volume_level - 1]),
 			)
 	volume_changed.emit(_volume_level, is_muted())
@@ -136,24 +134,6 @@ func _play_volume_sound() -> void:
 		_volume_sound.volume_db = 0.0
 		_volume_sound.pitch_scale = VOLUME_PITCH_SCALES[_volume_level]
 	_volume_sound.play()
-
-
-func _ensure_game_audio_bus() -> int:
-	var bus_index := AudioServer.get_bus_index(GAME_AUDIO_BUS)
-	if bus_index >= 0:
-		return bus_index
-	AudioServer.add_bus()
-	bus_index = AudioServer.bus_count - 1
-	AudioServer.set_bus_name(bus_index, GAME_AUDIO_BUS)
-	AudioServer.set_bus_send(bus_index, &"Master")
-	return bus_index
-
-
-func _route_game_audio_players() -> void:
-	for node in get_tree().root.find_children("*", "AudioStreamPlayer", true, false):
-		var player := node as AudioStreamPlayer
-		if is_instance_valid(player) and player != _volume_sound:
-			player.bus = GAME_AUDIO_BUS
 
 
 func _wobble_volume() -> void:

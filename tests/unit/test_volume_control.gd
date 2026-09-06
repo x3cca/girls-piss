@@ -4,6 +4,12 @@ const LEVEL_SCENE := preload("res://scenes/level_1.tscn")
 const CHROME_SCENE := preload("res://scenes/level_1_chrome.tscn")
 
 
+func test_audio_uses_only_the_master_bus() -> void:
+	assert_eq(AudioServer.bus_count, 1)
+	assert_eq(AudioServer.get_bus_name(0), &"Master")
+	assert_eq(AudioServer.get_bus_index(&"Game"), -1)
+
+
 func test_touch_input_ignores_the_emulated_mouse_copy() -> void:
 	var chrome := CHROME_SCENE.instantiate() as Level1Chrome
 	add_child_autofree(chrome)
@@ -28,34 +34,34 @@ func test_volume_control_cycles_three_even_levels_and_mute() -> void:
 	level.skip_title_screen = true
 	add_child_autofree(level)
 	var chrome := level.get_node("Level1Chrome") as Level1Chrome
-	var game_bus := AudioServer.get_bus_index(&"Game")
-	var original_volume_db := AudioServer.get_bus_volume_db(game_bus)
-	var original_muted := AudioServer.is_bus_mute(game_bus)
+	var master_bus := AudioServer.get_bus_index(&"Master")
+	var original_volume_db := AudioServer.get_bus_volume_db(master_bus)
+	var original_muted := AudioServer.is_bus_mute(master_bus)
 
 	assert_eq(chrome.get_volume_level(), 3)
 	assert_false(chrome.is_muted())
-	assert_almost_eq(AudioServer.get_bus_volume_db(game_bus), 0.0, 0.001)
+	assert_almost_eq(AudioServer.get_bus_volume_db(master_bus), 0.0, 0.001)
 
 	chrome.set_volume_level(1)
 	assert_eq(chrome.get_volume_level(), 1)
 	assert_false(chrome.is_muted())
 	assert_true((chrome.get_node("VolumeIcons/Volume1") as Sprite2D).visible)
-	assert_almost_eq(AudioServer.get_bus_volume_db(game_bus), linear_to_db(1.0 / 3.0), 0.001)
+	assert_almost_eq(AudioServer.get_bus_volume_db(master_bus), linear_to_db(1.0 / 3.0), 0.001)
 
 	chrome.cycle_volume()
 	assert_eq(chrome.get_volume_level(), 2)
 	assert_true((chrome.get_node("VolumeIcons/Volume2") as Sprite2D).visible)
-	assert_almost_eq(AudioServer.get_bus_volume_db(game_bus), linear_to_db(2.0 / 3.0), 0.001)
+	assert_almost_eq(AudioServer.get_bus_volume_db(master_bus), linear_to_db(2.0 / 3.0), 0.001)
 
 	chrome.cycle_volume()
 	assert_eq(chrome.get_volume_level(), 3)
 	assert_true((chrome.get_node("VolumeIcons/Volume3") as Sprite2D).visible)
-	assert_almost_eq(AudioServer.get_bus_volume_db(game_bus), 0.0, 0.001)
+	assert_almost_eq(AudioServer.get_bus_volume_db(master_bus), 0.0, 0.001)
 
 	chrome.cycle_volume()
 	assert_eq(chrome.get_volume_level(), 0)
 	assert_true(chrome.is_muted())
-	assert_true(AudioServer.is_bus_mute(game_bus))
+	assert_true(AudioServer.is_bus_mute(master_bus))
 	assert_true((chrome.get_node("VolumeIcons/MuteVolume") as Sprite2D).visible)
 	var mute_position := (chrome.get_node("VolumeIcons/MuteVolume") as Sprite2D).position
 	chrome.cycle_volume()
@@ -63,11 +69,11 @@ func test_volume_control_cycles_three_even_levels_and_mute() -> void:
 
 	assert_eq(chrome.get_volume_level(), 1)
 	assert_false(chrome.is_muted())
-	assert_false(AudioServer.is_bus_mute(game_bus))
+	assert_false(AudioServer.is_bus_mute(master_bus))
 	assert_not_null(chrome._wobble_tween)
 
-	AudioServer.set_bus_volume_db(game_bus, original_volume_db)
-	AudioServer.set_bus_mute(game_bus, original_muted)
+	AudioServer.set_bus_volume_db(master_bus, original_volume_db)
+	AudioServer.set_bus_mute(master_bus, original_muted)
 
 
 func test_mute_click_is_consumed_without_starting_the_stream() -> void:
@@ -75,9 +81,9 @@ func test_mute_click_is_consumed_without_starting_the_stream() -> void:
 	level.skip_title_screen = true
 	add_child_autofree(level)
 	await get_tree().process_frame
-	var game_bus := AudioServer.get_bus_index(&"Game")
-	var original_volume_db := AudioServer.get_bus_volume_db(game_bus)
-	var original_muted := AudioServer.is_bus_mute(game_bus)
+	var master_bus := AudioServer.get_bus_index(&"Master")
+	var original_volume_db := AudioServer.get_bus_volume_db(master_bus)
+	var original_muted := AudioServer.is_bus_mute(master_bus)
 
 	var chrome := level.get_node("Level1Chrome") as Level1Chrome
 	var hitbox := chrome.get_node("VolumeHitbox") as Control
@@ -97,8 +103,8 @@ func test_mute_click_is_consumed_without_starting_the_stream() -> void:
 	chrome._on_volume_hitbox_mouse_exited()
 	assert_true(level.hud.aim_reticle.visible)
 
-	AudioServer.set_bus_volume_db(game_bus, original_volume_db)
-	AudioServer.set_bus_mute(game_bus, original_muted)
+	AudioServer.set_bus_volume_db(master_bus, original_volume_db)
+	AudioServer.set_bus_mute(master_bus, original_muted)
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 
@@ -108,9 +114,9 @@ func test_volume_cycle_plays_pitch_rising_orchestra_cue() -> void:
 	add_child_autofree(level)
 	var chrome := level.get_node("Level1Chrome") as Level1Chrome
 	var cue := chrome.get_node("VolumeSound") as AudioStreamPlayer
-	var game_bus := AudioServer.get_bus_index(&"Game")
-	var original_volume_db := AudioServer.get_bus_volume_db(game_bus)
-	var original_muted := AudioServer.is_bus_mute(game_bus)
+	var master_bus := AudioServer.get_bus_index(&"Master")
+	var original_volume_db := AudioServer.get_bus_volume_db(master_bus)
+	var original_muted := AudioServer.is_bus_mute(master_bus)
 
 	assert_eq(cue.stream.resource_path, "res://assets/audio/orchestra_hit.ogg")
 	assert_eq(cue.bus, &"Master")
@@ -130,5 +136,5 @@ func test_volume_cycle_plays_pitch_rising_orchestra_cue() -> void:
 	assert_almost_eq(cue.pitch_scale, Level1Chrome.MUTED_VOLUME_PITCH_SCALE, 0.001)
 	assert_almost_eq(cue.volume_db, Level1Chrome.MUTED_VOLUME_SOUND_DB, 0.001)
 
-	AudioServer.set_bus_volume_db(game_bus, original_volume_db)
-	AudioServer.set_bus_mute(game_bus, original_muted)
+	AudioServer.set_bus_volume_db(master_bus, original_volume_db)
+	AudioServer.set_bus_mute(master_bus, original_muted)

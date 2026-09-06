@@ -10,13 +10,13 @@ script = ExtResource("1_music")
 
 [node name="Room" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("2_room")
-bus = &"Game"
+bus = &"Master"
 autoplay = true
 
 [node name="Oomph" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("4_oomph")
-bus = &"Game"
+bus = &"Master"
 
 [node name="Gameplay" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("3_gameplay")
-bus = &"Game"
+bus = &"Master"

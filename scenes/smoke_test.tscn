@@ -93,5 +93,5 @@ texture_scale = 2.85
 
 [node name="SpraySound" type="AudioStreamPlayer" parent="." unique_id=265636619]
 stream = ExtResource("19_spray_sound")
-bus = &"Game"
+bus = &"Master"
 pitch_scale = 1.122462
