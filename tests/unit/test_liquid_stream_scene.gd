@@ -360,7 +360,7 @@ func test_title_start_input_is_consumed_before_gameplay_begins() -> void:
 	assert_false(input_controller.is_pissing())
 	assert_true(hud.input_prompt.is_showing())
 	assert_eq(hud.input_prompt.current_source, InputPrompt.PromptSource.KEYBOARD)
-	await get_tree().create_timer(0.6).timeout
+	await get_tree().create_timer(0.9).timeout
 	assert_true(instance.gameplay_started)
 	assert_false(input_controller.is_pissing())
 

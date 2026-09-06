@@ -6,6 +6,8 @@ class_name TitleComposition
 ## Keeping the layers separate lets the first level remain visible underneath
 ## the title and leaves the small start animation easy to replace later.
 
+signal start_flash_completed
+
 const REFERENCE_SIZE := Vector2(1080.0, 1920.0)
 
 @export_range(0.05, 2.0, 0.05) var frame_duration := 0.5
@@ -15,6 +17,9 @@ const REFERENCE_SIZE := Vector2(1080.0, 1920.0)
 @export_range(0.1, 2.0, 0.05) var title_entry_duration := 0.35
 @export_range(0.0, 1.0, 0.05) var start_entry_delay := 0.5
 @export_range(0.1, 2.0, 0.05) var start_entry_duration := 0.25
+@export_range(0.01, 0.25, 0.01) var start_flash_duration := 0.03
+@export_range(0.0, 1.0, 0.01) var start_flash_pause := 0.12
+@export_range(1, 6, 1) var start_flash_count := 3
 @export_range(0.0, 12.0, 0.5) var title_wobble_distance := 6.0
 @export_range(0.0, 5.0, 0.1) var title_wobble_angle_degrees := 2.0
 @export_range(0.0, 4.0, 0.05) var title_wobble_speed := 0.8
@@ -26,6 +31,8 @@ var _layout_signature := Vector2.ZERO
 var _intro_id := 0
 var _title_entry_tween: Tween
 var _start_entry_tween: Tween
+var _start_flash_tween: Tween
+var _start_flash_active := false
 var _wobble_elapsed := 0.0
 var _start_frame_1_rest_position := Vector2.ZERO
 var _start_frame_2_rest_position := Vector2.ZERO
@@ -64,6 +71,8 @@ func _process(delta: float) -> void:
 		return
 	_wobble_elapsed += maxf(delta, 0.0)
 	_apply_title_wobble()
+	if _start_flash_active:
+		return
 	_frame_elapsed += maxf(delta, 0.0)
 	if _frame_elapsed < frame_duration:
 		return
@@ -73,6 +82,7 @@ func _process(delta: float) -> void:
 
 func show_title() -> void:
 	_stop_intro_tweens()
+	_stop_start_flash()
 	_title_active = true
 	_frame_elapsed = 0.0
 	_set_frame(0)
@@ -84,6 +94,7 @@ func show_title() -> void:
 
 func hide_title() -> void:
 	_stop_intro_tweens()
+	_stop_start_flash()
 	_title_active = false
 	visible = false
 
@@ -94,6 +105,49 @@ func is_title_active() -> bool:
 
 func get_frame() -> int:
 	return _frame
+
+
+func play_start_flash() -> bool:
+	if not _title_active:
+		return false
+	_stop_intro_tweens()
+	_stop_start_flash()
+	_start_flash_active = true
+	# The player can start before the title's normal entrance has reached the
+	# start art. Make the feedback visible immediately in that case.
+	_start_frame_1.modulate.a = 1.0
+	_start_frame_2.modulate.a = 1.0
+
+	_start_flash_tween = create_tween()
+	var flash_duration := maxf(start_flash_duration, 0.01)
+	for _flash_index in range(maxi(start_flash_count, 1)):
+		_start_flash_tween.tween_property(
+			_start_frame_1,
+			"modulate:a",
+			0.0,
+			flash_duration,
+		)
+		_start_flash_tween.parallel().tween_property(
+			_start_frame_2,
+			"modulate:a",
+			0.0,
+			flash_duration,
+		)
+		_start_flash_tween.tween_property(
+			_start_frame_1,
+			"modulate:a",
+			1.0,
+			flash_duration,
+		)
+		_start_flash_tween.parallel().tween_property(
+			_start_frame_2,
+			"modulate:a",
+			1.0,
+			flash_duration,
+		)
+	_start_flash_tween.tween_interval(maxf(start_flash_pause, 0.0))
+	_start_flash_tween.finished.connect(_on_start_flash_finished)
+	return true
 
 
 func _set_frame(frame: int) -> void:
@@ -194,6 +248,15 @@ func _on_start_entry_delay_finished(intro_id: int) -> void:
 		1.0,
 		entry_duration,
 	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+
+func _on_start_flash_finished() -> void:
+	_start_flash_tween = null
+	_start_flash_active = false
+	_start_frame_1.modulate.a = 1.0
+	_start_frame_2.modulate.a = 1.0
+	if _title_active:
+		start_flash_completed.emit()
 
 
 func _reset_entry_state() -> void:
@@ -300,3 +363,10 @@ func _stop_intro_tweens() -> void:
 	if _start_entry_tween:
 		_start_entry_tween.kill()
 	_start_entry_tween = null
+
+
+func _stop_start_flash() -> void:
+	if _start_flash_tween:
+		_start_flash_tween.kill()
+	_start_flash_tween = null
+	_start_flash_active = false

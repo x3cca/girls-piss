@@ -72,6 +72,9 @@ func test_request_start_locks_duplicate_requests_until_exit_completes() -> void:
 	title.entry_duration = 0.01
 	title.exit_duration = 0.05
 	add_child_autofree(title)
+	var composition := title.get_node("Overlay/TitleComposition") as TitleComposition
+	composition.start_flash_duration = 0.01
+	composition.start_flash_pause = 0.01
 	var completed: Array[int] = []
 	title.transition_completed.connect(func(source: int): completed.append(source))
 
@@ -83,6 +86,32 @@ func test_request_start_locks_duplicate_requests_until_exit_completes() -> void:
 	assert_false(title.is_active())
 	assert_false(title.is_start_locked())
 	assert_eq(completed, [InputController.AimSource.MOUSE])
+
+
+func test_request_start_flashes_three_times_before_the_title_fades() -> void:
+	var title := TITLE_SCENE.instantiate() as TitleScreen
+	title.autoplay = false
+	title.exit_duration = 0.05
+	add_child_autofree(title)
+	var composition := title.get_node("Overlay/TitleComposition") as TitleComposition
+	composition.start_flash_duration = 0.03
+	composition.start_flash_pause = 0.12
+	var flash_completed := [false]
+	composition.start_flash_completed.connect(func() -> void: flash_completed[0] = true)
+
+	title.show_title()
+	assert_true(title.request_start(InputController.AimSource.KEYBOARD))
+	assert_true(title.is_active())
+	assert_false(flash_completed[0])
+
+	await get_tree().create_timer(0.2).timeout
+	assert_true(title.is_active())
+	assert_false(flash_completed[0])
+
+	await get_tree().create_timer(0.3).timeout
+	assert_true(flash_completed[0])
+	await get_tree().create_timer(0.1).timeout
+	assert_false(title.is_active())
 
 
 func test_request_start_plays_the_beer_sound() -> void:

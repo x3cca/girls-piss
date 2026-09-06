@@ -31,6 +31,7 @@ var start_locked := false
 var _completed := false
 var _start_source := DEFAULT_SOURCE
 var _exit_tween: Tween
+var _start_flash_pending := false
 
 
 func _ready() -> void:
@@ -39,6 +40,8 @@ func _ready() -> void:
 	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if autoplay:
 		show_title()
+	if not _composition.start_flash_completed.is_connected(_on_start_flash_completed):
+		_composition.start_flash_completed.connect(_on_start_flash_completed)
 
 
 func _exit_tree() -> void:
@@ -58,6 +61,7 @@ func show_title() -> void:
 	_completed = false
 	active = true
 	start_locked = false
+	_start_flash_pending = false
 	visible = true
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -75,6 +79,16 @@ func request_start(source: int) -> bool:
 	_start_source = source
 	_start_sound.play()
 	start_requested.emit(source)
+	_start_flash_pending = true
+	if not _composition.play_start_flash():
+		_on_start_flash_completed()
+	return true
+
+
+func _on_start_flash_completed() -> void:
+	if not _start_flash_pending or not active:
+		return
+	_start_flash_pending = false
 
 	if _exit_tween:
 		_exit_tween.kill()
@@ -83,7 +97,6 @@ func request_start(source: int) -> bool:
 		Tween.TRANS_QUAD,
 	).set_ease(Tween.EASE_IN)
 	_exit_tween.finished.connect(_finish_transition)
-	return true
 
 
 func skip_to_gameplay(source := DEFAULT_SOURCE) -> bool:
@@ -91,6 +104,7 @@ func skip_to_gameplay(source := DEFAULT_SOURCE) -> bool:
 		return false
 	if _exit_tween:
 		_exit_tween.kill()
+	_start_flash_pending = false
 	_start_source = source
 	start_locked = false
 	_finish_transition()
@@ -123,6 +137,7 @@ func _finish_transition() -> void:
 	_completed = true
 	active = false
 	start_locked = false
+	_start_flash_pending = false
 	_composition.hide_title()
 	visible = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
