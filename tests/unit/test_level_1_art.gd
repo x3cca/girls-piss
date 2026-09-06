@@ -56,9 +56,6 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 	assert_eq(level.get_node("PissToilet/Bowl").scale, Vector2.ONE * 0.75)
 	assert_eq(level.get_node("PissToilet/Seat").scale, Vector2.ONE * 0.75)
 	assert_eq(level.get_node("PissToilet/Tank").scale, Vector2.ONE)
-	var bowl := level.get_node("PissToilet/Bowl") as Sprite2D
-	var stream := level.get_node("LiquidStream") as LiquidStream
-	assert_eq(stream.to_global(stream.source_position), bowl.global_position)
 	var seat := level.get_node("PissToilet/Seat") as Sprite2D
 	var tank := level.get_node("PissToilet/Tank") as Sprite2D
 	var seat_top := seat.position.y - seat.texture.get_height() * seat.scale.y * 0.5

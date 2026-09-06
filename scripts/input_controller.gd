@@ -194,8 +194,11 @@ func _update_mouse_button_state(event: InputEventMouseButton) -> void:
 		return
 	if event.pressed and not event.canceled:
 		_mouse_pressed = true
-		_begin_pissing()
 		_update_mouse_target(event.position)
+		# Publish the click position before the hold signal reaches the stream.
+		# This makes the first parcel use the position where the mouse started
+		# clicking instead of the previous reticle position.
+		_begin_pissing()
 	else:
 		_mouse_pressed = false
 	_update_pissing()
@@ -356,8 +359,9 @@ func _claim_touch(index: int, position: Vector2) -> void:
 	if _touch_index != -1:
 		return
 	_touch_index = index
-	_begin_pissing()
 	_update_touch_target(position)
+	# As with a mouse click, the tap position is the first shot's target.
+	_begin_pissing()
 
 
 func _release_touch(index: int) -> void:
