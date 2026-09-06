@@ -153,6 +153,38 @@ func test_strike_forces_the_stream_input_to_release() -> void:
 	assert_eq(level.get_safety_cooldown_remaining(), level.safety_cooldown)
 
 
+func test_left_bracket_debug_shortcut_triggers_an_instant_strike() -> void:
+	var level := LEVEL_SCENE.instantiate() as Main
+	level.skip_title_screen = true
+	add_child_autofree(level)
+	level.set_process(false)
+	level.get_node("LiquidStream").set_process(false)
+
+	var left_bracket := InputEventKey.new()
+	left_bracket.physical_keycode = KEY_BRACKETLEFT
+	left_bracket.pressed = true
+	level._unhandled_input(left_bracket)
+	level._unhandled_input(left_bracket)
+
+	assert_eq(level.get_strikes(), 2)
+
+
+func test_right_bracket_debug_shortcut_completes_immediately() -> void:
+	var level := LEVEL_SCENE.instantiate() as Main
+	level.skip_title_screen = true
+	add_child_autofree(level)
+	level.set_process(false)
+	level.get_node("LiquidStream").set_process(false)
+
+	var right_bracket := InputEventKey.new()
+	right_bracket.physical_keycode = KEY_BRACKETRIGHT
+	right_bracket.pressed = true
+	level._unhandled_input(right_bracket)
+
+	assert_eq(level.state, Main.COMPLETE)
+	assert_true(level.hud.completion_card.visible)
+
+
 func test_reticle_uses_neutral_negative_and_success_textures() -> void:
 	var reticle := TouchReticle.new()
 	add_child_autofree(reticle)

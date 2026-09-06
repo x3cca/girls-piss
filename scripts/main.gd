@@ -35,6 +35,8 @@ const COMPLETE := State.COMPLETE
 const FAILED := State.FAILED
 const FAILURE := State.FAILED
 const GAME_OVER := State.FAILED
+const DEBUG_INSTANT_STRIKE_ACTION := &"debug_instant_strike"
+const DEBUG_INSTANT_WIN_ACTION := &"debug_instant_win"
 
 const CONTACT_DURATION := 0.0
 const SAFETY_COOLDOWN := 4.0
@@ -185,6 +187,42 @@ func _process(delta: float) -> void:
 		_layout_world()
 		_refresh_reticle_preview()
 	queue_redraw()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if OS.has_feature("web") or not gameplay_started or not event is InputEventKey:
+		return
+	var key := event as InputEventKey
+	if not key.pressed or key.echo:
+		return
+	if key.is_action_pressed(DEBUG_INSTANT_STRIKE_ACTION):
+		_debug_instant_strike()
+		get_viewport().set_input_as_handled()
+	elif key.is_action_pressed(DEBUG_INSTANT_WIN_ACTION):
+		_debug_instant_win()
+		get_viewport().set_input_as_handled()
+
+
+func _debug_instant_strike() -> void:
+	if state != PLAYING:
+		return
+	# Debug strikes intentionally bypass the normal safety grace period so
+	# repeated shortcut presses can exercise consecutive strike states.
+	_strike_cooldown_remaining = 0.0
+	_take_strike()
+
+
+func _debug_instant_win() -> void:
+	if state != PLAYING:
+		return
+	input_controller.stop_pissing()
+	while state == PLAYING and shape_trace.completed_steps < shape_trace.total_steps:
+		shape_trace.complete_current_checkpoint()
+	# Completing a trace normally replays the recorded line before showing the
+	# card. Debug win should be immediate even if the player had already drawn.
+	if state == REPLAYING:
+		line_replay.stop()
+		_on_replay_finished()
 
 
 func _collect_negative_zones() -> void:
