@@ -16,13 +16,16 @@ float stain_at(vec2 uv) {
 
 
 void fragment() {
+	// Keep the authored RGB untouched. Multiplying by the built-in COLOR shifts
+	// these sRGB assets in the compatibility renderer even with a blank stain map.
 	vec2 texel = max(stain_map_texel_size, vec2(0.0001));
 	vec2 stain_gradient = vec2(
 		stain_at(UV + vec2(texel.x, 0.0)) - stain_at(UV - vec2(texel.x, 0.0)),
 		stain_at(UV + vec2(0.0, texel.y)) - stain_at(UV - vec2(0.0, texel.y))
 	);
 	vec2 distortion = stain_gradient * distortion_strength;
-	vec4 base = texture(TEXTURE, clamp(UV + distortion, vec2(0.0), vec2(1.0))) * COLOR;
+	vec4 base = texture(TEXTURE, clamp(UV + distortion, vec2(0.0), vec2(1.0)));
+	base.a *= COLOR.a;
 	float stain = stain_at(UV);
 	float yellow_amount = clamp(stain * stain_opacity * stain_color.a, 0.0, 1.0);
 	vec3 shaded = mix(base.rgb, stain_color.rgb, yellow_amount);
