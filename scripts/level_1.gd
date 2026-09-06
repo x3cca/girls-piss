@@ -115,6 +115,7 @@ func _layout_level1() -> void:
 		if tank:
 			tank.position = Vector2(0.0, -900.0)
 	_align_bowl_light()
+	_sync_stream_source_to_bowl()
 	shape_trace.target_center_position = Vector2(
 		viewport_size.x * 0.5,
 		viewport_size.y * 0.625,
