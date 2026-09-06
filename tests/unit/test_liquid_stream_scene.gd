@@ -181,6 +181,7 @@ func test_music_controller_uses_one_track_for_each_music_state() -> void:
 	assert_lt(gameplay_music.volume_db, -70.0)
 	assert_almost_eq(oomph_music.volume_db, music_controller.oomph_volume_db, 0.01)
 	assert_almost_eq(music_controller.get_shake_scale(), music_controller.oomph_shake_scale, 0.001)
+	assert_eq(music_controller._active_player, oomph_music)
 
 	music_controller.set_pissing(true)
 	assert_false(room_music.playing)
@@ -193,6 +194,7 @@ func test_music_controller_uses_one_track_for_each_music_state() -> void:
 		music_controller.gameplay_shake_scale,
 		0.001,
 	)
+	assert_eq(music_controller._active_player, gameplay_music)
 
 	music_controller.set_pissing(false)
 	assert_false(room_music.playing)
@@ -201,6 +203,7 @@ func test_music_controller_uses_one_track_for_each_music_state() -> void:
 	assert_almost_eq(oomph_music.volume_db, music_controller.oomph_volume_db, 0.01)
 	assert_lt(gameplay_music.volume_db, -70.0)
 	assert_almost_eq(music_controller.get_shake_scale(), music_controller.oomph_shake_scale, 0.001)
+	assert_eq(music_controller._active_player, oomph_music)
 
 
 func test_music_controller_emits_beats_from_audio_position() -> void:
@@ -387,6 +390,10 @@ func test_title_start_input_is_consumed_before_gameplay_begins() -> void:
 	var input_controller := instance.get_node("InputController") as InputController
 	var hud := instance.get_node("HUDLayer/HUD") as StreamHUD
 	var title := instance.get_node("TitleLayer/TitleScreen") as TitleScreen
+	var music_controller := instance.get_node("MusicController") as MusicController
+	var room_music := music_controller.get_node("Room") as AudioStreamPlayer
+	var oomph_music := music_controller.get_node("Oomph") as AudioStreamPlayer
+	var gameplay_music := music_controller.get_node("Gameplay") as AudioStreamPlayer
 
 	var key := InputEventKey.new()
 	key.physical_keycode = KEY_SPACE
@@ -400,6 +407,9 @@ func test_title_start_input_is_consumed_before_gameplay_begins() -> void:
 	await get_tree().create_timer(0.9).timeout
 	assert_true(instance.gameplay_started)
 	assert_false(input_controller.is_pissing())
+	assert_false(room_music.playing)
+	assert_true(oomph_music.playing)
+	assert_false(gameplay_music.playing)
 
 
 func test_mouse_start_shows_mouse_controls_immediately() -> void:

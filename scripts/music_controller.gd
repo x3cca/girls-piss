@@ -50,6 +50,9 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if not beat_sync_enabled or not _gameplay_music_started:
 		return
+	# Both gameplay states have their own complete, more intense mix. Follow the
+	# one that is currently audible instead of tying beat events to the peeing
+	# track, which is stopped during the non-peeing state.
 	if not is_instance_valid(_active_player) or not _active_player.playing:
 		return
 
@@ -112,6 +115,8 @@ func begin_gameplay() -> void:
 		return
 	_gameplay_music_started = true
 	_reset_beat_clock()
+	# The room track is title-only. Start the non-peeing gameplay mix at the
+	# beginning of its loop so the title can never remain the active song.
 	_switch_to(oomph_player, 0.0)
 
 
@@ -123,12 +128,17 @@ func begin_gameplay_crossfade() -> void:
 func start_gameplay_immediately() -> void:
 	_gameplay_music_started = true
 	_reset_beat_clock()
+	# This path is used by the direct-start level and also acts as a safe
+	# fallback if the title transition was completed without its start signal.
 	_switch_to(oomph_player, 0.0)
 
 
 func set_pissing(active: bool) -> void:
 	if not _gameplay_music_started:
 		return
+	# The bass-boosted mix is a complete peeing track, not an additive bus
+	# layer. Keep exactly one gameplay track audible so the unified Master bus
+	# does not change the intended balance.
 	_switch_to(gameplay_player if active else oomph_player)
 
 

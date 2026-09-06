@@ -336,6 +336,10 @@ func _on_volume_pointer_changed(active: bool) -> void:
 
 func _on_title_transition_completed(source: int) -> void:
 	initial_input_source = source
+	# The start-request signal normally moves music off the title track before
+	# this transition. Repeat the idempotent handoff here so title completion can
+	# never leave the muted room mix playing if that signal was skipped.
+	music_controller.start_gameplay_immediately()
 	_start_gameplay(initial_input_source)
 
 

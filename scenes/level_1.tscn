@@ -28,6 +28,3 @@ show_zone = false
 normalized_points = PackedVector2Array(0, 0.33, 1, 0.33, 1, 1, 0, 1)
 excluded_normalized_points = PackedVector2Array()
 show_zone = false
-
-[node name="SpraySound" parent="." index="20" unique_id=265636619]
-bus = &"Master"
