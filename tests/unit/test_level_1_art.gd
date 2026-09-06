@@ -107,6 +107,8 @@ func test_web_export_uses_level_1_as_the_main_scene() -> void:
 			'export_files=PackedStringArray("res://scenes/level_1.tscn")',
 		),
 	)
+	assert_true(export_presets.contains("resources/materials/item_outline.tres"))
+	assert_true(export_presets.contains("shaders/item_outline.gdshader"))
 
 
 func test_level_1_floor_is_bad_but_toilet_and_wall_are_neutral() -> void:
