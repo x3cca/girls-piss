@@ -333,7 +333,7 @@ func _on_input_detected(source: int) -> void:
 
 
 func _on_title_start_requested(_source: int) -> void:
-	music_controller.begin_gameplay_crossfade()
+	music_controller.begin_gameplay()
 
 
 func _on_volume_pointer_changed(active: bool) -> void:
@@ -402,7 +402,7 @@ func _on_music_beat(_beat_index: int, strength: float) -> void:
 	# LiquidStream owns the beat pulse so its ribbon and the camera shake are
 	# driven by the same event. It emits pulse_triggered even while idle, which
 	# keeps the room moving to the music before the player starts a hold.
-	stream.trigger_pulse(strength)
+	stream.trigger_pulse(strength * music_controller.get_shake_scale())
 
 
 func _advance_pulse_feedback(delta: float) -> void:

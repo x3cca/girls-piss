@@ -89,9 +89,9 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 				assert_true((room_music.stream as AudioStreamOggVorbis).loop)
 				assert_true((oomph_music.stream as AudioStreamOggVorbis).loop)
 				assert_true((gameplay_music.stream as AudioStreamOggVorbis).loop)
-			music_controller.begin_gameplay_crossfade()
+			music_controller.begin_gameplay()
 			assert_true(oomph_music.playing)
-			assert_true(gameplay_music.playing)
+			assert_false(gameplay_music.playing)
 	var impact := instance.get_node_or_null("LiquidStream/ImpactBurst") as CPUParticles2D
 	assert_not_null(impact)
 	if impact:
@@ -150,7 +150,7 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 		assert_almost_eq(impact.scale_amount_max, 0.55, 0.001)
 
 
-func test_music_controller_crossfades_preloaded_looping_tracks() -> void:
+func test_music_controller_uses_one_track_for_each_music_state() -> void:
 	var instance := SMOKE_TEST_SCENE.instantiate()
 	add_child_autofree(instance)
 	var music_controller := instance.get_node("MusicController") as MusicController
@@ -285,6 +285,29 @@ func test_stream_pulse_shakes_world_without_moving_crosshair() -> void:
 	var hud_offset := instance._hud_layer.offset
 
 	instance._on_music_beat(0, 1.0)
+	assert_almost_eq(
+		instance._active_shake_strength,
+		instance.pulse_shake_strength,
+		0.001,
+	)
+	assert_almost_eq(
+		instance._pulse_shake_amplitude,
+		instance.music_controller.oomph_shake_scale,
+		0.001,
+	)
+	instance._reset_pulse_feedback()
+	instance.music_controller.set_pissing(true)
+	instance._on_music_beat(1, 1.0)
+	assert_almost_eq(
+		instance._active_shake_strength,
+		instance.pulse_shake_strength,
+		0.001,
+	)
+	assert_almost_eq(
+		instance._pulse_shake_amplitude,
+		instance.music_controller.gameplay_shake_scale,
+		0.001,
+	)
 	await get_tree().process_frame
 
 	assert_true(instance.position != base_position)

@@ -9,11 +9,12 @@ const SILENT_VOLUME_DB := -80.0
 ## away from the music. The defaults are tuned to the supplied gameplay loop.
 signal beat_started(beat_index: int, strength: float)
 
-@export_range(0.1, 8.0, 0.05) var gameplay_crossfade_duration := 5.0
-@export_range(0.1, 3.0, 0.05) var intensity_crossfade_duration := 0.45
 @export_range(-24.0, 0.0, 0.5) var room_volume_db := 0.0
 @export_range(-24.0, 0.0, 0.5) var oomph_volume_db := 0.0
 @export_range(-24.0, 0.0, 0.5) var gameplay_volume_db := 0.0
+@export_group("Music response")
+@export_range(0.0, 1.0, 0.05) var oomph_shake_scale := 0.5
+@export_range(0.0, 1.0, 0.05) var gameplay_shake_scale := 1.0
 @export_group("Beat sync")
 @export var beat_sync_enabled := true
 @export_range(30.0, 240.0, 0.1) var gameplay_bpm := 153.0
@@ -24,11 +25,9 @@ signal beat_started(beat_index: int, strength: float)
 @onready var oomph_player: AudioStreamPlayer = $Oomph
 @onready var gameplay_player: AudioStreamPlayer = $Gameplay
 
-var _crossfade_tween: Tween
-var _intensity_tween: Tween
 var _gameplay_music_started := false
-var _title_progress := 0.0
-var _intensity_progress := 0.0
+var _active_player: AudioStreamPlayer
+var _active_shake_scale := 0.0
 var _last_playback_position := -1.0
 var _last_beat_index := -1
 
@@ -40,15 +39,18 @@ func _ready() -> void:
 	room_player.volume_db = room_volume_db
 	oomph_player.volume_db = SILENT_VOLUME_DB
 	gameplay_player.volume_db = SILENT_VOLUME_DB
+	_stop_other_players(room_player)
 	if not room_player.playing:
 		room_player.play()
+	_active_player = room_player
+	_active_shake_scale = 0.0
 	set_process(true)
 
 
 func _process(_delta: float) -> void:
 	if not beat_sync_enabled or not _gameplay_music_started:
 		return
-	if not gameplay_player.playing:
+	if not is_instance_valid(_active_player) or not _active_player.playing:
 		return
 
 	_advance_beat_clock(_get_synced_playback_position())
@@ -91,13 +93,13 @@ func _get_synced_playback_position() -> float:
 	# keeps a visual beat event aligned with the sound coming out of the device,
 	# rather than with the render frame that happened to poll the player.
 	var playback_position := (
-			gameplay_player.get_playback_position()
+			_active_player.get_playback_position()
 			+ AudioServer.get_time_since_last_mix()
 			- AudioServer.get_output_latency()
 	)
 	var track_length := (
-			gameplay_player.stream.get_length()
-			if gameplay_player.stream
+			_active_player.stream.get_length()
+			if _active_player.stream
 			else 0.0
 	)
 	if track_length > 0.0:
@@ -105,65 +107,33 @@ func _get_synced_playback_position() -> float:
 	return maxf(playback_position, 0.0)
 
 
-func begin_gameplay_crossfade() -> void:
+func begin_gameplay() -> void:
 	if _gameplay_music_started:
 		return
 	_gameplay_music_started = true
-	if _crossfade_tween:
-		_crossfade_tween.kill()
-
-	if not room_player.playing:
-		room_player.play()
-	_start_gameplay_layers()
 	_reset_beat_clock()
-	_title_progress = 0.0
-	_intensity_progress = 0.0
-	_apply_title_crossfade(0.0)
+	_switch_to(oomph_player, 0.0)
 
-	# Tween a normalized mix value and convert to amplitude gains. Tweening dB
-	# values directly creates a large quiet dip in the middle of the overlap.
-	_crossfade_tween = create_tween()
-	_crossfade_tween.tween_method(
-		_apply_crossfade,
-		0.0,
-		1.0,
-		gameplay_crossfade_duration,
-	)
-	_crossfade_tween.tween_callback(_stop_room_player)
+
+func begin_gameplay_crossfade() -> void:
+	# Keep the old entry point for callers from before music became exclusive.
+	begin_gameplay()
 
 
 func start_gameplay_immediately() -> void:
-	if _crossfade_tween:
-		_crossfade_tween.kill()
-	if _intensity_tween:
-		_intensity_tween.kill()
 	_gameplay_music_started = true
-	_start_gameplay_layers()
 	_reset_beat_clock()
-	room_player.stop()
-	_title_progress = 1.0
-	_intensity_progress = 0.0
-	_apply_title_crossfade(1.0)
+	_switch_to(oomph_player, 0.0)
 
 
 func set_pissing(active: bool) -> void:
 	if not _gameplay_music_started:
 		return
-	if _intensity_tween:
-		_intensity_tween.kill()
+	_switch_to(gameplay_player if active else oomph_player)
 
-	var target_progress := 1.0 if active else 0.0
-	if is_equal_approx(_intensity_progress, target_progress):
-		_apply_intensity_crossfade(target_progress)
-		return
 
-	_intensity_tween = create_tween()
-	_intensity_tween.tween_method(
-		_apply_intensity_crossfade,
-		_intensity_progress,
-		target_progress,
-		intensity_crossfade_duration,
-	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+func get_shake_scale() -> float:
+	return _active_shake_scale
 
 
 func _set_looping(player: AudioStreamPlayer) -> void:
@@ -174,46 +144,48 @@ func _set_looping(player: AudioStreamPlayer) -> void:
 	stream.loop_offset = 0.0
 
 
-func _apply_crossfade(progress: float) -> void:
-	# Keep the old helper name for callers that used the two-layer controller.
-	_apply_title_crossfade(progress)
+func _switch_to(target: AudioStreamPlayer, position := -1.0) -> void:
+	if target == _active_player and target.playing:
+		return
+
+	var start_position := position
+	if start_position < 0.0 and is_instance_valid(_active_player):
+		start_position = _active_player.get_playback_position()
+	if start_position < 0.0:
+		start_position = 0.0
+	var target_length := target.stream.get_length() if target.stream else 0.0
+	if target_length > 0.0:
+		start_position = fmod(start_position, target_length)
+
+	_stop_other_players(target)
+	target.volume_db = _volume_for(target)
+	target.play(start_position)
+	_active_player = target
+	_active_shake_scale = _shake_scale_for(target)
 
 
-func _apply_title_crossfade(progress: float) -> void:
-	_title_progress = clampf(progress, 0.0, 1.0)
-	_apply_mix()
+func _stop_other_players(keep: AudioStreamPlayer) -> void:
+	for player in [room_player, oomph_player, gameplay_player]:
+		if player == keep:
+			continue
+		player.stop()
+		player.volume_db = SILENT_VOLUME_DB
 
 
-func _apply_intensity_crossfade(progress: float) -> void:
-	_intensity_progress = clampf(progress, 0.0, 1.0)
-	_apply_mix()
+func _volume_for(player: AudioStreamPlayer) -> float:
+	if player == room_player:
+		return room_volume_db
+	if player == oomph_player:
+		return oomph_volume_db
+	return gameplay_volume_db
 
 
-func _apply_mix() -> void:
-	var gameplay_base_gain := sin(_title_progress * PI * 0.5)
-	var room_gain := cos(_title_progress * PI * 0.5)
-	var oomph_gain := gameplay_base_gain * cos(_intensity_progress * PI * 0.5)
-	var gameplay_gain := gameplay_base_gain * sin(_intensity_progress * PI * 0.5)
-	room_player.volume_db = _gain_to_db(room_gain, room_volume_db)
-	oomph_player.volume_db = _gain_to_db(oomph_gain, oomph_volume_db)
-	gameplay_player.volume_db = _gain_to_db(gameplay_gain, gameplay_volume_db)
-
-
-func _start_gameplay_layers() -> void:
-	# Start both synchronized gameplay layers together. The full layer remains
-	# silent until a piss hold, so the intensity fade never seeks or lazy-loads.
-	oomph_player.play(0.0)
-	gameplay_player.play(0.0)
-
-
-func _gain_to_db(gain: float, target_db: float) -> float:
-	if gain <= 0.0001:
-		return SILENT_VOLUME_DB
-	return linear_to_db(gain * db_to_linear(target_db))
-
-
-func _stop_room_player() -> void:
-	room_player.stop()
+func _shake_scale_for(player: AudioStreamPlayer) -> float:
+	if player == oomph_player:
+		return clampf(oomph_shake_scale, 0.0, 1.0)
+	if player == gameplay_player:
+		return clampf(gameplay_shake_scale, 0.0, 1.0)
+	return 0.0
 
 
 func _reset_beat_clock() -> void:
