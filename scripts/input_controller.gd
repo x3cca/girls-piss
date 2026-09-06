@@ -30,6 +30,7 @@ var target_position := Vector2.ZERO
 var input_mode := "desktop"
 var touch_controls_visible := false
 var gameplay_input_enabled := true
+var pointer_input_blocked := false
 var music_target_offset_angle_current := 0.0
 var bus_index := 0
 
@@ -110,7 +111,7 @@ func process_frame(delta: float) -> void:
 	set_target_position(_previous_input_position)
 
 
-func _input(event: InputEvent) -> void:
+func _unhandled_input(event: InputEvent) -> void:
 	handle_input_event(event)
 
 
@@ -121,8 +122,12 @@ func handle_input_event(event: InputEvent) -> void:
 			_claim_input_source(AimSource.KEYBOARD)
 		_update_keyboard_state(key)
 	elif event is InputEventMouseMotion:
+		if pointer_input_blocked:
+			return
 		_update_mouse_target((event as InputEventMouseMotion).position)
 	elif event is InputEventMouseButton:
+		if pointer_input_blocked:
+			return
 		var mouse_button := event as InputEventMouseButton
 		if (
 				mouse_button.button_index == MOUSE_BUTTON_LEFT
@@ -346,6 +351,13 @@ func set_gameplay_input_enabled(enabled: bool) -> void:
 		_set_stream_input_held(false)
 		_has_started_pissing = false
 		touch_target_changed.emit(Vector2.ZERO, false)
+
+
+func set_pointer_input_blocked(blocked: bool) -> void:
+	pointer_input_blocked = blocked
+	if blocked and _mouse_pressed:
+		_mouse_pressed = false
+		_update_pissing()
 
 
 func is_gameplay_input_enabled() -> bool:

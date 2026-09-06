@@ -13,27 +13,38 @@ const VOLUME_TEXTURES := [
 	preload("res://assets/art/drive/Volume3.png"),
 ]
 const MUTED_TEXTURE: Texture2D = preload("res://assets/art/drive/MuteVolumeX.svg")
+const CURSOR_TEXTURE: Texture2D = preload(
+	"res://assets/placeholders/cursor_pixel_pack/Tiles/tile_0026.png"
+)
 const WOBBLE_ANGLE := deg_to_rad(8.0)
 
 signal volume_changed(level: int, muted: bool)
+signal volume_pointer_changed(active: bool)
 
 @onready var _volume: Sprite2D = $Volume
 @onready var _back_shadow: Sprite2D = $BackShadow
 @onready var _back: Sprite2D = $Back
-@onready var _volume_hitbox: Area2D = $VolumeHitbox
+@onready var _volume_hitbox: Control = $VolumeHitbox
 var _layout_signature := Vector2.ZERO
-var _volume_level := MIN_VOLUME_LEVEL
+var _volume_level := MAX_VOLUME_LEVEL
 var _master_bus_index := -1
 var _wobble_tween: Tween
+var _volume_pointer_active := false
 
 
 func _ready() -> void:
 	_master_bus_index = AudioServer.get_bus_index(&"Master")
-	_volume_hitbox.input_event.connect(_on_volume_hitbox_input_event)
+	_volume_hitbox.gui_input.connect(_on_volume_hitbox_gui_input)
 	_volume_hitbox.mouse_entered.connect(_on_volume_hitbox_mouse_entered)
 	_volume_hitbox.mouse_exited.connect(_on_volume_hitbox_mouse_exited)
+	Input.set_custom_mouse_cursor(CURSOR_TEXTURE, Input.CURSOR_ARROW, Vector2.ZERO)
+	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 	_apply_volume()
 	_layout()
+
+
+func _exit_tree() -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 
 func _process(_delta: float) -> void:
@@ -52,7 +63,8 @@ func _layout() -> void:
 		viewport_size.y / REFERENCE_SIZE.y,
 	)
 	_set_volume_layout(Vector2(875.0, 16.0), composition_scale)
-	_volume_hitbox.position = Vector2(875.0 + 121.0, 16.0 + 90.5) * composition_scale
+	_volume_hitbox.position = Vector2(875.0, 16.0) * composition_scale
+	_volume_hitbox.size = Vector2(242.0, 181.0)
 	_volume_hitbox.scale = composition_scale
 	_set_sprite_layout(_back_shadow, Vector2(816.0, 1690.0), composition_scale)
 	_set_sprite_layout(_back, Vector2(824.0, 1698.0), composition_scale)
@@ -124,22 +136,28 @@ func _wobble_volume() -> void:
 	_wobble_tween.tween_property(_volume, "rotation", 0.0, 0.12)
 
 
-func _on_volume_hitbox_input_event(
-		_viewport: Node,
-		event: InputEvent,
-		_shape_idx: int,
-) -> void:
+func _on_volume_hitbox_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		cycle_volume()
-		get_viewport().set_input_as_handled()
+		_volume_hitbox.accept_event()
 	elif event is InputEventScreenTouch and event.pressed:
 		cycle_volume()
-		get_viewport().set_input_as_handled()
+		_volume_hitbox.accept_event()
 
 
 func _on_volume_hitbox_mouse_entered() -> void:
-	Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND)
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+	if _volume_pointer_active:
+		return
+	_volume_pointer_active = true
+	volume_pointer_changed.emit(true)
 
 
 func _on_volume_hitbox_mouse_exited() -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+	if not _volume_pointer_active:
+		return
+	_volume_pointer_active = false
+	volume_pointer_changed.emit(false)

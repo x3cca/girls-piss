@@ -19,6 +19,7 @@ class_name Main
 @onready var screen_overlay: ScreenOverlay = $ScreenOverlay
 @onready var _ambient: CanvasModulate = $Ambient
 @onready var surface_effects: SurfaceEffects = get_node_or_null("SurfaceEffects") as SurfaceEffects
+@onready var level_1_chrome: Level1Chrome = get_node_or_null("Level1Chrome") as Level1Chrome
 
 @export var skip_title_screen := false
 @export var enable_negative_zones := true
@@ -124,6 +125,10 @@ func _ready() -> void:
 	_wire_hud()
 	if not input_controller.input_detected.is_connected(_on_input_detected):
 		input_controller.input_detected.connect(_on_input_detected)
+	if is_instance_valid(level_1_chrome) and not level_1_chrome.volume_pointer_changed.is_connected(
+		_on_volume_pointer_changed,
+	):
+		level_1_chrome.volume_pointer_changed.connect(_on_volume_pointer_changed)
 	if not title_screen.transition_completed.is_connected(_on_title_transition_completed):
 		title_screen.transition_completed.connect(_on_title_transition_completed)
 	line_recorder.start_recording()
@@ -235,6 +240,10 @@ func _on_input_detected(source: int) -> void:
 		return
 	if title_screen.request_start(source):
 		initial_input_source = source
+func _on_volume_pointer_changed(active: bool) -> void:
+	input_controller.set_pointer_input_blocked(active)
+	if is_instance_valid(hud):
+		hud.set_aim_pointer_blocked(active)
 
 
 func _on_title_transition_completed(source: int) -> void:
@@ -257,7 +266,7 @@ func _start_gameplay(source: int) -> void:
 	input_controller.reset_input()
 	input_controller.set_target_position(shape_trace.get_checkpoint_position(0))
 	input_controller.set_gameplay_input_enabled(true)
-	input_controller.set_process_input(true)
+	input_controller.set_process_unhandled_input(true)
 	input_controller.set_process(true)
 	hud.set_gameplay_controls_visible(true)
 	hud.show_input_prompt(source)
@@ -543,7 +552,7 @@ func _fail_attempt() -> void:
 	line_recorder.finish_recording()
 	line_replay.stop()
 	input_controller.set_gameplay_input_enabled(false)
-	input_controller.set_process_input(false)
+	input_controller.set_process_unhandled_input(false)
 	input_controller.set_process(false)
 	stream.set_live_enabled(false)
 	shape_trace.set_trace_visible(false)
@@ -558,7 +567,7 @@ func _on_trace_completed() -> void:
 	_reset_pulse_feedback()
 	_set_state(REPLAYING)
 	line_recorder.finish_recording()
-	input_controller.set_process_input(false)
+	input_controller.set_process_unhandled_input(false)
 	input_controller.set_process(false)
 	stream.set_live_enabled(false)
 	shape_trace.set_trace_visible(false)
@@ -605,7 +614,7 @@ func reset_level() -> void:
 	input_controller.reset_input()
 	input_controller.set_target_position(shape_trace.get_checkpoint_position(0))
 	input_controller.set_gameplay_input_enabled(true)
-	input_controller.set_process_input(true)
+	input_controller.set_process_unhandled_input(true)
 	input_controller.set_process(true)
 	hud.hide_completion_card()
 	hud.set_strikes(strike_count)

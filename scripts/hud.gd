@@ -15,6 +15,7 @@ var safe_margin := 28.0
 @onready var piss_meter: PissMeter = $PissMeter
 var _wired_input_controller: InputController
 var gameplay_controls_visible := true
+var aim_pointer_blocked := false
 var aim_zone_state := TouchReticle.ReticleState.NEUTRAL
 
 
@@ -41,7 +42,7 @@ func process_frame(_delta: float) -> void:
 		aim_reticle.set_zone_state(aim_zone_state)
 		aim_reticle.set_aim_target(
 			input_controller.get_target_position() if input_controller else Vector2.ZERO,
-			gameplay_controls_visible,
+			gameplay_controls_visible and not aim_pointer_blocked,
 		)
 	if is_instance_valid(carrot_marker):
 		carrot_marker.visible = gameplay_controls_visible
@@ -54,7 +55,10 @@ func process_frame(_delta: float) -> void:
 func set_gameplay_controls_visible(enabled: bool) -> void:
 	gameplay_controls_visible = enabled
 	if is_instance_valid(aim_reticle):
-		aim_reticle.set_aim_target(aim_reticle.position, enabled)
+		aim_reticle.set_aim_target(
+			aim_reticle.position,
+			enabled and not aim_pointer_blocked,
+		)
 	if is_instance_valid(carrot_marker):
 		carrot_marker.visible = enabled
 	if is_instance_valid(input_prompt) and not enabled:
@@ -65,6 +69,16 @@ func set_gameplay_controls_visible(enabled: bool) -> void:
 		# The meter stays on screen during the title transition, but only drains
 		# after gameplay has been released by the title gate.
 		piss_meter.set_gameplay_active(enabled)
+	queue_redraw()
+
+
+func set_aim_pointer_blocked(blocked: bool) -> void:
+	aim_pointer_blocked = blocked
+	if is_instance_valid(aim_reticle):
+		aim_reticle.set_aim_target(
+			aim_reticle.position,
+			gameplay_controls_visible and not aim_pointer_blocked,
+		)
 	queue_redraw()
 
 

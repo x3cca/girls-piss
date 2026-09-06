@@ -12,6 +12,10 @@ func test_volume_control_cycles_three_even_levels_and_mute() -> void:
 	var original_volume_db := AudioServer.get_bus_volume_db(master_bus)
 	var original_muted := AudioServer.is_bus_mute(master_bus)
 
+	assert_eq(chrome.get_volume_level(), 3)
+	assert_false(chrome.is_muted())
+	assert_almost_eq(AudioServer.get_bus_volume_db(master_bus), 0.0, 0.001)
+
 	chrome.set_volume_level(1)
 	assert_eq(chrome.get_volume_level(), 1)
 	assert_false(chrome.is_muted())
@@ -45,3 +49,35 @@ func test_volume_control_cycles_three_even_levels_and_mute() -> void:
 
 	AudioServer.set_bus_volume_db(master_bus, original_volume_db)
 	AudioServer.set_bus_mute(master_bus, original_muted)
+
+
+func test_mute_click_is_consumed_without_starting_the_stream() -> void:
+	var level := LEVEL_SCENE.instantiate() as Level1
+	level.skip_title_screen = true
+	add_child_autofree(level)
+	await get_tree().process_frame
+	var master_bus := AudioServer.get_bus_index(&"Master")
+	var original_volume_db := AudioServer.get_bus_volume_db(master_bus)
+	var original_muted := AudioServer.is_bus_mute(master_bus)
+
+	var chrome := level.get_node("Level1Chrome") as Level1Chrome
+	var hitbox := chrome.get_node("VolumeHitbox") as Control
+	assert_eq(hitbox.mouse_filter, Control.MOUSE_FILTER_STOP)
+	assert_eq(hitbox.mouse_default_cursor_shape, Control.CURSOR_ARROW)
+
+	chrome._on_volume_hitbox_mouse_entered()
+	var mouse_down := InputEventMouseButton.new()
+	mouse_down.button_index = MOUSE_BUTTON_LEFT
+	mouse_down.position = hitbox.global_position + hitbox.size * hitbox.scale * 0.5
+	mouse_down.pressed = true
+	level.input_controller.handle_input_event(mouse_down)
+
+	assert_false(level.input_controller.is_stream_input_held())
+	assert_false(level.input_controller.is_pissing())
+	assert_false(level.hud.aim_reticle.visible)
+	chrome._on_volume_hitbox_mouse_exited()
+	assert_true(level.hud.aim_reticle.visible)
+
+	AudioServer.set_bus_volume_db(master_bus, original_volume_db)
+	AudioServer.set_bus_mute(master_bus, original_muted)
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
