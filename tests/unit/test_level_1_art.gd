@@ -13,7 +13,7 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 
 	assert_eq(level.shape_trace.normalized_points.size(), 10)
 	assert_eq(level.shape_trace.target_textures.size(), 10)
-	assert_eq(level.shape_trace.checkpoint_look_ahead, 3)
+	assert_eq(level.shape_trace.checkpoint_look_ahead, 1)
 	assert_almost_eq(level.shape_trace.look_ahead_opacity, 0.25, 0.001)
 	assert_almost_eq(level.shape_trace.look_ahead_opacity_falloff, 0.5, 0.001)
 	assert_eq(
@@ -33,16 +33,16 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 		level.target_points,
 		PackedVector2Array(
 			[
-				Vector2(0.27, 0.53),
-				Vector2(0.34, 0.40),
-				Vector2(0.43, 0.41),
-				Vector2(0.70, 0.52),
-				Vector2(0.46, 0.80),
-				Vector2(0.61, 0.43),
-				Vector2(0.64, 0.74),
-				Vector2(0.69, 0.61),
-				Vector2(0.52, 0.59),
-				Vector2(0.28, 0.65),
+				Vector2(0.305, 0.541),
+				Vector2(0.364, 0.430),
+				Vector2(0.441, 0.439),
+				Vector2(0.670, 0.532),
+				Vector2(0.466, 0.770),
+				Vector2(0.594, 0.456),
+				Vector2(0.619, 0.719),
+				Vector2(0.662, 0.609),
+				Vector2(0.517, 0.592),
+				Vector2(0.313, 0.643),
 			],
 		),
 	)
@@ -70,8 +70,8 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 	)
 	level.shape_trace.process_frame(0.0)
 	assert_true(level.shape_trace._targets[0].visible)
-	assert_true(level.shape_trace._targets[1].visible)
-	assert_true(level.shape_trace._targets[2].visible)
+	assert_false(level.shape_trace._targets[1].visible)
+	assert_false(level.shape_trace._targets[2].visible)
 	assert_false(level.shape_trace._targets[3].visible)
 	assert_eq(
 		level.shape_trace._targets[0].get_node("Sprite").texture.resource_path,
@@ -86,8 +86,6 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 		"res://assets/art/drive/Gum.png",
 	)
 	assert_almost_eq(level.shape_trace._targets[0].modulate.a, 1.0, 0.001)
-	assert_almost_eq(level.shape_trace._targets[1].modulate.a, 0.25, 0.001)
-	assert_almost_eq(level.shape_trace._targets[2].modulate.a, 0.125, 0.001)
 	for index in level.shape_trace.normalized_points.size():
 		assert_eq(
 			level.shape_trace._targets[index].position,
