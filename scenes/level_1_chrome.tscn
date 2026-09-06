@@ -1,9 +1,12 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/level_1_chrome.gd" id="1_chrome"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/Volume1.png" id="2_volume"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/Back1Shadow.png" id="3_back_shadow"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/Back1.png" id="4_back"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape_volume"]
+size = Vector2(242, 181)
 
 [node name="Level1Chrome" type="Node2D"]
 z_index = 6
@@ -12,6 +15,12 @@ script = ExtResource("1_chrome")
 [node name="Volume" type="Sprite2D" parent="."]
 texture_filter = 1
 texture = ExtResource("2_volume")
+
+[node name="VolumeHitbox" type="Area2D" parent="."]
+input_pickable = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="VolumeHitbox"]
+shape = SubResource("RectangleShape_volume")
 
 [node name="BackShadow" type="Sprite2D" parent="."]
 texture_filter = 1
