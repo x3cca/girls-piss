@@ -127,6 +127,8 @@ func test_web_export_uses_level_1_as_the_main_scene() -> void:
 	)
 	assert_true(export_presets.contains("resources/materials/item_outline.tres"))
 	assert_true(export_presets.contains("shaders/item_outline.gdshader"))
+	assert_eq(ProjectSettings.get_setting("display/window/size/viewport_width"), 540)
+	assert_eq(ProjectSettings.get_setting("display/window/size/viewport_height"), 960)
 
 
 func test_level_1_floor_and_seat_are_bad_but_wall_and_tank_are_neutral() -> void:
@@ -136,10 +138,10 @@ func test_level_1_floor_and_seat_are_bad_but_wall_and_tank_are_neutral() -> void
 	level.set_process(false)
 	level.get_node("LiquidStream").set_process(false)
 
-	var wall_position := Vector2(360.0, 200.0)
-	var tank_position := Vector2(360.0, 300.0)
-	var seat_position := Vector2(360.0, 700.0)
-	var floor_position := Vector2(40.0, 1240.0)
+	var wall_position := Vector2(5.0, 150.0)
+	var tank_position := Vector2(270.0, 225.0)
+	var seat_position := Vector2(60.0, 542.0)
+	var floor_position := Vector2(30.0, 930.0)
 
 	level.evaluate_stream_endpoint(wall_position, true, 0.35)
 	level.evaluate_stream_endpoint(tank_position, true, 0.35)

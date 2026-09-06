@@ -72,7 +72,7 @@ func test_stream_starts_at_the_aim_position_when_hold_begins() -> void:
 	stream.input_controller = controller
 	stream.source_position = Vector2(360.0, 1328.0)
 	var idle_target := Vector2(240.0, 500.0)
-	var start_target := Vector2(600.0, 260.0)
+	var start_target := Vector2(500.0, 260.0)
 	controller.set_target_position(idle_target)
 	stream.process_frame(0.1)
 	controller.set_target_position(start_target)
@@ -106,7 +106,7 @@ func test_mouse_hold_starts_at_the_click_position() -> void:
 	controller.set_target_position(Vector2(240.0, 500.0))
 	stream.process_frame(0.1)
 
-	var click_position := Vector2(600.0, 260.0)
+	var click_position := Vector2(500.0, 260.0)
 	var mouse_down := InputEventMouseButton.new()
 	mouse_down.button_index = MOUSE_BUTTON_LEFT
 	mouse_down.position = click_position
@@ -131,7 +131,7 @@ func test_touch_hold_starts_at_the_tap_position() -> void:
 	controller.set_target_position(Vector2(240.0, 500.0))
 	stream.process_frame(0.1)
 
-	var tap_position := Vector2(600.0, 260.0)
+	var tap_position := Vector2(500.0, 260.0)
 	var touch_down := InputEventScreenTouch.new()
 	touch_down.index = 1
 	touch_down.position = tap_position
@@ -159,7 +159,7 @@ func test_mouse_hold_keeps_its_start_position_through_input_processing() -> void
 	# keep a nonzero cursor offset active while the stream starts.
 	controller._music_target_offset_amplitude = 1.0
 	controller._music_target_offset_position = Vector2(24.0, 0.0)
-	var click_position := Vector2(600.0, 260.0)
+	var click_position := Vector2(500.0, 260.0)
 	var mouse_down := InputEventMouseButton.new()
 	mouse_down.button_index = MOUSE_BUTTON_LEFT
 	mouse_down.position = click_position
@@ -252,7 +252,7 @@ func test_first_shot_flies_from_source_before_endpoint_becomes_active() -> void:
 	stream.input_controller = controller
 	stream.gravity = Vector2(0.0, 360.0)
 	stream.source_position = Vector2(360.0, 1328.0)
-	var target := Vector2(600.0, 260.0)
+	var target := Vector2(500.0, 260.0)
 	controller.set_target_position(target)
 
 	var space_down := InputEventKey.new()
@@ -281,7 +281,7 @@ func test_stream_follow_has_a_small_overshoot_and_settles() -> void:
 	stream.set_process(false)
 	stream.input_controller = controller
 	var first_target := Vector2(120.0, 500.0)
-	var second_target := Vector2(600.0, 500.0)
+	var second_target := Vector2(500.0, 500.0)
 	controller.set_target_position(first_target)
 	stream.process_frame(0.1)
 	controller.set_target_position(second_target)
@@ -310,7 +310,7 @@ func test_large_aim_delta_blooms_and_staying_still_restores_accuracy() -> void:
 	stream.set_process(false)
 	stream.input_controller = controller
 	var first_target := Vector2(240.0, 500.0)
-	var jumped_target := Vector2(600.0, 500.0)
+	var jumped_target := Vector2(500.0, 500.0)
 	controller.set_target_position(first_target)
 	stream.process_frame(1.0 / 60.0)
 	controller.set_target_position(jumped_target)
@@ -371,7 +371,7 @@ func test_small_aim_delta_creates_less_bloom_than_a_large_delta() -> void:
 	stream.reset_stream()
 	controller.set_target_position(Vector2(320.0, 500.0))
 	stream.process_frame(1.0 / 60.0)
-	controller.set_target_position(Vector2(600.0, 500.0))
+	controller.set_target_position(Vector2(500.0, 500.0))
 	stream.process_frame(1.0 / 60.0)
 	var large_bloom := stream.get_aim_bloom_radius()
 
@@ -402,7 +402,7 @@ func test_extreme_bloom_starts_a_double_stream_until_it_settles() -> void:
 	stream.input_controller = controller
 	controller.set_target_position(Vector2(100.0, 500.0))
 	stream.process_frame(1.0 / 60.0)
-	controller.set_target_position(Vector2(720.0, 500.0))
+	controller.set_target_position(Vector2(500.0, 500.0))
 	stream.process_frame(1.0 / 60.0)
 
 	assert_true(stream.get_aim_bloom_radius() >= stream.double_stream_start_radius)

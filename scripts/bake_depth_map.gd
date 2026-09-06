@@ -11,7 +11,7 @@ class_name DepthMapBaker
 
 @export var source_root: Node
 @export var output_path := "res://resources/depth_map_baked.png"
-@export var bake_world_rect := Rect2(0.0, 0.0, 720.0, 1280.0)
+@export var bake_world_rect := Rect2(0.0, 0.0, 540.0, 960.0)
 @export var bake_size := Vector2i(720, 1280)
 @export var minimum_depth := 0.0
 @export var maximum_depth := 1.0
@@ -21,7 +21,7 @@ var _sprite_images: Dictionary = { }
 
 func bake(
 		root: Node,
-		world_rect: Rect2 = Rect2(0.0, 0.0, 720.0, 1280.0),
+		world_rect: Rect2 = Rect2(0.0, 0.0, 540.0, 960.0),
 		output_size: Vector2i = Vector2i(720, 1280),
 ) -> Image:
 	var safe_size := Vector2i(maxi(output_size.x, 1), maxi(output_size.y, 1))
@@ -60,7 +60,7 @@ func bake(
 
 func bake_depth_texture(
 		root: Node,
-		world_rect: Rect2 = Rect2(0.0, 0.0, 720.0, 1280.0),
+		world_rect: Rect2 = Rect2(0.0, 0.0, 540.0, 960.0),
 		output_size: Vector2i = Vector2i(720, 1280),
 ) -> ImageTexture:
 	return ImageTexture.create_from_image(bake(root, world_rect, output_size))

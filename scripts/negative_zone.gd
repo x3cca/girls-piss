@@ -76,7 +76,7 @@ func get_polygon() -> PackedVector2Array:
 func _sync_polygon() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	if viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
-		viewport_size = Vector2(720.0, 1280.0)
+		viewport_size = Vector2(540.0, 960.0)
 	if (
 			_viewport_signature == viewport_size
 			and _normalized_signature == normalized_points

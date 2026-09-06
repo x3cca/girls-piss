@@ -61,8 +61,7 @@ resets it (for example after a strike, retry, or completion).
 
 Open the folder in Godot 4.7.2+ and run the project; it starts at
 `scenes/level_1.tscn`. `scenes/smoke_test.tscn` remains available as the
-debug scene with authored negative zones. The authored viewport is 720×1280;
-the project also uses a 540×960 desktop window override.
+debug scene with authored negative zones. The authored viewport is 540×960.
 
 For direct-level testing, enable `Main.skip_title_screen` on the root node of
 the scene. Tests and tools can use `Main.start_gameplay_immediately()` for the

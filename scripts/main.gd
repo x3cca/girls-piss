@@ -2,8 +2,7 @@ extends Node2D
 
 class_name Main
 
-## Playable portrait-first sample level. All world positions are derived from the
-## visible rectangle, so expand stretching and taller phone ratios stay usable.
+## Playable portrait-first sample level using the fixed 540x960 playfield.
 ## The stream source is deliberately below the frame: the player controls the
 ## jet, never a visible wand or nozzle.
 
@@ -66,7 +65,7 @@ var targets: Array[WettableTarget] = []
 @export_range(0.0, 20.0, 0.1) var failure_exit_rotation := TAU * 3.0
 @export_range(0.0, 120.0, 0.5) var failure_knock_shake_strength := 52.0
 @export_range(0.05, 0.5, 0.01) var failure_knock_shake_duration := 0.16
-var _world_size := Vector2(720.0, 1280.0)
+var _world_size := Vector2(540.0, 960.0)
 var _layout_signature := Vector2.ZERO
 var _elapsed := 0.0
 var _base_position := Vector2.ZERO

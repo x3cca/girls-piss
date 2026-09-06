@@ -15,7 +15,7 @@ class_name DepthMap2D
 		_cached_image = null
 		_debug_texture = null
 		queue_redraw()
-@export var world_rect := Rect2(0.0, 0.0, 720.0, 1280.0):
+@export var world_rect := Rect2(0.0, 0.0, 540.0, 960.0):
 	set(value):
 		world_rect = value
 		queue_redraw()

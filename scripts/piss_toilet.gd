@@ -12,7 +12,7 @@ class_name PissToilet
 signal layout_changed
 
 const DEFAULT_ALPHA_THRESHOLD := SurfaceEffects.DEFAULT_ALPHA_THRESHOLD
-const REFERENCE_VIEWPORT := Vector2(720.0, 1280.0)
+const REFERENCE_VIEWPORT := Vector2(540.0, 960.0)
 
 ## The child transforms in piss_toilet.tscn are authored artwork. These
 ## read-only properties expose the authored layout to dependent systems, but

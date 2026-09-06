@@ -468,14 +468,14 @@ func _is_meaningful_controller_motion(event: InputEventJoypadMotion) -> bool:
 func _default_target_position() -> Vector2:
 	var viewport_size := get_viewport().get_visible_rect().size
 	if viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
-		viewport_size = Vector2(720.0, 1280.0)
+		viewport_size = Vector2(540.0, 960.0)
 	return viewport_size * Vector2(0.5, 0.5)
 
 
 func _clamp_target(position: Vector2) -> Vector2:
 	var viewport_size := get_viewport().get_visible_rect().size
 	if viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
-		viewport_size = Vector2(720.0, 1280.0)
+		viewport_size = Vector2(540.0, 960.0)
 	return Vector2(
 		clampf(position.x, 0.0, viewport_size.x),
 		clampf(position.y, 0.0, viewport_size.y),

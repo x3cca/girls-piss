@@ -734,7 +734,7 @@ func _get_wall_floor_boundary() -> float:
 		)
 		return floor.to_global(local_top).y
 	var owner_node := get_parent()
-	var viewport_size := Vector2(720.0, 1280.0)
+	var viewport_size := Vector2(540.0, 960.0)
 	var viewport := get_viewport()
 	if viewport:
 		viewport_size = viewport.get_visible_rect().size

@@ -16,7 +16,7 @@ uniform float strength = 1.0;
 uniform float fps = 6.0;
 uniform sampler2D noise : filter_linear, repeat_enable;
 uniform sampler2D depth_clip_map : filter_nearest;
-uniform vec4 depth_clip_rect = vec4(0.0, 0.0, 720.0, 1280.0);
+uniform vec4 depth_clip_rect = vec4(0.0, 0.0, 540.0, 960.0);
 uniform float depth_clip_enabled = 0.0;
 uniform float depth_clip_depth = 0.0;
 uniform float depth_clip_epsilon = 0.02;
