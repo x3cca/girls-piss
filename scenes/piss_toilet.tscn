@@ -57,19 +57,20 @@ texture = ExtResource("1_outside")
 [node name="Bowl" type="Sprite2D" parent="." unique_id=1541688367]
 z_index = 1
 material = SubResource("ShaderMaterial_bowl_surface")
-position = Vector2(0, -236.125)
-scale = Vector2(0.9375, 0.9375)
+position = Vector2(0, -92.125)
+scale = Vector2(0.75, 0.75)
 texture = ExtResource("2_bowl")
 
 [node name="Tank" type="Sprite2D" parent="." unique_id=1206500093]
 z_index = 2
 material = SubResource("ShaderMaterial_tank_surface")
-position = Vector2(0, -900)
+position = Vector2(0, -720)
+scale = Vector2(0.8, 0.8)
 texture = ExtResource("3_tank")
 
 [node name="Seat" type="Sprite2D" parent="." unique_id=1453341359]
 z_index = 3
 material = SubResource("ShaderMaterial_seat_surface")
-position = Vector2(0, -236.875)
+position = Vector2(0, -92.875)
 scale = Vector2(0.75, 0.75)
 texture = ExtResource("4_seat")

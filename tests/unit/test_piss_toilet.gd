@@ -37,7 +37,7 @@ func test_smoke_test_places_the_toilet_in_the_play_scene() -> void:
 
 	var toilet := smoke_test.get_node("PissToilet") as Node2D
 	assert_eq(toilet.position, Vector2(360, 640))
-	assert_eq(toilet.scale, Vector2(0.45, 0.45))
+	assert_eq(toilet.scale, Vector2(0.5625, 0.5625))
 	assert_not_null(smoke_test.get_node_or_null("NegativeZone01"))
 	assert_not_null(smoke_test.get_node_or_null("NegativeZone02"))
 
@@ -59,9 +59,9 @@ func test_authored_child_layout_survives_multiple_root_scales() -> void:
 	add_child_autofree(toilet)
 	var authored_positions := {
 		"Outside": Vector2(0.0, -125.875),
-		"Bowl": Vector2(0.0, -236.125),
-		"Tank": Vector2(0.0, -900.0),
-		"Seat": Vector2(0.0, -236.875),
+		"Bowl": Vector2(0.0, -92.125),
+		"Tank": Vector2(0.0, -720.0),
+		"Seat": Vector2(0.0, -92.875),
 	}
 	for part_name in authored_positions:
 		assert_eq((toilet.get_node(part_name) as Sprite2D).position, authored_positions[part_name])

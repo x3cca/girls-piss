@@ -45,7 +45,7 @@ debug_visualization = true
 
 [node name="PissToilet" parent="." unique_id=1742420003 instance=ExtResource("16_piss_toilet")]
 position = Vector2(360, 640)
-scale = Vector2(0.45, 0.45)
+scale = Vector2(0.5625, 0.5625)
 
 [node name="LiquidStream" parent="." unique_id=1204969384 instance=ExtResource("2_stream")]
 

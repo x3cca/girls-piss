@@ -14,6 +14,7 @@ const TARGET_TEXTURES: Array[Texture2D] = [
 	preload("res://assets/art/drive/Straw.png"),
 	preload("res://assets/art/drive/Tampon.png"),
 ]
+const TOILET_COMPOSITION_SCALE := 1.25
 
 var target_offsets := PackedVector2Array(
 	[
@@ -92,10 +93,12 @@ func _layout_level1() -> void:
 		return
 	var toilet := get_node_or_null("PissToilet") as PissToilet
 	if toilet:
-		# The raw toilet art is authored for the 1080x1920 reference. Keep the
-		# drain and the first target visually centered when the viewport changes.
+		# The raw toilet art is authored for the 1080x1920 reference. The complete
+		# toilet composition is intentionally 25% larger in the play screen.
+		# Keep the drain and the first target visually centered when the viewport
+		# changes.
 		toilet.position = Vector2(viewport_size.x * 0.5, viewport_size.y * 0.625)
-		var art_scale := viewport_size.x / 1080.0
+		var art_scale := viewport_size.x / 1080.0 * TOILET_COMPOSITION_SCALE
 		toilet.scale = Vector2.ONE * art_scale
 		toilet.apply_layout()
 		var target_local_points := PackedVector2Array()

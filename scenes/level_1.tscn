@@ -10,6 +10,9 @@
 script = ExtResource("2_level_1")
 draw_neutral_canvas = false
 
+[node name="PissToilet" parent="." index="3" unique_id=1742420003]
+scale = Vector2(0.5625, 0.5625)
+
 [node name="NegativeZone01" parent="." index="7" unique_id=2103637511]
 visible = false
 normalized_points = PackedVector2Array()

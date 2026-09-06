@@ -29,7 +29,7 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 		level.shape_trace.target_textures[9].resource_path,
 		"res://assets/art/drive/Tampon.png",
 	)
-	assert_almost_eq(level.shape_trace.native_target_scale, 0.9375, 0.001)
+	assert_almost_eq(level.shape_trace.native_target_scale, 0.75, 0.001)
 	assert_eq(level.target_offsets.size(), 10)
 	assert_false(level.draw_neutral_canvas)
 	assert_false(level.get_node("DepthMap").debug_visualization)
@@ -38,14 +38,14 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 	assert_gt(level.line_replay.z_index, level.get_node("Level1Chrome").z_index)
 	assert_gt(level.line_replay.z_index, level.shape_trace.z_index)
 	assert_eq(level.get_node("PissToilet/Outside").scale, Vector2.ONE * 0.75)
-	assert_eq(level.get_node("PissToilet/Bowl").scale, Vector2.ONE * 0.9375)
+	assert_eq(level.get_node("PissToilet/Bowl").scale, Vector2.ONE * 0.75)
 	assert_eq(level.get_node("PissToilet/Seat").scale, Vector2.ONE * 0.75)
-	assert_eq(level.get_node("PissToilet/Tank").scale, Vector2.ONE)
+	assert_eq(level.get_node("PissToilet/Tank").scale, Vector2.ONE * 0.8)
 	# These transforms are authored in piss_toilet.tscn. The runtime layout pass
 	# must preserve the hand-tuned bowl/seat placement.
-	assert_eq(level.get_node("PissToilet/Bowl").position, Vector2(0.0, -236.125))
-	assert_eq(level.get_node("PissToilet/Seat").position, Vector2(0.0, -236.875))
-	assert_eq(level.get_node("PissToilet/Tank").position, Vector2(0.0, -900.0))
+	assert_eq(level.get_node("PissToilet/Bowl").position, Vector2(0.0, -92.125))
+	assert_eq(level.get_node("PissToilet/Seat").position, Vector2(0.0, -92.875))
+	assert_eq(level.get_node("PissToilet/Tank").position, Vector2(0.0, -720.0))
 	assert_eq(
 		level.get_node("Level1Background/BackWall").texture.resource_path,
 		"res://assets/art/drive/BackWalll.png",
@@ -115,7 +115,7 @@ func test_level_1_floor_is_bad_but_toilet_and_wall_are_neutral() -> void:
 	var wall_position := Vector2(360.0, 200.0)
 	var tank_position := Vector2(360.0, 300.0)
 	var seat_position := Vector2(360.0, 700.0)
-	var floor_position := Vector2(360.0, 1240.0)
+	var floor_position := Vector2(40.0, 1240.0)
 
 	level.evaluate_stream_endpoint(wall_position, true, 0.35)
 	level.evaluate_stream_endpoint(tank_position, true, 0.35)
