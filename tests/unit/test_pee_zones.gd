@@ -243,6 +243,22 @@ func test_reticle_uses_neutral_negative_and_success_textures() -> void:
 	assert_eq(reticle.get_node("Sprite").texture, TouchReticle.CROSSHAIR_SUCCESS)
 
 
+func test_checkpoint_completion_plays_success_crosshair_burst() -> void:
+	var level := LEVEL_SCENE.instantiate() as Main
+	level.skip_title_screen = true
+	add_child_autofree(level)
+	level.set_process(false)
+	level.get_node("LiquidStream").set_process(false)
+
+	level._on_checkpoint_completed(0)
+
+	assert_true(level.hud.aim_reticle.is_success_burst_active())
+	assert_eq(
+		level.hud.aim_reticle.get_node("Sprite").texture,
+		TouchReticle.CROSSHAIR_SUCCESS,
+	)
+
+
 func test_reticle_is_double_sized_and_uses_the_boil_material() -> void:
 	var reticle := TouchReticle.new()
 	add_child_autofree(reticle)

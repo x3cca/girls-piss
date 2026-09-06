@@ -927,6 +927,7 @@ func _on_wet_target_hit(
 func _on_checkpoint_completed(_index: int) -> void:
 	if state != PLAYING:
 		return
+	hud.play_success_burst()
 	if is_instance_valid(screen_overlay):
 		screen_overlay.play_success_feedback()
 
