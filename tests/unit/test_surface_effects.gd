@@ -54,6 +54,8 @@ func test_all_bathroom_surfaces_have_independent_reusable_shaders() -> void:
 	)
 	assert_eq(bowl.get_shader_parameter("stain_color"), SurfaceEffects.DEFAULT_STAIN_COLOR)
 	assert_eq(bowl.get_shader_parameter("stain_opacity"), SurfaceEffects.DEFAULT_STAIN_OPACITY)
+	assert_eq(bowl.get_shader_parameter("ripple_strength"), 0.0)
+	assert_eq(bowl.get_shader_parameter("ripple_center"), Vector2(0.5, 0.5))
 	assert_eq(seat.get_shader_parameter("stain_color"), SurfaceEffects.DEFAULT_STAIN_COLOR)
 	assert_eq(seat.get_shader_parameter("stain_opacity"), SurfaceEffects.DEFAULT_STAIN_OPACITY)
 
@@ -86,7 +88,7 @@ func test_endpoint_classification_uses_alpha_and_wall_floor_boundary() -> void:
 	)
 
 
-func test_contact_stamps_permanent_surface_maps_and_reset_clears() -> void:
+func test_contact_builds_bowl_noise_and_keeps_one_ripple() -> void:
 	var level := _level()
 	var effects := level.surface_effects
 	var bowl := level.get_node("PissToilet/Bowl") as Sprite2D
@@ -101,22 +103,37 @@ func test_contact_stamps_permanent_surface_maps_and_reset_clears() -> void:
 	assert_eq(effects.get_bowl_ripple_count(), 1)
 	assert_eq(effects.get_surface_stain_count(SurfaceEffects.SURFACE_BOWL), 1)
 	assert_gt(effects.get_surface_stain_value(SurfaceEffects.SURFACE_BOWL, bowl_position), 0.0)
+	assert_eq(effects.get_surface_material(SurfaceEffects.SURFACE_BOWL).get_shader_parameter("ripple_age"), 0.0)
+	var first_ripple_center: Vector2 = effects.get_bowl_ripples()[0]["uv"] as Vector2
+
+	# Continuous endpoint updates add persistent noise without creating another
+	# radial ripple or moving the existing ripple center.
+	effects.observe_stream_endpoint(bowl_position + Vector2(8.0, 0.0), true)
+	assert_eq(effects.get_surface_stain_count(SurfaceEffects.SURFACE_BOWL), 2)
+	assert_eq(effects.get_bowl_ripple_count(), 1)
+	assert_eq(effects.get_bowl_ripples()[0]["uv"], first_ripple_center)
 
 	# The mark remains after a long pause; only a level reset clears it.
 	effects._process(10.0)
 	assert_true(effects.is_surface_active(SurfaceEffects.SURFACE_BOWL))
 	assert_eq(effects.get_surface_strength(SurfaceEffects.SURFACE_BOWL), 1.0)
 	assert_gt(effects.get_surface_stain_value(SurfaceEffects.SURFACE_BOWL, bowl_position), 0.0)
+	assert_almost_eq(
+		effects.get_surface_material(SurfaceEffects.SURFACE_BOWL).get_shader_parameter("ripple_age"),
+		10.0,
+		0.001,
+	)
 
-	# A released re-hit creates a second persistent bowl spot.
+	# A released re-hit updates the one ripple to the new real impact.
 	effects.observe_stream_endpoint(Vector2.ZERO, false)
 	var second_bowl_position := (
 			bowl
 	).to_global(Vector2(80.0, 80.0))
 	assert_eq(effects.detect_surface(second_bowl_position), SurfaceEffects.SURFACE_BOWL)
 	effects.observe_stream_endpoint(second_bowl_position, true)
-	assert_eq(effects.get_bowl_ripple_count(), 2)
-	assert_eq(effects.get_surface_stain_count(SurfaceEffects.SURFACE_BOWL), 2)
+	assert_eq(effects.get_bowl_ripple_count(), 1)
+	assert_eq(effects.get_surface_stain_count(SurfaceEffects.SURFACE_BOWL), 3)
+	assert_ne(effects.get_bowl_ripples()[0]["uv"], first_ripple_center)
 	assert_gt(effects.get_surface_stain_value(SurfaceEffects.SURFACE_BOWL, second_bowl_position), 0.0)
 	assert_eq(effects.get_surface_strength(SurfaceEffects.SURFACE_SEAT), 0.0)
 

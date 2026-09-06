@@ -61,6 +61,7 @@ var _stain_images: Dictionary = { }
 var _stain_textures: Dictionary = { }
 var _stain_map_sizes: Dictionary = { }
 var _stain_stamp_counts: Dictionary = { }
+var _noise_stamp_serial := 0
 var _surface_states: Dictionary = { }
 ## Kept as a queryable contact history for bowl ripple tests and tooling. The
 ## actual visual state is the persistent bowl stain map, not these positions.
@@ -85,6 +86,14 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_time_since_endpoint_signal += maxf(delta, 0.0)
+	if not _surface_states.has(SURFACE_BOWL):
+		return
+	var bowl_state: Dictionary = _surface_states[SURFACE_BOWL]
+	if float(bowl_state.get("ripple_strength", 0.0)) <= 0.0:
+		return
+	bowl_state["ripple_age"] = float(bowl_state.get("ripple_age", 0.0)) + maxf(delta, 0.0)
+	_surface_states[SURFACE_BOWL] = bowl_state
+	_apply_surface_state(SURFACE_BOWL, bowl_state)
 
 
 func bind_stream(value: LiquidStream) -> void:
@@ -146,10 +155,23 @@ func _on_drawing_point_updated(position: Vector2, active: bool) -> void:
 			and _time_since_endpoint_signal <= contact_signal_gap
 			and (state["position"] as Vector2).distance_to(position) <= rehit_distance
 	)
-	if not continuous_contact:
-		_stamp_surface(surface, node, position)
-		if surface == SURFACE_BOWL:
+	var bowl_contact_started := (
+			surface == SURFACE_BOWL
+			and (
+				not _endpoint_active
+				or _last_endpoint_surface != SURFACE_BOWL
+				or not bool(state["active"])
+			)
+		)
+	if surface == SURFACE_BOWL:
+		# Water noise accumulates along the committed stream endpoint. The ripple
+		# itself is reset only when contact begins, so it never follows the aim.
+		_stamp_bowl_noise(surface, node, position)
+		if bowl_contact_started:
 			_add_ripple(position, node)
+	elif not continuous_contact:
+		# Other surfaces, including the seat, still receive their persistent splats.
+		_stamp_surface(surface, node, position)
 	state["active"] = true
 	state["strength"] = 1.0
 	state["position"] = position
@@ -206,6 +228,7 @@ func reset_effects() -> void:
 	_last_endpoint_surface = SURFACE_NONE
 	_ripples.clear()
 	_stain_stamp_counts.clear()
+	_noise_stamp_serial = 0
 	_clear_stain_maps()
 	for surface in SURFACES:
 		var state: Dictionary = _surface_states[surface]
@@ -214,6 +237,9 @@ func reset_effects() -> void:
 		state["strength"] = 0.0
 		state["position"] = Vector2.ZERO
 		state["uv"] = Vector2(0.5, 0.5)
+		state["ripple_uv"] = Vector2(0.5, 0.5)
+		state["ripple_age"] = 0.0
+		state["ripple_strength"] = 0.0
 		_surface_states[surface] = state
 		_apply_surface_state(surface, state)
 
@@ -338,6 +364,9 @@ func _ensure_surface_states() -> void:
 			"strength": 0.0,
 			"position": Vector2.ZERO,
 			"uv": Vector2(0.5, 0.5),
+			"ripple_uv": Vector2(0.5, 0.5),
+			"ripple_age": 0.0,
+			"ripple_strength": 0.0,
 		}
 
 
@@ -386,6 +415,9 @@ func _prepare_materials() -> void:
 				"strength": 0.0,
 				"position": Vector2.ZERO,
 				"uv": Vector2(0.5, 0.5),
+				"ripple_uv": Vector2(0.5, 0.5),
+				"ripple_age": 0.0,
+				"ripple_strength": 0.0,
 			}
 		_apply_surface_state(surface, _surface_states[surface])
 
@@ -393,11 +425,14 @@ func _prepare_materials() -> void:
 func _set_common_material_parameters(surface: String, material: ShaderMaterial) -> void:
 	var stain_map: ImageTexture = _stain_textures.get(surface) as ImageTexture
 	if stain_map != null:
-		material.set_shader_parameter("stain_map", stain_map)
+		material.set_shader_parameter(
+			"water_noise_map" if surface == SURFACE_BOWL else "stain_map",
+			stain_map,
+		)
 	var map_size: Vector2i = _stain_map_sizes.get(surface, Vector2i(1, 1))
 	if surface == SURFACE_BOWL:
 		material.set_shader_parameter(
-			"stain_map_texel_size",
+			"water_noise_map_texel_size",
 			Vector2(1.0 / maxf(map_size.x, 1), 1.0 / maxf(map_size.y, 1)),
 		)
 	material.set_shader_parameter("splat_threshold", splat_threshold)
@@ -408,27 +443,90 @@ func _set_common_material_parameters(surface: String, material: ShaderMaterial) 
 	material.resource_name = "SurfaceEffect_%s" % surface.capitalize()
 
 
-func _apply_surface_state(surface: String, _state: Dictionary) -> void:
+func _apply_surface_state(surface: String, state: Dictionary) -> void:
 	var material: ShaderMaterial = _surface_materials.get(surface) as ShaderMaterial
 	if material == null:
 		return
 	var stain_map: ImageTexture = _stain_textures.get(surface) as ImageTexture
 	if stain_map != null:
-		material.set_shader_parameter("stain_map", stain_map)
+		material.set_shader_parameter(
+			"water_noise_map" if surface == SURFACE_BOWL else "stain_map",
+			stain_map,
+		)
+	if surface == SURFACE_BOWL:
+		material.set_shader_parameter("ripple_center", state.get("ripple_uv", Vector2(0.5, 0.5)))
+		material.set_shader_parameter("ripple_age", state.get("ripple_age", 0.0))
+		material.set_shader_parameter("ripple_strength", state.get("ripple_strength", 0.0))
 
 
 func _add_ripple(position: Vector2, node: Sprite2D) -> void:
-	# The bowl's ripple history is now permanent contact history. Its visual
-	# representation is accumulated in the bowl stain map, which supports any
-	# number of distinct spots without packing a fixed list into the shader.
+	# Keep one impact ripple. The persistent water texture is updated separately
+	# for every committed stream chunk.
+	_ripples.clear()
+	var ripple_uv := _world_to_uv(node, position)
 	_ripples.append(
 		{
 			"position": position,
-			"uv": _world_to_uv(node, position),
+			"uv": ripple_uv,
 			"age": 0.0,
 			"strength": 1.0,
 		},
 	)
+	var state: Dictionary = _surface_states[SURFACE_BOWL]
+	state["ripple_uv"] = ripple_uv
+	state["ripple_age"] = 0.0
+	state["ripple_strength"] = 1.0
+	_surface_states[SURFACE_BOWL] = state
+
+
+func _stamp_bowl_noise(surface: String, node: Sprite2D, position: Vector2) -> void:
+	_prepare_stain_map(surface, node)
+	var noise_image: Image = _stain_images.get(surface) as Image
+	var noise_texture: ImageTexture = _stain_textures.get(surface) as ImageTexture
+	if noise_image == null or noise_texture == null or noise_image.is_empty():
+		return
+	var uv := _world_to_uv(node, position)
+	var radius := clampf(stain_radius * 0.55, 0.004, 0.25)
+	var stamp_width := maxi(1, ceili(radius * 2.0 * noise_image.get_width()))
+	var stamp_height := maxi(1, ceili(radius * 2.0 * noise_image.get_height()))
+	var center := Vector2(
+		uv.x * noise_image.get_width() - 0.5,
+		uv.y * noise_image.get_height() - 0.5,
+	)
+	var half_width := stamp_width * 0.5
+	var half_height := stamp_height * 0.5
+	var min_x := maxi(0, floori(center.x - half_width))
+	var max_x := mini(noise_image.get_width() - 1, ceili(center.x + half_width))
+	var min_y := maxi(0, floori(center.y - half_height))
+	var max_y := mini(noise_image.get_height() - 1, ceili(center.y + half_height))
+	for y in range(min_y, max_y + 1):
+		for x in range(min_x, max_x + 1):
+			var local := Vector2(
+				((x + 0.5) - (center.x - half_width)) / stamp_width * 2.0 - 1.0,
+				((y + 0.5) - (center.y - half_height)) / stamp_height * 2.0 - 1.0,
+			)
+			var distance := local.length()
+			if distance > 1.0:
+				continue
+			var edge := 1.0 - smoothstep(0.0, 1.0, distance)
+			var noise := _stamp_noise(Vector2i(x, y), _noise_stamp_serial)
+			var value := (0.25 + noise * 0.75) * edge
+			var current := noise_image.get_pixel(x, y).r
+			var updated := maxf(current, value)
+			if updated > current:
+				noise_image.set_pixel(x, y, Color(updated, 0.0, 0.0, 1.0))
+	_noise_stamp_serial += 1
+	noise_texture.update(noise_image)
+	_stain_stamp_counts[surface] = int(_stain_stamp_counts.get(surface, 0)) + 1
+
+
+func _stamp_noise(pixel: Vector2i, serial: int) -> float:
+	var value := sin(
+		float(pixel.x) * 12.9898
+		+ float(pixel.y) * 78.233
+		+ float(serial) * 37.719
+	) * 43758.5453
+	return value - floorf(value)
 
 
 func _prepare_stain_map(surface: String, node: Sprite2D) -> void:
