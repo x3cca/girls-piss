@@ -15,6 +15,7 @@
 [ext_resource type="PackedScene" path="res://scenes/depth_environment.tscn" id="14_depth_environment"]
 [ext_resource type="PackedScene" path="res://scenes/negative_zone.tscn" id="15_negative_zone"]
 [ext_resource type="PackedScene" path="res://scenes/piss_toilet.tscn" id="16_piss_toilet"]
+[ext_resource type="Script" path="res://scripts/surface_effects.gd" id="17_surface_effects"]
 
 [sub_resource type="Gradient" id="Gradient_light"]
 colors = PackedColorArray(1, 1, 1, 0.95, 1, 1, 1, 0)
@@ -47,6 +48,9 @@ scale = Vector2(0.45, 0.45)
 
 [node name="LiquidStream" parent="." unique_id=1204969384 instance=ExtResource("2_stream")]
 
+[node name="SurfaceEffects" type="Node" parent="." unique_id=1992168420]
+script = ExtResource("17_surface_effects")
+
 [node name="ShapeTrace" parent="." unique_id=136454311 instance=ExtResource("8_trace")]
 normalized_points = PackedVector2Array(0.5, 0.78, 0.69, 0.71, 0.79, 0.54, 0.74, 0.37, 0.58, 0.27, 0.39, 0.28, 0.25, 0.4, 0.23, 0.58, 0.34, 0.71, 0.52, 0.68, 0.65, 0.57, 0.61, 0.43, 0.49, 0.37, 0.38, 0.45, 0.4, 0.57, 0.52, 0.6, 0.59, 0.51, 0.53, 0.44, 0.48, 0.49)
 closed_path = false
@@ -64,21 +68,23 @@ normalized_points = PackedVector2Array(0.72, 0.1, 0.97, 0.1, 0.92, 0.29, 0.75, 0
 [node name="PissLineReplay" parent="." unique_id=1262491738 instance=ExtResource("10_replay")]
 
 [node name="Ambient" type="CanvasModulate" parent="." unique_id=1496793359]
-color = Color(0.337, 0.376, 0.502, 1)
+color = Color(1, 1, 1, 1)
 
 [node name="BroadMoonLight" type="PointLight2D" parent="." unique_id=687514520]
-position = Vector2(360, 435)
-color = Color(0.569, 0.663, 1, 1)
-energy = 0.72
+position = Vector2(360, 640)
+color = Color(1, 0.95, 0.9, 1)
+energy = 1
 texture = SubResource("GradientTexture_light")
-texture_scale = 3.4
+texture_scale = 2.85
+enabled = false
 
 [node name="StreamImpactLight" type="PointLight2D" parent="." unique_id=172867828]
 position = Vector2(360, 1328)
-color = Color(1, 0.898, 0.537, 1)
-energy = 1.1
+color = Color(1, 0.95, 0.9, 1)
+energy = 1.15
 texture = SubResource("GradientTexture_light")
-texture_scale = 0.82
+texture_scale = 0.9
+enabled = false
 
 [node name="ScreenOverlay" parent="." unique_id=125728605 instance=ExtResource("7_overlay")]
 
