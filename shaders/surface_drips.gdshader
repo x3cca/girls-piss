@@ -9,7 +9,10 @@ uniform float stain_opacity = 0.62;
 
 
 void fragment() {
-	vec4 base = texture(TEXTURE, UV) * COLOR;
+	// Keep the authored RGB untouched. Multiplying by the built-in COLOR shifts
+	// these sRGB assets in the compatibility renderer even with a blank stain map.
+	vec4 base = texture(TEXTURE, UV);
+	base.a *= COLOR.a;
 	float stain = texture(stain_map, UV).r;
 	float yellow_amount = clamp(stain * stain_opacity * stain_color.a, 0.0, 1.0);
 	vec3 shaded = mix(base.rgb, stain_color.rgb, yellow_amount);
