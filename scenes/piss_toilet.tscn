@@ -10,6 +10,7 @@
 [node name="Outside" type="Sprite2D" parent="."]
 position = Vector2(0, 32)
 texture = ExtResource("1_outside")
+modulate = Color(1, 1, 1, 0.2)
 z_index = 0
 
 [node name="Bowl" type="Sprite2D" parent="."]

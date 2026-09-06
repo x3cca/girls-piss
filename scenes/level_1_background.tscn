@@ -21,7 +21,9 @@ texture = ExtResource("3_floor")
 [node name="WallShadow" type="Sprite2D" parent="."]
 texture_filter = 1
 texture = ExtResource("4_shadow")
+modulate = Color(1, 1, 1, 0.2)
 
 [node name="WallPaper" type="Sprite2D" parent="."]
 texture_filter = 1
 texture = ExtResource("5_paper")
+modulate = Color(1, 1, 1, 0.2)
