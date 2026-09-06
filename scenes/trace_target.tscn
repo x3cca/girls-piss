@@ -2,12 +2,12 @@
 
 [ext_resource type="Script" path="res://scripts/trace_target.gd" id="1_trace_target"]
 [ext_resource type="Texture2D" path="res://assets/art/aimer_placeholder.png" id="2_texture"]
-[ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="3_boil"]
+[ext_resource type="Material" path="res://resources/materials/item_outline.tres" id="3_item_outline"]
 
 [node name="TraceTarget" type="Node2D"]
 script = ExtResource("1_trace_target")
 
 [node name="Sprite" type="Sprite2D" parent="."]
 texture_filter = 1
-material = ExtResource("3_boil")
+material = ExtResource("3_item_outline")
 texture = ExtResource("2_texture")

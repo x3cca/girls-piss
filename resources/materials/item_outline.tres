@@ -1,0 +1,18 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://sxis02v4xtb8"]
+
+[ext_resource type="Shader" uid="uid://c6dug8lywwhdg" path="res://shaders/item_outline.gdshader" id="1_item_outline"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_item_outline"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_item_outline"]
+noise = SubResource("FastNoiseLite_item_outline")
+seamless = true
+
+[resource]
+shader = ExtResource("1_item_outline")
+shader_parameter/outline_color = Color(0, 0, 0, 1)
+shader_parameter/outline_width = 4.0
+shader_parameter/noise = SubResource("NoiseTexture2D_item_outline")
+shader_parameter/noise_scale = Vector2(0.01, 0.01)
+shader_parameter/boil_strength = 0.1
+shader_parameter/boil_fps = 6.0

@@ -2,7 +2,7 @@ extends Node2D
 
 class_name TraceTarget
 
-const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
+const ITEM_MATERIAL := preload("res://resources/materials/item_outline.tres")
 
 ## A lightweight sprite target used by ShapeTrace. Idle motion is deliberately
 ## restrained so the target feels buoyant without making its hit point unclear.
@@ -35,7 +35,7 @@ func _ready() -> void:
 		_sprite = Sprite2D.new()
 		_sprite.name = "Sprite"
 		_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		_sprite.material = BOIL_MATERIAL
+		_sprite.material = ITEM_MATERIAL
 		add_child(_sprite)
 	reset_target()
 
