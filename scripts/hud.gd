@@ -11,7 +11,7 @@ var safe_margin := 28.0
 @onready var carrot_marker: TextureRect = $CarrotMarker
 @onready var completion_card: CompletionCard = $CompletionCard
 @onready var input_prompt: InputPrompt = $InputPrompt
-@onready var strike_indicator: StrikeIndicator = $StrikeIndicator
+@onready var strike_warning: StrikeWarning = $StrikeWarning
 @onready var piss_meter: PissMeter = $PissMeter
 var _wired_input_controller: InputController
 var gameplay_controls_visible := true
@@ -59,8 +59,8 @@ func set_gameplay_controls_visible(enabled: bool) -> void:
 		carrot_marker.visible = enabled
 	if is_instance_valid(input_prompt) and not enabled:
 		input_prompt.hide_prompt()
-	if is_instance_valid(strike_indicator):
-		strike_indicator.visible = enabled
+	if is_instance_valid(strike_warning) and not enabled:
+		strike_warning.hide_warning()
 	if is_instance_valid(piss_meter):
 		# The meter stays on screen during the title transition, but only drains
 		# after gameplay has been released by the title gate.
@@ -99,8 +99,16 @@ func reset_piss_meter() -> void:
 
 
 func set_strikes(value: int) -> void:
-	if is_instance_valid(strike_indicator):
-		strike_indicator.set_strikes(value)
+	# Kept as a HUD boundary for the gameplay controller. Strike warnings are
+	# event-driven, so the count itself does not leave a persistent marker.
+	if is_instance_valid(strike_warning) and value <= 0:
+		strike_warning.hide_warning()
+
+
+func show_strike_warning(strike: int, duration := -1.0) -> void:
+	if not gameplay_controls_visible or not is_instance_valid(strike_warning):
+		return
+	strike_warning.show_warning(strike, duration)
 
 
 func set_aim_zone_state(next_state: int) -> void:

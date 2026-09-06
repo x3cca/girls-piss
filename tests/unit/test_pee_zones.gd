@@ -107,7 +107,7 @@ func test_force_pissing_does_not_merge_separate_holds_for_contact_rules() -> voi
 	assert_eq(level.get_strikes(), 2)
 
 
-func test_three_strikes_stop_gameplay_and_show_retry_state() -> void:
+func test_four_strikes_stop_gameplay_and_show_retry_state() -> void:
 	var level := LEVEL_SCENE.instantiate() as Main
 	level.skip_title_screen = true
 	add_child_autofree(level)
@@ -115,13 +115,13 @@ func test_three_strikes_stop_gameplay_and_show_retry_state() -> void:
 	level.get_node("LiquidStream").set_process(false)
 	var bad_position := Vector2(120.0, 220.0)
 
-	for strike_index in 3:
+	for strike_index in 4:
 		if strike_index > 0:
 			level.evaluate_stream_endpoint(Vector2.ZERO, false, 0.0)
 			level._process(level.safety_cooldown)
 		level.evaluate_stream_endpoint(bad_position, true, 0.35)
 
-	assert_eq(level.get_strikes(), 3)
+	assert_eq(level.get_strikes(), 4)
 	assert_eq(level.state, Main.FAILED)
 	assert_false(level.input_controller.is_gameplay_input_enabled())
 	assert_true(level.hud.completion_card.visible)

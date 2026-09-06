@@ -186,7 +186,7 @@ func test_piss_meter_has_a_one_minute_continuous_stream_budget() -> void:
 	assert_almost_eq(meter.get_time_remaining(), 50.0, 0.001)
 
 
-func test_empty_piss_meter_fails_the_level_like_three_strikes() -> void:
+func test_empty_piss_meter_fails_the_level() -> void:
 	var level := LEVEL_SCENE.instantiate() as Level1
 	level.skip_title_screen = true
 	add_child_autofree(level)
