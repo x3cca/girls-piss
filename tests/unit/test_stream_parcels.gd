@@ -144,6 +144,35 @@ func test_touch_hold_starts_at_the_tap_position() -> void:
 	assert_eq(stream.parcel_at(0)["position"], stream.source_position)
 
 
+func test_mouse_hold_keeps_its_start_position_through_input_processing() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+	var controller := InputController.new()
+	add_child_autofree(controller)
+	stream.set_process(false)
+	stream.input_controller = controller
+	stream.source_position = Vector2(360.0, 1328.0)
+	controller.set_target_position(Vector2(240.0, 500.0))
+	stream.process_frame(0.1)
+
+	# A live controller frame can change the public target after the click, so
+	# keep a nonzero cursor offset active while the stream starts.
+	controller._music_target_offset_position = Vector2(24.0, 0.0)
+	var click_position := Vector2(600.0, 260.0)
+	var mouse_down := InputEventMouseButton.new()
+	mouse_down.button_index = MOUSE_BUTTON_LEFT
+	mouse_down.position = click_position
+	mouse_down.pressed = true
+	controller.handle_input_event(mouse_down)
+	controller.process_frame(1.0 / 60.0)
+	assert_true(controller.get_target_position() != click_position)
+
+	stream.process_frame(1.0 / 60.0)
+
+	assert_eq(stream.get_stream_target_position(), click_position)
+	assert_eq(stream.parcel_at(0)["launch_target"], click_position)
+
+
 func test_stream_follow_has_a_small_overshoot_and_settles() -> void:
 	var stream := STREAM_SCENE.instantiate() as LiquidStream
 	add_child_autofree(stream)
