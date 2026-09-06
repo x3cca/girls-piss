@@ -27,6 +27,11 @@ const CURSOR_TEXTURE: Texture2D = preload(
 
 const DOOR_KNOCK_OFFSETS := [0.0, 0.19, 0.54]
 const DOOR_BANG_HOLD_AFTER_LAST := 0.18
+const DOOR_BANG_VERTICAL_ANCHORS := [0.0, 1.0, 0.5]
+const DOOR_BANG_ROW_FRAME_ORDER := [1, 2, 0]
+const DOOR_BANG_ROW_WIDTH_RATIO := 0.9
+const DOOR_BANG_ROW_HEIGHT_RATIO := 0.29
+const DOOR_BANG_ROW_GAP := 12.0
 
 @onready var _backdrop: ColorRect = $Backdrop
 @onready var _dread_frame: TextureRect = $DreadFrame
@@ -45,6 +50,8 @@ var _raid_sequence_tween: Tween
 var _door_knock_tween: Tween
 var _door_smash_delay_tween: Tween
 var _card_revealed := false
+var _door_bang_layout_size := Vector2.ZERO
+var _door_bang_frame_positions: Array[Vector2] = []
 
 
 func _ready() -> void:
@@ -207,6 +214,7 @@ func _show_door_bang_frame(frame_index: int) -> void:
 	if not _door_bang.visible:
 		return
 	_door_bang.frame = frame_index
+	_position_door_bang_frame(frame_index)
 	# The three authored frames now correspond one-to-one with the three knocks
 	# in the audio clip, so each one can kick the camera independently.
 	raid_knock.emit()
@@ -237,15 +245,65 @@ func _layout_door_bang() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	if viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
 		return
-	# The source frames have different crops. Size against the largest rotated
-	# frame so every impact stays centered and visible along the bottom edge.
+	if viewport_size == _door_bang_layout_size:
+		return
+	_door_bang_layout_size = viewport_size
+	# Each source frame is a separate authored impact. They are played in
+	# sequence, but each one gets its own slot in the horizontal row instead of
+	# sharing the same center point. The authored vertical order is top, bottom,
+	# middle for DoorBang1, DoorBang2, DoorBang3 respectively. Horizontally, the
+	# authored order is right, left, middle.
+	var frame_sizes: Array[Vector2] = []
+	var total_frame_width := 0.0
+	var max_frame_height := 0.0
+	var frame_count := _door_bang.sprite_frames.get_frame_count(&"default")
+	var rotation_cosine := absf(cos(_door_bang.rotation))
+	var rotation_sine := absf(sin(_door_bang.rotation))
+	for frame_index in range(frame_count):
+		var texture := _door_bang.sprite_frames.get_frame_texture(&"default", frame_index)
+		var texture_size := texture.get_size()
+		var frame_size := Vector2(
+			texture_size.x * rotation_cosine + texture_size.y * rotation_sine,
+			texture_size.x * rotation_sine + texture_size.y * rotation_cosine,
+		)
+		frame_sizes.append(frame_size)
+		total_frame_width += frame_size.x
+		max_frame_height = maxf(max_frame_height, frame_size.y)
+	if frame_sizes.is_empty() or max_frame_height <= 0.0:
+		return
+
+	var unscaled_row_width := total_frame_width + DOOR_BANG_ROW_GAP * (frame_count - 1)
 	var scale_factor := minf(
-		viewport_size.x * 0.72 / 469.0,
-		viewport_size.y * 0.29 / 370.0,
+		viewport_size.x * DOOR_BANG_ROW_WIDTH_RATIO / unscaled_row_width,
+		viewport_size.y * DOOR_BANG_ROW_HEIGHT_RATIO / max_frame_height,
 	)
 	scale_factor = maxf(scale_factor, 0.1)
 	_door_bang.scale = Vector2.ONE * scale_factor
-	_door_bang.position = Vector2(
-		viewport_size.x * 0.5,
-		viewport_size.y - 370.0 * scale_factor * 0.5,
-	)
+
+	var row_height := max_frame_height * scale_factor
+	var row_gap := DOOR_BANG_ROW_GAP * scale_factor
+	var row_width := total_frame_width * scale_factor + row_gap * (frame_count - 1)
+	var row_left := (viewport_size.x - row_width) * 0.5
+	var row_top := viewport_size.y - row_height
+	_door_bang_frame_positions.clear()
+	_door_bang_frame_positions.resize(frame_count)
+	for row_slot in range(frame_count):
+		var frame_index := row_slot
+		if row_slot < DOOR_BANG_ROW_FRAME_ORDER.size():
+			frame_index = DOOR_BANG_ROW_FRAME_ORDER[row_slot]
+		var frame_size := frame_sizes[frame_index] * scale_factor
+		var vertical_anchor := 0.5
+		if frame_index < DOOR_BANG_VERTICAL_ANCHORS.size():
+			vertical_anchor = DOOR_BANG_VERTICAL_ANCHORS[frame_index]
+		_door_bang_frame_positions[frame_index] = Vector2(
+			row_left + frame_size.x * 0.5,
+			row_top + (row_height - frame_size.y) * vertical_anchor + frame_size.y * 0.5,
+		)
+		row_left += frame_size.x + row_gap
+	_position_door_bang_frame(_door_bang.frame)
+
+
+func _position_door_bang_frame(frame_index: int) -> void:
+	if frame_index < 0 or frame_index >= _door_bang_frame_positions.size():
+		return
+	_door_bang.position = _door_bang_frame_positions[frame_index]
