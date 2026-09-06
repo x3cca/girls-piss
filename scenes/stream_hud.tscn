@@ -1,37 +1,31 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=24 format=3]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scripts/completion_card.gd" id="4_completion"]
 [ext_resource type="PackedScene" path="res://scenes/touch_reticle.tscn" id="5_touch_reticle"]
 [ext_resource type="PackedScene" path="res://scenes/input_prompt.tscn" id="6_prompt"]
-[ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="7_boil"]
 [ext_resource type="PackedScene" path="res://scenes/strike_warning.tscn" id="8_strikes"]
 [ext_resource type="PackedScene" path="res://scenes/piss_meter.tscn" id="9_meter"]
 [ext_resource type="PackedScene" path="res://scenes/game_over.tscn" id="10_game_over"]
+[ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="11_boil"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/Dread vignette2.png" id="12_dread"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/GoodJerbFinished.png" id="13_good_jerb"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/YouDidItStarSticker.png" id="14_good_job_star"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/DottyCredit.png" id="15_dotty_credit"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/DottyCreditQuote.png" id="16_dotty_quote"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/MusicCredit.png" id="17_music_credit"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/PissAgainArrow1.png" id="18_piss_again_arrow_one"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/PissAgainArrow2.png" id="19_piss_again_arrow_two"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/PissAgainText1.png" id="20_piss_again_text_one"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/PissAgainText2.png" id="21_piss_again_text_two"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/YouDidItStarStickerText.png" id="22_good_job_text"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/SleepyCreditQuote.png" id="23_sleepy_quote"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/SleepCredit.png" id="24_sleep_credit"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/RayCreditQuote.png" id="25_ray_quote"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/Ray credit.png" id="26_ray_credit"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBox_button"]
-bg_color = Color(0.945, 0.827, 0.329, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(1, 0.972, 0.674, 1)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-
-[sub_resource type="StyleBoxFlat" id="StyleBox_button_hover"]
-bg_color = Color(1, 0.914, 0.486, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(1, 0.972, 0.674, 1)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
+[sub_resource type="StyleBoxFlat" id="StyleBox_transparent_button"]
+bg_color = Color(0, 0, 0, 0)
 
 [node name="StreamHUD" type="Control"]
 layout_mode = 3
@@ -62,14 +56,264 @@ mouse_filter = 0
 visible = false
 script = ExtResource("4_completion")
 
-[node name="PlayAgainButton" type="Button" parent="CompletionCard"]
+[node name="Backdrop" type="ColorRect" parent="CompletionCard"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.06, 0.045, 0.075, 0.68)
+
+[node name="DreadFrame" type="TextureRect" parent="CompletionCard"]
+texture_filter = 1
+material = ExtResource("11_boil")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+modulate = Color(1, 1, 1, 0.34)
+texture = ExtResource("12_dread")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Presentation" type="Control" parent="CompletionCard"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Art" type="Control" parent="CompletionCard/Presentation"]
 layout_mode = 0
-theme_override_colors/font_color = Color(0.12, 0.1, 0.04, 1)
-theme_override_colors/font_hover_color = Color(0.12, 0.1, 0.04, 1)
-theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = SubResource("StyleBox_button")
-theme_override_styles/hover = SubResource("StyleBox_button_hover")
-text = "PLAY AGAIN"
+offset_right = 1080.0
+offset_bottom = 1920.0
+mouse_filter = 2
+
+[node name="GoodJobGroup" type="Control" parent="CompletionCard/Presentation/Art"]
+layout_mode = 0
+offset_right = 1080.0
+offset_bottom = 760.0
+pivot_offset = Vector2(540, 380)
+mouse_filter = 2
+
+[node name="GoodJerbFinished" type="TextureRect" parent="CompletionCard/Presentation/Art/GoodJobGroup"]
+texture_filter = 1
+material = ExtResource("11_boil")
+layout_mode = 0
+offset_left = 15.0
+offset_top = 70.0
+offset_right = 1064.0
+offset_bottom = 719.0
+mouse_filter = 2
+texture = ExtResource("13_good_jerb")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="GoodJobSticker" type="Control" parent="CompletionCard/Presentation/Art/GoodJobGroup"]
+layout_mode = 0
+offset_right = 1080.0
+offset_bottom = 760.0
+pivot_offset = Vector2(780, 252)
+mouse_filter = 2
+
+[node name="GoodJobStar" type="TextureRect" parent="CompletionCard/Presentation/Art/GoodJobGroup/GoodJobSticker"]
+texture_filter = 1
+material = ExtResource("11_boil")
+layout_mode = 0
+offset_left = 564.0
+offset_top = 9.0
+offset_right = 1061.0
+offset_bottom = 495.0
+mouse_filter = 2
+texture = ExtResource("14_good_job_star")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="GoodJobText" type="TextureRect" parent="CompletionCard/Presentation/Art/GoodJobGroup/GoodJobSticker"]
+texture_filter = 1
+material = ExtResource("11_boil")
+layout_mode = 0
+offset_left = 499.0
+offset_top = 96.0
+offset_right = 1030.0
+offset_bottom = 377.0
+mouse_filter = 2
+texture = ExtResource("22_good_job_text")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="Credits" type="Control" parent="CompletionCard/Presentation/Art"]
+layout_mode = 0
+offset_right = 1080.0
+offset_bottom = 1510.0
+mouse_filter = 2
+
+[node name="PissListQuote" type="TextureRect" parent="CompletionCard/Presentation/Art/Credits"]
+texture_filter = 1
+material = ExtResource("11_boil")
+layout_mode = 0
+offset_left = 80.0
+offset_top = 784.0
+offset_right = 997.0
+offset_bottom = 870.0
+mouse_filter = 2
+texture = ExtResource("16_dotty_quote")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="DottyCredit" type="TextureRect" parent="CompletionCard/Presentation/Art/Credits"]
+texture_filter = 1
+material = ExtResource("11_boil")
+layout_mode = 0
+offset_left = 205.0
+offset_top = 882.0
+offset_right = 870.0
+offset_bottom = 947.0
+mouse_filter = 2
+texture = ExtResource("15_dotty_credit")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="PissingAloneQuote" type="TextureRect" parent="CompletionCard/Presentation/Art/Credits"]
+texture_filter = 1
+material = ExtResource("11_boil")
+layout_mode = 0
+offset_left = 58.0
+offset_top = 975.0
+offset_right = 1017.0
+offset_bottom = 1058.0
+mouse_filter = 2
+texture = ExtResource("23_sleepy_quote")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="SleepyStarDropsCredit" type="TextureRect" parent="CompletionCard/Presentation/Art/Credits"]
+texture_filter = 1
+material = ExtResource("11_boil")
+layout_mode = 0
+offset_left = 127.0
+offset_top = 1065.0
+offset_right = 948.0
+offset_bottom = 1126.0
+mouse_filter = 2
+texture = ExtResource("24_sleep_credit")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="GirlPissGirlBossQuote" type="TextureRect" parent="CompletionCard/Presentation/Art/Credits"]
+texture_filter = 1
+material = ExtResource("11_boil")
+layout_mode = 0
+offset_left = 224.0
+offset_top = 1172.0
+offset_right = 850.0
+offset_bottom = 1248.0
+mouse_filter = 2
+texture = ExtResource("25_ray_quote")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="RayCredit" type="TextureRect" parent="CompletionCard/Presentation/Art/Credits"]
+texture_filter = 1
+material = ExtResource("11_boil")
+layout_mode = 0
+offset_left = 122.0
+offset_top = 1251.0
+offset_right = 952.0
+offset_bottom = 1316.0
+mouse_filter = 2
+texture = ExtResource("26_ray_credit")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="MusicCredit" type="TextureRect" parent="CompletionCard/Presentation/Art/Credits"]
+texture_filter = 1
+material = ExtResource("11_boil")
+layout_mode = 0
+offset_left = 78.0
+offset_top = 1343.0
+offset_right = 982.0
+offset_bottom = 1463.0
+mouse_filter = 2
+texture = ExtResource("17_music_credit")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="PissAgainGroup" type="Control" parent="CompletionCard/Presentation/Art"]
+layout_mode = 0
+offset_right = 748.0
+offset_bottom = 420.0
+mouse_filter = 2
+pivot_offset = Vector2(374, 210)
+
+[node name="PissAgainArrow1" type="TextureRect" parent="CompletionCard/Presentation/Art/PissAgainGroup"]
+texture_filter = 1
+material = ExtResource("11_boil")
+layout_mode = 0
+offset_right = 748.0
+offset_bottom = 420.0
+mouse_filter = 2
+texture = ExtResource("18_piss_again_arrow_one")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="PissAgainArrow2" type="TextureRect" parent="CompletionCard/Presentation/Art/PissAgainGroup"]
+visible = false
+texture_filter = 1
+material = ExtResource("11_boil")
+layout_mode = 0
+offset_top = -1.0
+offset_right = 746.0
+offset_bottom = 420.0
+mouse_filter = 2
+texture = ExtResource("19_piss_again_arrow_two")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="PissAgainText1" type="TextureRect" parent="CompletionCard/Presentation/Art/PissAgainGroup"]
+z_index = 1
+texture_filter = 1
+material = ExtResource("11_boil")
+layout_mode = 0
+offset_left = 125.0
+offset_top = 151.0
+offset_right = 681.0
+offset_bottom = 344.0
+mouse_filter = 2
+texture = ExtResource("20_piss_again_text_one")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="PissAgainText2" type="TextureRect" parent="CompletionCard/Presentation/Art/PissAgainGroup"]
+visible = false
+z_index = 1
+texture_filter = 1
+material = ExtResource("11_boil")
+layout_mode = 0
+offset_left = 128.0
+offset_top = 145.0
+offset_right = 684.0
+offset_bottom = 342.0
+mouse_filter = 2
+texture = ExtResource("21_piss_again_text_two")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="PlayAgainButton" type="Button" parent="CompletionCard"]
+z_index = 10
+layout_mode = 0
 mouse_default_cursor_shape = 0
+focus_mode = 2
+theme_override_styles/normal = SubResource("StyleBox_transparent_button")
+theme_override_styles/hover = SubResource("StyleBox_transparent_button")
+theme_override_styles/pressed = SubResource("StyleBox_transparent_button")
+theme_override_styles/focus = SubResource("StyleBox_transparent_button")
 
 [node name="GameOver" parent="." instance=ExtResource("10_game_over")]
