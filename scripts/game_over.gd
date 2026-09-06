@@ -21,6 +21,10 @@ const CURSOR_TEXTURE: Texture2D = preload(
 @export_range(0.0, 1.0, 0.05) var backdrop_opacity := 0.82
 @export_range(0.0, 1.0, 0.05) var dread_opacity := 0.9
 @export_range(0.0, 1.0, 0.05) var game_over_piss_opacity := 0.5
+@export_range(0.0, 3.0, 0.05) var retry_reveal_delay := 1.0
+@export_range(0.1, 1.0, 0.05) var retry_slide_duration := 0.45
+@export_range(0.0, 40.0, 1.0) var retry_wobble_distance := 14.0
+@export_range(0.05, 1.0, 0.05) var retry_wobble_duration := 0.12
 @export_range(0.0, 2.0, 0.05) var door_bang_delay := 1.1
 @export_range(0.0, 2.0, 0.05) var launch_delay_after_door := 0.92
 @export_range(0.0, 0.2, 0.01) var door_smash_audio_delay := 0.06
@@ -32,11 +36,22 @@ const DOOR_BANG_ROW_FRAME_ORDER := [1, 2, 0]
 const DOOR_BANG_ROW_WIDTH_RATIO := 0.9
 const DOOR_BANG_ROW_HEIGHT_RATIO := 0.29
 const DOOR_BANG_ROW_GAP := 12.0
+const REFERENCE_VIEWPORT_SIZE := Vector2(1080.0, 1920.0)
+const RETRY_ARROW_DESIGN_POSITION := Vector2(167.0, 1494.0)
+const RETRY_ARROW_DESIGN_SIZE := Vector2(748.0, 420.0)
+const RETRY_TEXT_ONE_DESIGN_POSITION := Vector2(292.0, 1645.0)
+const RETRY_TEXT_ONE_DESIGN_SIZE := Vector2(556.0, 193.0)
+const RETRY_TEXT_TWO_DESIGN_POSITION := Vector2(295.0, 1639.0)
+const RETRY_TEXT_TWO_DESIGN_SIZE := Vector2(556.0, 197.0)
 
 @onready var _backdrop: ColorRect = $Backdrop
 @onready var _dread_frame: TextureRect = $DreadFrame
 @onready var _presentation: Control = $Presentation
+@onready var _game_over_one: TextureRect = $Presentation/GameOver1
 @onready var _game_over_piss: TextureRect = $Presentation/GameOverPiss
+@onready var _game_over_two: TextureRect = $Presentation/GameOver2
+@onready var _game_over_chalk: TextureRect = $Presentation/GameOverChaulk
+@onready var _kick_out_text: TextureRect = $Presentation/YouGotKickedOutText
 @onready var _retry_button: TextureButton = $Presentation/RetryButton
 @onready var _piss_again_text_one: TextureRect = $Presentation/PissAgainText1
 @onready var _piss_again_text_two: TextureRect = $Presentation/PissAgainText2
@@ -46,12 +61,18 @@ const DOOR_BANG_ROW_GAP := 12.0
 @onready var _door_kick: AudioStreamPlayer = $DoorKick
 
 var _entry_tween: Tween
+var _retry_tween: Tween
 var _raid_sequence_tween: Tween
 var _door_knock_tween: Tween
 var _door_smash_delay_tween: Tween
 var _card_revealed := false
 var _door_bang_layout_size := Vector2.ZERO
 var _door_bang_frame_positions: Array[Vector2] = []
+var _card_art_layout_size := Vector2.ZERO
+var _retry_horizontal_offset := 0.0
+var _retry_button_base_position := Vector2.ZERO
+var _piss_again_text_one_base_position := Vector2.ZERO
+var _piss_again_text_two_base_position := Vector2.ZERO
 
 
 func _ready() -> void:
@@ -67,6 +88,7 @@ func _ready() -> void:
 	_dread_frame.modulate.a = dread_opacity
 	_game_over_piss.modulate.a = game_over_piss_opacity
 	_door_bang.visible = false
+	_layout_card_art()
 	_layout_door_bang()
 	visible = false
 	set_process(false)
@@ -79,13 +101,16 @@ func _exit_tree() -> void:
 func _process(_delta: float) -> void:
 	if visible:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+		_layout_card_art()
 		_layout_door_bang()
 
 
 func show_card() -> void:
 	if _entry_tween:
 		_entry_tween.kill()
+		_entry_tween = null
 	_stop_raid_sequence()
+	_stop_retry_animation()
 	visible = true
 	set_process(true)
 	_card_revealed = false
@@ -95,7 +120,8 @@ func show_card() -> void:
 	_presentation.pivot_offset = get_viewport().get_visible_rect().size * 0.5
 	_presentation.modulate.a = 0.0
 	_presentation.scale = Vector2.ONE * entry_start_scale
-	_retry_button.grab_focus()
+	_layout_card_art()
+	_set_retry_affordance_position(_get_retry_entry_offset())
 	_start_raid_sequence()
 
 
@@ -108,6 +134,7 @@ func reveal_card() -> void:
 		return
 	_card_revealed = true
 	_set_card_art_visible(true)
+	_layout_card_art()
 	_presentation.modulate.a = 0.0
 	_presentation.scale = Vector2.ONE * entry_start_scale
 	_entry_tween = create_tween()
@@ -116,6 +143,7 @@ func reveal_card() -> void:
 	_entry_tween.tween_property(_presentation, "scale", Vector2.ONE, entry_duration).set_trans(
 		Tween.TRANS_BACK,
 	).set_ease(Tween.EASE_OUT)
+	_entry_tween.finished.connect(_start_retry_animation)
 
 
 func hide_card() -> void:
@@ -123,6 +151,7 @@ func hide_card() -> void:
 		_entry_tween.kill()
 		_entry_tween = null
 	_stop_raid_sequence()
+	_stop_retry_animation()
 	visible = false
 	set_process(false)
 	_card_revealed = false
@@ -130,6 +159,7 @@ func hide_card() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 	_presentation.modulate = Color.WHITE
 	_presentation.scale = Vector2.ONE
+	_set_retry_affordance_position(0.0)
 
 
 func is_showing() -> bool:
@@ -159,6 +189,126 @@ func _on_retry_pressed() -> void:
 func _set_retry_text_hovered(hovered: bool) -> void:
 	_piss_again_text_one.visible = not hovered
 	_piss_again_text_two.visible = hovered
+
+
+func _start_retry_animation() -> void:
+	_entry_tween = null
+	if not visible or not _card_revealed:
+		return
+	_stop_retry_animation()
+	_set_retry_affordance_position(_get_retry_entry_offset())
+	_retry_tween = create_tween()
+	_retry_tween.tween_interval(maxf(retry_reveal_delay, 0.0))
+	_retry_tween.tween_method(
+		_set_retry_affordance_position,
+		_get_retry_entry_offset(),
+		0.0,
+		retry_slide_duration,
+	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_retry_tween.tween_method(
+		_set_retry_affordance_position,
+		0.0,
+		-retry_wobble_distance,
+		retry_wobble_duration,
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_retry_tween.tween_method(
+		_set_retry_affordance_position,
+		-retry_wobble_distance,
+		retry_wobble_distance * 0.7,
+		retry_wobble_duration,
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_retry_tween.tween_method(
+		_set_retry_affordance_position,
+		retry_wobble_distance * 0.7,
+		-retry_wobble_distance * 0.35,
+		retry_wobble_duration,
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_retry_tween.tween_method(
+		_set_retry_affordance_position,
+		-retry_wobble_distance * 0.35,
+		0.0,
+		retry_wobble_duration,
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_retry_tween.finished.connect(_on_retry_animation_finished)
+
+
+func _on_retry_animation_finished() -> void:
+	_retry_tween = null
+	if visible and _card_revealed:
+		_retry_button.grab_focus()
+
+
+func _stop_retry_animation() -> void:
+	if _retry_tween:
+		_retry_tween.kill()
+		_retry_tween = null
+
+
+func _get_retry_entry_offset() -> float:
+	return get_viewport().get_visible_rect().size.x
+
+
+func _set_retry_affordance_position(horizontal_offset: float) -> void:
+	_retry_horizontal_offset = horizontal_offset
+	_retry_button.position.x = _retry_button_base_position.x + horizontal_offset
+	_piss_again_text_one.position.x = _piss_again_text_one_base_position.x + horizontal_offset
+	_piss_again_text_two.position.x = _piss_again_text_two_base_position.x + horizontal_offset
+
+
+func _layout_card_art() -> void:
+	var viewport_size := get_viewport().get_visible_rect().size
+	if viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
+		return
+	if viewport_size == _card_art_layout_size:
+		return
+	_card_art_layout_size = viewport_size
+	_layout_control(_game_over_one, Vector2.ZERO, viewport_size)
+	_layout_control(_game_over_piss, Vector2.ZERO, viewport_size)
+	_layout_control(_game_over_two, Vector2.ZERO, viewport_size)
+	_layout_control(_game_over_chalk, Vector2.ZERO, viewport_size)
+	_layout_control(_kick_out_text, Vector2.ZERO, viewport_size)
+	var reference_scale := minf(
+		viewport_size.x / REFERENCE_VIEWPORT_SIZE.x,
+		viewport_size.y / REFERENCE_VIEWPORT_SIZE.y,
+	)
+	var reference_origin := (
+		viewport_size - REFERENCE_VIEWPORT_SIZE * reference_scale
+	) * 0.5
+	var retry_arrow_position := reference_origin + RETRY_ARROW_DESIGN_POSITION * reference_scale
+	var retry_text_one_position := (
+		reference_origin + RETRY_TEXT_ONE_DESIGN_POSITION * reference_scale
+	)
+	var retry_text_two_position := (
+		reference_origin + RETRY_TEXT_TWO_DESIGN_POSITION * reference_scale
+	)
+	_layout_control(
+		_retry_button,
+		retry_arrow_position,
+		RETRY_ARROW_DESIGN_SIZE * reference_scale,
+	)
+	_layout_control(
+		_piss_again_text_one,
+		retry_text_one_position,
+		RETRY_TEXT_ONE_DESIGN_SIZE * reference_scale,
+	)
+	_layout_control(
+		_piss_again_text_two,
+		retry_text_two_position,
+		RETRY_TEXT_TWO_DESIGN_SIZE * reference_scale,
+	)
+	_retry_button_base_position = retry_arrow_position
+	_piss_again_text_one_base_position = retry_text_one_position
+	_piss_again_text_two_base_position = retry_text_two_position
+	_set_retry_affordance_position(_retry_horizontal_offset)
+
+
+func _layout_control(control: Control, position: Vector2, size: Vector2) -> void:
+	control.anchor_left = 0.0
+	control.anchor_top = 0.0
+	control.anchor_right = 0.0
+	control.anchor_bottom = 0.0
+	control.position = position
+	control.size = size
 
 
 func _start_raid_sequence() -> void:

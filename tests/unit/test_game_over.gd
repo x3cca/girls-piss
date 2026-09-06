@@ -6,6 +6,7 @@ const GAME_OVER_ONE := preload("res://assets/art/drive/GameOver1.png")
 const GAME_OVER_PISS := preload("res://assets/art/drive/GameOverPiss.png")
 const GAME_OVER_TWO := preload("res://assets/art/drive/GameOver2.png")
 const GAME_OVER_CHAULK := preload("res://assets/art/drive/GameOverChaulk.png")
+const KICK_OUT_TEXT := preload("res://assets/art/drive/yougotkickedouttext.png")
 const PISS_AGAIN_ARROW_ONE := preload("res://assets/art/drive/PissAgainArrow1.png")
 const PISS_AGAIN_ARROW_TWO := preload("res://assets/art/drive/PissAgainArrow2.png")
 const PISS_AGAIN_TEXT_ONE := preload("res://assets/art/drive/PissAgainText1.png")
@@ -37,6 +38,7 @@ func test_game_over_starts_hidden_and_uses_authored_failure_assets() -> void:
 		"Presentation/GameOverPiss",
 		"Presentation/GameOver2",
 		"Presentation/GameOverChaulk",
+		"Presentation/YouGotKickedOutText",
 		"Presentation/RetryButton",
 		"Presentation/PissAgainText1",
 		"Presentation/PissAgainText2",
@@ -46,6 +48,7 @@ func test_game_over_starts_hidden_and_uses_authored_failure_assets() -> void:
 	assert_eq(game_over.get_node("Presentation/GameOverPiss").texture, GAME_OVER_PISS)
 	assert_eq(game_over.get_node("Presentation/GameOver2").texture, GAME_OVER_TWO)
 	assert_eq(game_over.get_node("Presentation/GameOverChaulk").texture, GAME_OVER_CHAULK)
+	assert_eq(game_over.get_node("Presentation/YouGotKickedOutText").texture, KICK_OUT_TEXT)
 	assert_almost_eq(game_over.get_node("Presentation/GameOverPiss").modulate.a, 0.5, 0.001)
 	assert_lt(
 		game_over.get_node("Presentation/GameOver1").z_index,
@@ -150,3 +153,52 @@ func test_failure_art_waits_for_raid_sequence_before_reveal() -> void:
 	assert_true(game_over.get_node("Presentation").visible)
 
 	game_over.hide_card()
+
+
+func test_retry_button_waits_then_slides_in_with_wobble() -> void:
+	var game_over := GAME_OVER_SCENE.instantiate() as GameOver
+	add_child_autofree(game_over)
+	await get_tree().process_frame
+	game_over.entry_duration = 0.1
+	game_over.retry_reveal_delay = 1.0
+	game_over.retry_slide_duration = 0.3
+	game_over.retry_wobble_duration = 0.1
+
+	var retry_button := game_over.get_node("Presentation/RetryButton") as TextureButton
+	var resting_x := retry_button.position.x
+	game_over.show_card()
+	game_over.reveal_card()
+	var viewport_width := get_viewport().get_visible_rect().size.x
+	assert_almost_eq(retry_button.position.x, resting_x + viewport_width, 0.001)
+
+	await get_tree().create_timer(0.45).timeout
+	assert_almost_eq(retry_button.position.x, resting_x + viewport_width, 0.001)
+
+	await get_tree().create_timer(0.8).timeout
+	assert_lt(retry_button.position.x, viewport_width)
+	assert_ne(retry_button.position.x, 0.0)
+
+	await get_tree().create_timer(0.7).timeout
+	assert_almost_eq(retry_button.position.x, resting_x, 0.001)
+	game_over.hide_card()
+
+
+func test_failure_art_layers_preserve_the_authored_canvas_composition() -> void:
+	var game_over := GAME_OVER_SCENE.instantiate() as GameOver
+	add_child_autofree(game_over)
+	await get_tree().process_frame
+	var presentation := game_over.get_node("Presentation") as Control
+	var game_over_one := game_over.get_node("Presentation/GameOver1") as TextureRect
+	var game_over_two := game_over.get_node("Presentation/GameOver2") as TextureRect
+
+	assert_eq(game_over_one.size, presentation.size)
+	assert_eq(game_over_two.size, presentation.size)
+	assert_eq(game_over_one.position, Vector2.ZERO)
+	assert_eq(game_over_two.position, Vector2.ZERO)
+	var kick_out_text := game_over.get_node("Presentation/YouGotKickedOutText") as TextureRect
+	assert_eq(kick_out_text.size, presentation.size)
+	assert_eq(kick_out_text.position, Vector2.ZERO)
+	var retry_button := game_over.get_node("Presentation/RetryButton") as TextureButton
+	assert_lt(retry_button.size.x, presentation.size.x)
+	assert_lt(retry_button.size.y, presentation.size.y)
+	assert_gt(retry_button.position.y, presentation.size.y * 0.7)
