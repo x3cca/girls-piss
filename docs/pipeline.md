@@ -80,7 +80,9 @@ build-and-deploy.yml follows the current Date-or-Mate-2 workflow:
 5. Push the build to itch.io with Butler.
 
 The workflow targets the html-staging channel. The html prefix makes the
-channel browser-playable on itch.io.
+channel browser-playable on itch.io. The Web PCK is checked against a 6 MB cap;
+the limit leaves room for the authored Level 1 artwork while still catching an
+accidental export of the full development asset tree.
 
 ## GitHub Actions secrets
 
@@ -105,5 +107,5 @@ project resource. The nine prompt icons used by `InputPrompt` are explicitly
 included and preloaded so they remain available at runtime while the rest of
 the Kenney pack stays out of the PCK. The MCP and GUT addons, tests, and
 development scripts are also excluded in export_presets.cfg. CI checks the
-resulting PCK stays below 3 MB so an accidental return to an all-resources
+resulting PCK stays below 6 MB so an accidental return to an all-resources
 export is visible.

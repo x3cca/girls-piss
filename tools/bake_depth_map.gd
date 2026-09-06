@@ -1,5 +1,4 @@
 extends SceneTree
-
 ## Run with:
 ##   godot --headless --path . --script res://tools/bake_depth_map.gd
 ##

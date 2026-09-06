@@ -1,6 +1,5 @@
 extends GutTest
 
-
 func test_depth_map_samples_red_depth_and_alpha_bounds() -> void:
 	var image := Image.create(2, 1, false, Image.FORMAT_RGBA8)
 	image.set_pixel(0, 0, Color(0.2, 0.0, 0.0, 1.0))

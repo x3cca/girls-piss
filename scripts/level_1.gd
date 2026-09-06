@@ -2,6 +2,11 @@ extends Main
 
 class_name Level1
 
+const BOWL_ART_SCALE := 0.75
+# The tank remains anchored to the wall. Move the scaled bowl assembly up until
+# the seat's top edge meets the tank's bottom edge in the authored artwork.
+const TOILET_BOWL_OFFSET_Y := -157.875
+
 const TARGET_TEXTURES: Array[Texture2D] = [
 	preload("res://assets/art/drive/RedTicket.png"),
 	preload("res://assets/art/drive/Floss.png"),
@@ -17,21 +22,21 @@ const TARGET_TEXTURES: Array[Texture2D] = [
 
 var target_points := PackedVector2Array(
 	[
-		# Centers match the objects in Example of play Screen.png, in the
-		# same order as TARGET_TEXTURES, on the 1080x1920 reference canvas. They
-		# are inset 15% toward the bowl center so the seat can overlap the edges
-		# without hiding the small target sprites.
-		Vector2(0.305, 0.541), # RedTicket
-		Vector2(0.364, 0.430), # Floss
-		Vector2(0.441, 0.439), # Gum
-		Vector2(0.670, 0.532), # Cigarette
-		Vector2(0.466, 0.770), # Lollipop
-		Vector2(0.594, 0.456), # Condom
-		Vector2(0.619, 0.719), # Bandaid
-		Vector2(0.662, 0.609), # Fly
-		Vector2(0.517, 0.592), # Straw
-		Vector2(0.313, 0.643), # Tampon
-	]
+		# Centers match the ordered objects from Example of play Screen.png,
+		# then compress 25% toward the bowl center to fit the smaller bowl and
+		# keep the target sprites readable beneath the seat. The whole bowl
+		# assembly is then scooted upward to meet the tank.
+		Vector2(0.354, 0.474), # RedTicket
+		Vector2(0.398, 0.391), # Floss
+		Vector2(0.456, 0.397), # Gum
+		Vector2(0.628, 0.467), # Cigarette
+		Vector2(0.475, 0.646), # Lollipop
+		Vector2(0.571, 0.410), # Condom
+		Vector2(0.589, 0.607), # Bandaid
+		Vector2(0.622, 0.525), # Fly
+		Vector2(0.513, 0.512), # Straw
+		Vector2(0.360, 0.550), # Tampon
+	],
 )
 
 
@@ -54,7 +59,7 @@ func _ready() -> void:
 	shape_trace.use_native_target_sizes = true
 	# These crops are already authored at the size used by the play-screen
 	# reference. Scaling them only by the viewport keeps their visual weight.
-	shape_trace.native_target_scale = 1.0
+	shape_trace.native_target_scale = BOWL_ART_SCALE
 	# The target sprites sit inside the toilet: above the bowl (z=1) but below
 	# the seat/lid (z=3), so the authored seat edge can naturally overlap them.
 	shape_trace.z_index = 2
@@ -97,6 +102,13 @@ func _layout_level1() -> void:
 		toilet.position = Vector2(viewport_size.x * 0.5, viewport_size.y * 0.625)
 		var art_scale := viewport_size.x / 1080.0
 		toilet.scale = Vector2.ONE * art_scale
+		for part_name in [&"Outside", &"Bowl", &"Seat"]:
+			var part := toilet.get_node_or_null(NodePath(String(part_name))) as Sprite2D
+			if part:
+				part.scale = Vector2.ONE * BOWL_ART_SCALE
+				part.position.y = TOILET_BOWL_OFFSET_Y
+				if part_name == &"Outside":
+					part.position.y += 32.0
 		# The tank is the high wall panel in the reference composition. Its
 		# authored layer is offset above the bowl rather than centered on it.
 		var tank := toilet.get_node_or_null("Tank") as Sprite2D

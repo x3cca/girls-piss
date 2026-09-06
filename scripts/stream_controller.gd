@@ -91,8 +91,8 @@ var _double_point_depths := PackedFloat32Array()
 var _double_point_ages := PackedFloat32Array()
 var _preview_beat_elapsed := 0.0
 var _pulses: Array[Dictionary] = []
-var _depth_band_nodes: Dictionary = {}
-var _depth_band_resources: Dictionary = {}
+var _depth_band_nodes: Dictionary = { }
+var _depth_band_resources: Dictionary = { }
 var _stream_hold_was_active := false
 var _strike_flash_remaining := 0.0
 
@@ -134,7 +134,7 @@ func sample_stream_position(world_position: Vector2) -> Dictionary:
 	## A stream-facing query that preserves the old 2D behavior when no map is
 	## assigned. The raw map itself remains intentionally classification-free.
 	if depth_map == null:
-		return {"valid": true, "depth": 0.0}
+		return { "valid": true, "depth": 0.0 }
 	var sample := depth_map.sample_world_position(world_position)
 	if bool(sample.get("valid", false)):
 		return sample
@@ -678,23 +678,23 @@ func _apply_depth_render_order() -> void:
 			renderable.z_index = 0
 		else:
 			renderable.z_index = depth_map.get_render_z_index(
-			0.5,
-			depth_ribbon_z_offset,
-			depth_band_count,
-			depth_band_z_step,
-		)
+				0.5,
+				depth_ribbon_z_offset,
+				depth_band_count,
+				depth_band_z_step,
+			)
 
 
 func _ensure_depth_band_nodes() -> void:
 	if depth_map == null:
 		return
 	var specs := [
-		{"key": "edge", "node": _edge_mesh},
-		{"key": "body", "node": _body_mesh},
-		{"key": "highlight", "node": _highlight_mesh},
-		{"key": "double_edge", "node": _double_edge_mesh},
-		{"key": "double_body", "node": _double_body_mesh},
-		{"key": "double_highlight", "node": _double_highlight_mesh},
+		{ "key": "edge", "node": _edge_mesh },
+		{ "key": "body", "node": _body_mesh },
+		{ "key": "highlight", "node": _highlight_mesh },
+		{ "key": "double_edge", "node": _double_edge_mesh },
+		{ "key": "double_body", "node": _double_body_mesh },
+		{ "key": "double_highlight", "node": _double_highlight_mesh },
 	]
 	for spec in specs:
 		var key: String = spec["key"]
@@ -783,7 +783,7 @@ func _depth_band_points(
 		previous_band = band
 		previous_point = points[index]
 		previous_depth = point_depth
-	return {"points": band_points, "depths": band_depths}
+	return { "points": band_points, "depths": band_depths }
 
 
 func _get_render_depth_band(world_position: Vector2, committed_depth := -1.0) -> int:
@@ -806,9 +806,9 @@ func _update_depth_banded_ribbons(
 		point_depths := PackedFloat32Array(),
 ) -> void:
 	var style_specs := [
-		{"key": "%sedge" % prefix, "width": 36.0, "offset": 0.0},
-		{"key": "%sbody" % prefix, "width": 32.0, "offset": 0.0},
-		{"key": "%shighlight" % prefix, "width": 8.0, "offset": 1.7},
+		{ "key": "%sedge" % prefix, "width": 36.0, "offset": 0.0 },
+		{ "key": "%sbody" % prefix, "width": 32.0, "offset": 0.0 },
+		{ "key": "%shighlight" % prefix, "width": 8.0, "offset": 1.7 },
 	]
 	var split_data := _depth_band_points(points, point_depths)
 	var split_points: Array = split_data["points"]
@@ -1037,7 +1037,7 @@ func _path_length(points: PackedVector2Array) -> float:
 
 func _sample_depth_for_stream_effects(world_position: Vector2) -> Dictionary:
 	if depth_map == null:
-		return {"valid": true, "depth": 0.0}
+		return { "valid": true, "depth": 0.0 }
 	var sample := depth_map.sample_world_position(world_position)
 	if bool(sample.get("valid", false)):
 		return sample
@@ -1045,7 +1045,7 @@ func _sample_depth_for_stream_effects(world_position: Vector2) -> Dictionary:
 	# the camera-facing surface (depth zero), otherwise every target would be
 	# measured backward from the deepest edge of the baked map.
 	if world_position.distance_to(source_position) <= source_entry_grace:
-		return {"valid": true, "depth": 0.0}
+		return { "valid": true, "depth": 0.0 }
 	return sample
 
 
@@ -1097,9 +1097,9 @@ func _launch_velocity_for_target(target_position: Vector2) -> Vector2:
 	var launch_sample := _sample_depth_for_stream_effects(source_position)
 	var target_sample := sample_stream_position(target_position)
 	var travel_time := _travel_time_for_target(
-		 target_position,
-		 float(launch_sample.get("depth", 0.0)),
-		 float(target_sample.get("depth", launch_sample.get("depth", 0.0))),
+		target_position,
+		float(launch_sample.get("depth", 0.0)),
+		float(target_sample.get("depth", launch_sample.get("depth", 0.0))),
 	)
 	return (offset - gravity * travel_time * travel_time * 0.5) / travel_time
 
@@ -1108,7 +1108,7 @@ func _travel_time_for_target(
 		target_position: Vector2,
 		launch_depth := 0.0,
 		target_depth := 0.0,
-	) -> float:
+) -> float:
 	var screen_distance := target_position.distance_to(source_position)
 	var depth_distance := absf(target_depth - launch_depth) * maxf(depth_distance_scale, 0.0)
 	var effective_distance := screen_distance + depth_distance
@@ -1119,7 +1119,7 @@ func get_effective_travel_distance(
 		target_position: Vector2,
 		launch_depth := 0.0,
 		target_depth := 0.0,
-	) -> float:
+) -> float:
 	var screen_distance := target_position.distance_to(source_position)
 	var depth_distance := absf(target_depth - launch_depth) * maxf(depth_distance_scale, 0.0)
 	return screen_distance + depth_distance
@@ -1159,9 +1159,7 @@ func _truncate_at_target(
 				point_ages[j] if j < point_ages.size() else 0.0,
 			)
 			clipped_depths.append(
-				point_depths[j]
-				if j < point_depths.size()
-				else float(sample_stream_position(points[j]).get("depth", 0.0)),
+				point_depths[j] if j < point_depths.size() else float(sample_stream_position(points[j]).get("depth", 0.0)),
 			)
 		var segment_length := points[i].distance_to(points[i + 1])
 		var segment_fraction := 0.0
@@ -1170,14 +1168,14 @@ func _truncate_at_target(
 		var start_age := point_ages[i] if i < point_ages.size() else 0.0
 		var end_age := point_ages[i + 1] if i + 1 < point_ages.size() else start_age
 		var start_depth := (
-			point_depths[i]
-			if i < point_depths.size()
-			else float(sample_stream_position(points[i]).get("depth", 0.0))
+				point_depths[i]
+				if i < point_depths.size()
+				else float(sample_stream_position(points[i]).get("depth", 0.0))
 		)
 		var end_depth := (
-			point_depths[i + 1]
-			if i + 1 < point_depths.size()
-			else start_depth
+				point_depths[i + 1]
+				if i + 1 < point_depths.size()
+				else start_depth
 		)
 		clipped.append(result.position)
 		clipped_ages.append(lerpf(start_age, end_age, clampf(segment_fraction, 0.0, 1.0)))

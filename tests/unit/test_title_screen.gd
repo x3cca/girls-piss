@@ -40,11 +40,11 @@ func test_title_uses_the_authored_transparent_layer_composition() -> void:
 
 
 func _assert_layer(
-	composition: TitleComposition,
-	path: String,
-	filename: String,
-	position: Vector2,
-	size: Vector2,
+		composition: TitleComposition,
+		path: String,
+		filename: String,
+		position: Vector2,
+		size: Vector2,
 ) -> void:
 	var layer := composition.get_node(path) as Sprite2D
 	assert_not_null(layer)

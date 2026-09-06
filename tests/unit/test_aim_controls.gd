@@ -407,18 +407,24 @@ func test_meaningful_input_reports_each_source() -> void:
 	stick.axis_value = 0.75
 	controller.handle_input_event(stick)
 
-	assert_eq(detected, [
-		InputController.AimSource.KEYBOARD,
-		InputController.AimSource.MOUSE,
-		InputController.AimSource.TOUCH,
-		InputController.AimSource.CONTROLLER,
-		InputController.AimSource.CONTROLLER,
-	])
-	assert_eq(changed, [
-		InputController.AimSource.MOUSE,
-		InputController.AimSource.TOUCH,
-		InputController.AimSource.CONTROLLER,
-	])
+	assert_eq(
+		detected,
+		[
+			InputController.AimSource.KEYBOARD,
+			InputController.AimSource.MOUSE,
+			InputController.AimSource.TOUCH,
+			InputController.AimSource.CONTROLLER,
+			InputController.AimSource.CONTROLLER,
+		],
+	)
+	assert_eq(
+		changed,
+		[
+			InputController.AimSource.MOUSE,
+			InputController.AimSource.TOUCH,
+			InputController.AimSource.CONTROLLER,
+		],
+	)
 	assert_eq(controller.get_current_input_source(), InputController.AimSource.CONTROLLER)
 
 

@@ -45,10 +45,10 @@ func sample_world_position(world_position: Vector2) -> Dictionary:
 	## Return only data from the baked map. Bounds classification belongs to the
 	## gameplay system using the map.
 	if not world_rect.has_point(world_position):
-		return {"valid": false, "depth": 0.0}
+		return { "valid": false, "depth": 0.0 }
 	_refresh_cached_image()
 	if _cached_image == null or _cached_image.is_empty():
-		return {"valid": false, "depth": 0.0}
+		return { "valid": false, "depth": 0.0 }
 	var uv := Vector2(
 		(world_position.x - world_rect.position.x) / maxf(world_rect.size.x, 0.001),
 		(world_position.y - world_rect.position.y) / maxf(world_rect.size.y, 0.001),
@@ -58,7 +58,7 @@ func sample_world_position(world_position: Vector2) -> Dictionary:
 		clampi(floori(uv.y * float(_cached_image.get_height())), 0, _cached_image.get_height() - 1),
 	)
 	var color := _cached_image.get_pixelv(pixel)
-	return {"valid": color.a > 0.001, "depth": clampf(color.r, 0.0, 1.0)}
+	return { "valid": color.a > 0.001, "depth": clampf(color.r, 0.0, 1.0) }
 
 
 func world_position_to_uv(world_position: Vector2) -> Vector2:

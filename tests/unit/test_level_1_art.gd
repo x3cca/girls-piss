@@ -28,21 +28,21 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 		level.shape_trace.target_textures[9].resource_path,
 		"res://assets/art/drive/Tampon.png",
 	)
-	assert_almost_eq(level.shape_trace.native_target_scale, 1.0, 0.001)
+	assert_almost_eq(level.shape_trace.native_target_scale, 0.75, 0.001)
 	assert_eq(
 		level.target_points,
 		PackedVector2Array(
 			[
-				Vector2(0.305, 0.541),
-				Vector2(0.364, 0.430),
-				Vector2(0.441, 0.439),
-				Vector2(0.670, 0.532),
-				Vector2(0.466, 0.770),
-				Vector2(0.594, 0.456),
-				Vector2(0.619, 0.719),
-				Vector2(0.662, 0.609),
-				Vector2(0.517, 0.592),
-				Vector2(0.313, 0.643),
+				Vector2(0.354, 0.474),
+				Vector2(0.398, 0.391),
+				Vector2(0.456, 0.397),
+				Vector2(0.628, 0.467),
+				Vector2(0.475, 0.646),
+				Vector2(0.571, 0.410),
+				Vector2(0.589, 0.607),
+				Vector2(0.622, 0.525),
+				Vector2(0.513, 0.512),
+				Vector2(0.360, 0.550),
 			],
 		),
 	)
@@ -52,6 +52,15 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 	assert_lt(level.shape_trace.z_index, level.get_node("PissToilet/Seat").z_index)
 	assert_gt(level.line_replay.z_index, level.get_node("Level1Chrome").z_index)
 	assert_gt(level.line_replay.z_index, level.shape_trace.z_index)
+	assert_eq(level.get_node("PissToilet/Outside").scale, Vector2.ONE * 0.75)
+	assert_eq(level.get_node("PissToilet/Bowl").scale, Vector2.ONE * 0.75)
+	assert_eq(level.get_node("PissToilet/Seat").scale, Vector2.ONE * 0.75)
+	assert_eq(level.get_node("PissToilet/Tank").scale, Vector2.ONE)
+	var seat := level.get_node("PissToilet/Seat") as Sprite2D
+	var tank := level.get_node("PissToilet/Tank") as Sprite2D
+	var seat_top := seat.position.y - seat.texture.get_height() * seat.scale.y * 0.5
+	var tank_bottom := tank.position.y + tank.texture.get_height() * tank.scale.y * 0.5
+	assert_almost_eq(seat_top, tank_bottom, 0.001)
 	assert_eq(
 		level.get_node("Level1Background/BackWall").texture.resource_path,
 		"res://assets/art/drive/BackWalll.png",
