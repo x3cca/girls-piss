@@ -15,6 +15,7 @@ func test_stream_renderables_use_the_shared_boil_material() -> void:
 		"HighlightRibbon",
 		"Droplets",
 		"ImpactBurst",
+		"ImpactBurstSecondary",
 	]:
 		var canvas_item := stream.get_node(node_path) as CanvasItem
 		assert_not_null(canvas_item, "%s should be a canvas item." % node_path)

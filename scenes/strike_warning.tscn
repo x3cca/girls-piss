@@ -1,0 +1,22 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/strike_warning.gd" id="1_warning"]
+[ext_resource type="PackedScene" path="res://scenes/strike_warning_yellow.tscn" id="2_yellow"]
+[ext_resource type="PackedScene" path="res://scenes/strike_warning_orange.tscn" id="3_orange"]
+[ext_resource type="PackedScene" path="res://scenes/strike_warning_red.tscn" id="4_red"]
+
+[node name="StrikeWarning" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_warning")
+
+[node name="YellowWarning" parent="." instance=ExtResource("2_yellow")]
+
+[node name="OrangeWarning" parent="." instance=ExtResource("3_orange")]
+
+[node name="RedWarning" parent="." instance=ExtResource("4_red")]
