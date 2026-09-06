@@ -127,6 +127,7 @@ func test_web_export_uses_level_1_as_the_main_scene() -> void:
 	)
 	assert_true(export_presets.contains("resources/materials/item_outline.tres"))
 	assert_true(export_presets.contains("shaders/item_outline.gdshader"))
+	assert_true(export_presets.contains("assets/art/drive/Pisstank.png"))
 	assert_eq(ProjectSettings.get_setting("display/window/size/viewport_width"), 540)
 	assert_eq(ProjectSettings.get_setting("display/window/size/viewport_height"), 960)
 
