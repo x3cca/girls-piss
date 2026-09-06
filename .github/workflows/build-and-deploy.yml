@@ -46,6 +46,13 @@ jobs:
           PCK_SIZE="$(stat -c '%s' build/web/index.pck)"
           echo "Web PCK size: ${PCK_SIZE} bytes"
           test "$PCK_SIZE" -lt 12000000
+          PCK_STRINGS="$(strings build/web/index.pck)"
+          echo "$PCK_STRINGS" | grep -Fq 'res://scenes/level_1.tscn'
+          echo "$PCK_STRINGS" | grep -Fq 'res://scripts/level_1.gdc'
+          echo "$PCK_STRINGS" | grep -Fq 'res://scripts/trace_target.gdc'
+          echo "$PCK_STRINGS" | grep -Fq 'res://assets/art/drive/Pissbowl.png'
+          ! echo "$PCK_STRINGS" | grep -Fq 'res://tests/'
+          ! echo "$PCK_STRINGS" | grep -Fq 'res://addons/godot_mcp/'
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

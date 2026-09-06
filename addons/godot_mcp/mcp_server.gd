@@ -25,7 +25,8 @@ func _enter_tree():
 	_debugger_bridge_warning_logged = false
 	_try_register_runtime_bridge()
 	_try_register_debugger_bridge()
-	_register_input_handler_autoload()
+	if not _is_export_command():
+		_register_input_handler_autoload()
 
 	print("\n=== MCP HTTP+SSE SERVER STARTING ===")
 
@@ -175,6 +176,16 @@ func _exit_tree():
 # Method to get the debugger bridge for other components
 func get_debugger_bridge():
 	return debugger_bridge
+
+
+func _is_export_command() -> bool:
+	var args := OS.get_cmdline_args()
+	return (
+		args.has("--export-release")
+		or args.has("--export-debug")
+		or args.has("--export-pack")
+		or args.has("--export-patch")
+	)
 
 
 # Helper function for command processors to access EditorInterface

@@ -103,9 +103,12 @@ Actions unless a separate workflow explicitly needs it.
 ## Export notes
 
 The Web preset exports the main scene and its dependencies instead of every
-project resource. The nine prompt icons used by `InputPrompt` are explicitly
-included and preloaded so they remain available at runtime while the rest of
-the Kenney pack stays out of the PCK. The MCP and GUT addons, tests, and
-development scripts are also excluded in export_presets.cfg. CI checks the
-resulting PCK stays below 12 MB so an accidental return to an all-resources
-export is visible.
+project resource. Runtime-loaded scripts, trace/feedback scenes, target art,
+volume controls, and the cursor are explicitly included because Godot's scenes
+filter cannot discover every preload used by the generated Level 1 script. The
+nine prompt icons used by `InputPrompt` are also explicitly included so they
+remain available at runtime while the rest of the Kenney pack stays out of the
+PCK. The MCP and GUT addons, tests, and development scripts are excluded in
+`export_presets.cfg`; the MCP plugin also skips its editor-only runtime autoload
+while an export command is running. CI checks the resulting PCK stays below 12
+MB and contains Level 1's critical runtime resources without test or MCP files.
