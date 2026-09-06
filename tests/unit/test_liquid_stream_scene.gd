@@ -46,6 +46,7 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 	assert_not_null(body.texture if body is MeshInstance2D else null)
 	assert_not_null(instance.get_node_or_null("LiquidStream/Droplets"))
 	assert_not_null(instance.get_node_or_null("LiquidStream/ImpactBurst"))
+	assert_not_null(instance.get_node_or_null("LiquidStream/ImpactBurstSecondary"))
 	assert_null(instance.get_node_or_null("WettablePlot01"))
 	assert_null(instance.get_node_or_null("WettablePlot02"))
 	assert_null(instance.get_node_or_null("WettablePlot03"))
@@ -56,22 +57,78 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 	if impact:
 		assert_false(impact.one_shot)
 		assert_not_null(impact.texture)
+		if impact.texture:
+			assert_eq(
+				impact.texture.resource_path,
+				"res://assets/art/drive/YellowTextFX1.png",
+			)
+	var secondary_impact := instance.get_node_or_null(
+		"LiquidStream/ImpactBurstSecondary",
+	) as CPUParticles2D
+	assert_not_null(secondary_impact)
+	if secondary_impact:
+		assert_false(secondary_impact.one_shot)
+		assert_not_null(secondary_impact.texture)
+		assert_eq(secondary_impact.amount, 1)
+		assert_eq(
+			secondary_impact.emission_shape,
+			CPUParticles2D.EMISSION_SHAPE_SPHERE_SURFACE,
+		)
+		assert_almost_eq(secondary_impact.emission_sphere_radius, 28.0, 0.001)
+		assert_almost_eq(secondary_impact.lifetime, 0.18, 0.001)
+		assert_almost_eq(secondary_impact.lifetime_randomness, 0.45, 0.001)
+		assert_eq(secondary_impact.direction, Vector2.DOWN)
+		assert_eq(secondary_impact.spread, 180.0)
+		assert_true(secondary_impact.particle_flag_align_y)
+		assert_almost_eq(secondary_impact.angle_min, 180.0, 0.001)
+		assert_almost_eq(secondary_impact.angle_max, 180.0, 0.001)
+		assert_almost_eq(secondary_impact.radial_accel_min, -180.0, 0.001)
+		assert_almost_eq(secondary_impact.radial_accel_max, 240.0, 0.001)
+		assert_almost_eq(secondary_impact.tangential_accel_min, -240.0, 0.001)
+		assert_almost_eq(secondary_impact.tangential_accel_max, 240.0, 0.001)
+		assert_almost_eq(secondary_impact.scale_amount_min, 0.2, 0.001)
+		assert_almost_eq(secondary_impact.scale_amount_max, 0.55, 0.001)
+		if secondary_impact.texture:
+			assert_eq(
+				secondary_impact.texture.resource_path,
+				"res://assets/art/drive/YellowTextFX2.png",
+			)
+	if impact:
+		assert_eq(impact.amount, 1)
+		assert_eq(impact.emission_shape, CPUParticles2D.EMISSION_SHAPE_SPHERE_SURFACE)
+		assert_almost_eq(impact.emission_sphere_radius, 28.0, 0.001)
+		assert_almost_eq(impact.lifetime, 0.18, 0.001)
+		assert_almost_eq(impact.lifetime_randomness, 0.45, 0.001)
+		assert_eq(impact.direction, Vector2.DOWN)
+		assert_eq(impact.spread, 180.0)
+		assert_true(impact.particle_flag_align_y)
+		assert_almost_eq(impact.radial_accel_min, -180.0, 0.001)
+		assert_almost_eq(impact.radial_accel_max, 240.0, 0.001)
+		assert_almost_eq(impact.tangential_accel_min, -240.0, 0.001)
+		assert_almost_eq(impact.tangential_accel_max, 240.0, 0.001)
+		assert_almost_eq(impact.scale_amount_min, 0.2, 0.001)
+		assert_almost_eq(impact.scale_amount_max, 0.55, 0.001)
 
 
-func test_stream_pulse_drives_bloom_and_shake_feedback() -> void:
+func test_stream_pulse_drives_shake_without_pulsing_lights() -> void:
 	var scene := SMOKE_TEST_SCENE
 	var instance := scene.instantiate()
 	add_child_autofree(instance)
 	var stream := instance.get_node("LiquidStream") as LiquidStream
 	var broad_light := instance.get_node("BroadMoonLight") as PointLight2D
+	var impact_light := instance.get_node("StreamImpactLight") as PointLight2D
 	var base_energy := broad_light.energy
+	var base_scale := broad_light.texture_scale
 	var base_position: Vector2 = instance.position
 
 	stream.trigger_pulse()
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-	assert_true(broad_light.energy > base_energy)
+	assert_almost_eq(broad_light.energy, base_energy, 0.001)
+	assert_almost_eq(broad_light.texture_scale, base_scale, 0.001)
+	assert_false(broad_light.enabled)
+	assert_false(impact_light.enabled)
 	assert_true(instance.position != base_position)
 
 	for frame in 30:
