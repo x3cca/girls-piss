@@ -11,7 +11,7 @@ seamless = true
 [resource]
 shader = ExtResource("1_boil_shader")
 shader_parameter/scale = Vector2(0.15, 0.15)
-shader_parameter/strength = 0.75
+shader_parameter/strength = 0.5
 shader_parameter/fps = 6.0
 shader_parameter/noise = SubResource("NoiseTexture2D_boil")
 shader_parameter/depth_clip_rect = Vector4(0, 0, 720, 1280)

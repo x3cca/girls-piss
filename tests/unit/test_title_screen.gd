@@ -10,6 +10,7 @@ func test_title_uses_the_authored_transparent_layer_composition() -> void:
 	var composition := title.get_node("Overlay/TitleComposition") as TitleComposition
 
 	assert_true(title.is_active())
+	assert_eq(Input.get_mouse_mode(), Input.MOUSE_MODE_VISIBLE)
 	assert_true(composition.visible)
 	assert_true(composition.is_title_active())
 	assert_eq(composition.get_frame(), 0)

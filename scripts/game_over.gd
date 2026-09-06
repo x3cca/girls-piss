@@ -10,6 +10,10 @@ class_name GameOver
 
 signal retry_pressed
 
+const CURSOR_TEXTURE: Texture2D = preload(
+	"res://assets/placeholders/cursor_pixel_pack/Tiles/tile_0026.png"
+)
+
 @export_range(0.1, 1.0, 0.05) var entry_duration := 0.35
 @export_range(0.5, 1.0, 0.05) var entry_start_scale := 0.88
 @export_range(0.0, 1.0, 0.05) var backdrop_opacity := 0.82
@@ -27,6 +31,8 @@ var _entry_tween: Tween
 
 
 func _ready() -> void:
+	Input.set_custom_mouse_cursor(CURSOR_TEXTURE, Input.CURSOR_ARROW, Vector2.ZERO)
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_retry_button.pressed.connect(_on_retry_pressed)
 	_backdrop.color.a = backdrop_opacity
@@ -35,10 +41,21 @@ func _ready() -> void:
 	visible = false
 
 
+func _exit_tree() -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+
+func _process(_delta: float) -> void:
+	if visible:
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+
 func show_card() -> void:
 	if _entry_tween:
 		_entry_tween.kill()
 	visible = true
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	_presentation.pivot_offset = get_viewport_rect().size * 0.5
 	_presentation.modulate.a = 0.0
 	_presentation.scale = Vector2.ONE * entry_start_scale
@@ -55,8 +72,9 @@ func show_card() -> void:
 func hide_card() -> void:
 	if _entry_tween:
 		_entry_tween.kill()
-		_entry_tween = null
+	_entry_tween = null
 	visible = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 	_presentation.modulate = Color.WHITE
 	_presentation.scale = Vector2.ONE
 

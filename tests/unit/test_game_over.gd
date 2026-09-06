@@ -49,6 +49,7 @@ func test_game_over_starts_hidden_and_uses_authored_failure_assets() -> void:
 	var retry_button := game_over.get_node("Presentation/RetryButton") as TextureButton
 	assert_eq(retry_button.texture_normal, PISS_AGAIN_ARROW_ONE)
 	assert_eq(retry_button.texture_hover, PISS_AGAIN_ARROW_TWO)
+	assert_eq(retry_button.mouse_default_cursor_shape, Control.CURSOR_ARROW)
 
 
 func test_show_card_reveals_retry_state_and_emits_retry() -> void:
@@ -61,6 +62,7 @@ func test_show_card_reveals_retry_state_and_emits_retry() -> void:
 
 	game_over.show_card()
 	assert_true(game_over.is_showing())
+	assert_eq(Input.get_mouse_mode(), Input.MOUSE_MODE_VISIBLE)
 	assert_true(retry_button.visible)
 
 	retry_button.pressed.emit()

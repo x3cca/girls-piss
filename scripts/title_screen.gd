@@ -12,6 +12,9 @@ signal start_completed(source: int)
 signal exit_completed(source: int)
 
 const DEFAULT_SOURCE := 0
+const CURSOR_TEXTURE: Texture2D = preload(
+	"res://assets/placeholders/cursor_pixel_pack/Tiles/tile_0026.png"
+)
 
 @export var autoplay := true
 @export_range(0.1, 2.0, 0.05) var entry_duration := 0.75
@@ -29,9 +32,20 @@ var _exit_tween: Tween
 
 
 func _ready() -> void:
+	Input.set_custom_mouse_cursor(CURSOR_TEXTURE, Input.CURSOR_ARROW, Vector2.ZERO)
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if autoplay:
 		show_title()
+
+
+func _exit_tree() -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+
+func _process(_delta: float) -> void:
+	if active:
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 
 func show_title() -> void:
@@ -43,6 +57,8 @@ func show_title() -> void:
 	active = true
 	start_locked = false
 	visible = true
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	_composition.modulate.a = 1.0
 	_composition.show_title()
 
@@ -103,6 +119,7 @@ func _finish_transition() -> void:
 	start_locked = false
 	_composition.hide_title()
 	visible = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 	transition_completed.emit(_start_source)
 	start_completed.emit(_start_source)
 	exit_completed.emit(_start_source)
