@@ -63,6 +63,7 @@ var input_controller: InputController
 @onready var _double_highlight_mesh: MeshInstance2D = $DoubleHighlightRibbon
 @onready var _droplets: DepthParticleEmitter = $Droplets
 @onready var _impact: DepthParticleEmitter = $ImpactBurst
+@onready var _impact_secondary: DepthParticleEmitter = $ImpactBurstSecondary
 var _edge_mesh_resource := ArrayMesh.new()
 var _body_mesh_resource := ArrayMesh.new()
 var _highlight_mesh_resource := ArrayMesh.new()
@@ -178,9 +179,10 @@ func _process(delta: float) -> void:
 	var is_pissing := input_controller.is_stream_input_held()
 	var target := input_controller.get_target_position()
 	_update_aim_bloom(target, delta)
-	if is_pissing and not _stream_hold_was_active:
+	var stream_hold_started := is_pissing and not _stream_hold_was_active
+	if stream_hold_started:
 		_start_stream_hold(target)
-	if not _stream_target_initialized:
+	elif not _stream_target_initialized:
 		_stream_target_position = target
 		_stream_target_initialized = true
 	else:
@@ -216,6 +218,7 @@ func _process(delta: float) -> void:
 	elif is_pissing:
 		_current_stream_direction = direction
 	_impact.spread = _impact_spread()
+	_impact_secondary.spread = _impact_spread()
 	var hit := _truncate_at_target(
 		_current_points,
 		_current_point_ages,
@@ -223,6 +226,7 @@ func _process(delta: float) -> void:
 	)
 	var hit_target: bool = hit.get("classification", "") == COLLISION_TARGET_HIT
 	_impact.emitting = false
+	_impact_secondary.emitting = false
 	if is_pissing and not hit.is_empty():
 		_current_points = hit.points
 		_current_point_depths = hit.depths
@@ -365,6 +369,7 @@ func reset_stream() -> void:
 	_bloom_offset = Vector2.ZERO
 	_double_stream_active = false
 	_impact.emitting = false
+	_impact_secondary.emitting = false
 	_droplets.emitting = false
 	queue_redraw()
 
@@ -437,9 +442,11 @@ func _set_live_visuals(enabled: bool) -> void:
 		_hide_depth_band_group("double_")
 	_droplets.visible = enabled
 	_impact.visible = enabled
+	_impact_secondary.visible = enabled
 	if not enabled:
 		_droplets.emitting = false
 		_impact.emitting = false
+		_impact_secondary.emitting = false
 	else:
 		# The stream only starts when Space/a finger is held.
 		_droplets.emitting = false
@@ -632,16 +639,20 @@ func _update_stream_effects(direction: Vector2, is_pissing: bool) -> void:
 
 
 func _configure_depth_particles() -> void:
-	if _droplets == null or _impact == null:
+	if _droplets == null or _impact == null or _impact_secondary == null:
 		return
 	_droplets.set_depth_map(depth_map)
 	_impact.set_depth_map(depth_map)
+	_impact_secondary.set_depth_map(depth_map)
 	_droplets.source_entry_grace = source_entry_grace
 	_impact.source_entry_grace = source_entry_grace
+	_impact_secondary.source_entry_grace = source_entry_grace
 	_droplets.z_band_count = depth_band_count
 	_impact.z_band_count = depth_band_count
+	_impact_secondary.z_band_count = depth_band_count
 	_droplets.z_band_step = depth_band_z_step
 	_impact.z_band_step = depth_band_z_step
+	_impact_secondary.z_band_step = depth_band_z_step
 
 
 func _set_droplet_depth(world_position: Vector2) -> void:
@@ -656,10 +667,11 @@ func _set_droplet_depth(world_position: Vector2) -> void:
 
 
 func _set_impact_depth(world_position: Vector2) -> void:
-	if _impact == null:
+	if _impact == null or _impact_secondary == null:
 		return
 	var sample := sample_stream_position(world_position)
 	_impact.set_depth_context(world_position, float(sample.get("depth", 0.0)))
+	_impact_secondary.set_depth_context(world_position, float(sample.get("depth", 0.0)))
 
 
 func _apply_depth_render_order() -> void:
@@ -1008,7 +1020,7 @@ func _update_aim_bloom(target: Vector2, delta: float) -> void:
 
 
 func _impact_spread() -> float:
-	return clampf(100.0 + _aim_bloom_radius * 0.35, 100.0, 180.0)
+	return 180.0
 
 
 func _double_bloom_offset() -> Vector2:
@@ -1199,8 +1211,11 @@ func _emit_hit(hit: Dictionary, amount: float) -> void:
 	var normal: Vector2 = hit.normal
 	_impact.position = position
 	_impact.direction = normal
+	_impact_secondary.position = position
+	_impact_secondary.direction = normal
 	_set_impact_depth(position)
 	_impact.emitting = true
+	_impact_secondary.emitting = true
 	wet_target_hit.emit(target, amount, position, normal)
 
 
@@ -1212,11 +1227,15 @@ func _emit_floor_impact(position: Vector2) -> void:
 	var normal := -_tangent_at(endpoint_index, Vector2.UP)
 	_impact.position = position
 	_impact.direction = normal
+	_impact_secondary.position = position
+	_impact_secondary.direction = normal
 	if classify_stream_result(position) == COLLISION_OUT_OF_BOUNDS_MISS:
 		_impact.emitting = false
+		_impact_secondary.emitting = false
 		return
 	_set_impact_depth(position)
 	_impact.emitting = true
+	_impact_secondary.emitting = true
 
 
 func _update_double_stream_meshes(
