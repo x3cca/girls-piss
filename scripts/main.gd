@@ -4,8 +4,8 @@ class_name Main
 
 ## Playable portrait-first sample level. All world positions are derived from the
 ## visible rectangle, so expand stretching and taller phone ratios stay usable.
-## The stream source is deliberately below the frame: the player controls the
-## jet, never a visible wand or nozzle.
+## The stream source follows the bowl, so every new jet visibly begins at the
+## place where the player is pissing.
 
 @onready var input_controller: InputController = $InputController
 @onready var depth_map: DepthMap2D = $DepthMap
@@ -55,7 +55,6 @@ var targets: Array[WettableTarget] = []
 @export_range(0.0, 20.0, 0.1) var pulse_shake_strength := 2.5
 @export_range(0.05, 0.5, 0.01) var pulse_shake_duration := 0.14
 var _world_size := Vector2(720.0, 1280.0)
-var _layout_signature := Vector2.ZERO
 var _elapsed := 0.0
 var _base_position := Vector2.ZERO
 var _base_hud_offset := Vector2.ZERO
@@ -192,14 +191,17 @@ func _refresh_reticle_preview() -> void:
 func _layout_world() -> void:
 	if _world_size.x <= 1.0 or _world_size.y <= 1.0:
 		return
-	# The source stays just below the visible rectangle; only the jet enters frame.
-	stream.source_position = Vector2(_world_size.x * 0.5, _world_size.y + 48.0)
+	_sync_stream_source_to_bowl()
 	depth_map.world_rect = Rect2(Vector2.ZERO, _world_size)
 	_align_bowl_light()
-	if _layout_signature != _world_size:
-		_layout_signature = _world_size
+
+
+func _sync_stream_source_to_bowl() -> void:
+	var bowl := get_node_or_null("PissToilet/Bowl") as Sprite2D
+	if bowl:
+		stream.source_position = stream.to_local(bowl.global_position)
 		if _impact_light:
-			_impact_light.position = stream.source_position
+			_impact_light.position = to_local(bowl.global_position)
 
 
 func _align_bowl_light() -> void:

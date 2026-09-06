@@ -36,10 +36,25 @@ func test_smoke_test_places_the_toilet_in_the_play_scene() -> void:
 	add_child_autofree(smoke_test)
 
 	var toilet := smoke_test.get_node("PissToilet") as Node2D
+	var bowl := smoke_test.get_node("PissToilet/Bowl") as Sprite2D
+	var stream := smoke_test.get_node("LiquidStream") as LiquidStream
 	assert_eq(toilet.position, Vector2(360, 640))
 	assert_eq(toilet.scale, Vector2(0.45, 0.45))
+	assert_eq(stream.to_global(stream.source_position), bowl.global_position)
 	assert_not_null(smoke_test.get_node_or_null("NegativeZone01"))
 	assert_not_null(smoke_test.get_node_or_null("NegativeZone02"))
+
+
+func test_first_stream_parcel_starts_at_the_bowl() -> void:
+	var smoke_test := preload("res://scenes/smoke_test.tscn").instantiate()
+	add_child_autofree(smoke_test)
+
+	var bowl := smoke_test.get_node("PissToilet/Bowl") as Sprite2D
+	var stream := smoke_test.get_node("LiquidStream") as LiquidStream
+	stream.emit_parcels(Vector2(360.0, 240.0), 0.0)
+
+	assert_eq(stream.parcel_at(0)["position"], stream.source_position)
+	assert_eq(stream.to_global(stream.parcel_at(0)["position"]), bowl.global_position)
 
 
 func test_level_1_starts_with_the_toilet_without_test_zone_gameplay() -> void:
