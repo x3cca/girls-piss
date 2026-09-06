@@ -29,6 +29,7 @@ const RETRY_FINAL_POSITION := Vector2(167.0, 1494.0)
 @onready var _presentation: Control = $Presentation
 @onready var _art_root: Control = $Presentation/Art
 @onready var _good_job_group: Control = $Presentation/Art/GoodJobGroup
+@onready var _bowl_water: Sprite2D = $Presentation/Art/GoodJobGroup/BowlWater
 @onready var _good_job_sticker: Control = $Presentation/Art/GoodJobGroup/GoodJobSticker
 @onready var _good_job_text: TextureRect = $Presentation/Art/GoodJobGroup/GoodJobSticker/GoodJobText
 @onready var _retry_group: Control = $Presentation/Art/PissAgainGroup
@@ -58,6 +59,7 @@ const RETRY_FINAL_POSITION := Vector2(167.0, 1494.0)
 var failure_state := false
 var _animation_tween: Tween
 var _layout_signature := Vector2.ZERO
+var _bowl_elapsed := 0.0
 
 
 func _ready() -> void:
@@ -81,6 +83,8 @@ func _process(_delta: float) -> void:
 	if visible:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 		_layout_card()
+		_bowl_elapsed += _delta
+		_set_bowl_elapsed(_bowl_elapsed)
 
 
 func show_card() -> void:
@@ -187,6 +191,8 @@ func _start_reveal_sequence() -> void:
 
 func _reset_animation_state() -> void:
 	_layout_card()
+	_bowl_elapsed = 0.0
+	_set_bowl_elapsed(0.0)
 	_backdrop.color.a = backdrop_opacity
 	_dread_frame.modulate.a = vignette_opacity
 	_good_job_group.modulate.a = 0.0
@@ -199,6 +205,12 @@ func _reset_animation_state() -> void:
 	_retry_group.position = RETRY_FINAL_POSITION + Vector2(DESIGN_SIZE.x + 32.0, 0.0)
 	_retry_group.rotation = 0.0
 	_set_retry_text_hovered(false)
+
+
+func _set_bowl_elapsed(value: float) -> void:
+	var material := _bowl_water.material as ShaderMaterial
+	if material:
+		material.set_shader_parameter("ripple_age", value)
 
 
 func _set_retry_shake(progress: float) -> void:

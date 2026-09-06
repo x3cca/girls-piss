@@ -6,6 +6,8 @@ const STRIKE_EFFECT := preload("res://scenes/strike_vignette.tscn")
 const SUCCESS_EFFECT := preload("res://scenes/success_vignette.tscn")
 const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
 const RADIAL_SHADER := preload("res://shaders/radial_vignette.gdshader")
+const BOWL_SHADER := preload("res://shaders/surface_paint.gdshader")
+const WATER_SHADER := preload("res://shaders/surface_ripple.gdshader")
 
 
 func test_level_1_uses_the_authored_target_set_and_background() -> void:
@@ -206,6 +208,26 @@ func test_completion_card_shows_the_kenney_cursor() -> void:
 	assert_eq(play_again_button.mouse_default_cursor_shape, Control.CURSOR_ARROW)
 
 
+func test_completion_card_bowl_uses_splat_shader_and_water_uses_ripple_shader() -> void:
+	var level := LEVEL_SCENE.instantiate() as Level1
+	level.skip_title_screen = true
+	add_child_autofree(level)
+
+	var main_bowl := level.get_node("PissToilet/Bowl") as Sprite2D
+	var win_bowl := level.hud.completion_card.get_node(
+		"Presentation/Art/GoodJobGroup/Bowl",
+	) as Sprite2D
+	var main_water := level.get_node("PissToilet/BowlWater") as Sprite2D
+	var win_water := level.hud.completion_card.get_node(
+		"Presentation/Art/GoodJobGroup/BowlWater",
+	) as Sprite2D
+
+	assert_eq((main_bowl.material as ShaderMaterial).shader, BOWL_SHADER)
+	assert_eq((win_bowl.material as ShaderMaterial).shader, BOWL_SHADER)
+	assert_eq((main_water.material as ShaderMaterial).shader, WATER_SHADER)
+	assert_eq((win_water.material as ShaderMaterial).shader, WATER_SHADER)
+
+
 func test_piss_meter_reveals_with_a_left_slide_when_pissing_starts() -> void:
 	var meter := METER_SCENE.instantiate() as PissMeter
 	var controller := InputController.new()
@@ -268,6 +290,16 @@ func test_feedback_scenes_use_the_downloaded_strike_art_and_radial_success_flash
 	assert_eq(
 		(success.get_node("Vignette").material as ShaderMaterial).shader,
 		RADIAL_SHADER,
+	)
+	success.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	success.size = Vector2(720.0, 1280.0)
+	success._update_vignette_aspect()
+	assert_almost_eq(
+		(success.get_node("Vignette").material as ShaderMaterial).get_shader_parameter(
+			"aspect_ratio",
+		),
+		0.5625,
+		0.001,
 	)
 	assert_eq(
 		(success.get_node("Vignette").material as ShaderMaterial).get_shader_parameter(

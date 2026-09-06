@@ -144,6 +144,7 @@ func _ready() -> void:
 	shape_trace.trace_completed.connect(_on_trace_completed)
 	line_replay.replay_finished.connect(_on_replay_finished)
 	_wire_hud()
+	_sync_water_to_piss_meter()
 	if not input_controller.input_detected.is_connected(_on_input_detected):
 		input_controller.input_detected.connect(_on_input_detected)
 	if is_instance_valid(level_1_chrome) and not level_1_chrome.volume_pointer_changed.is_connected(
@@ -185,6 +186,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_frame_delta = maxf(delta, 0.0)
+	_sync_water_to_piss_meter()
 	_strike_cooldown_remaining = move_toward(
 		_strike_cooldown_remaining,
 		0.0,
@@ -697,6 +699,14 @@ func _on_piss_meter_depleted() -> void:
 	_fail_attempt()
 
 
+func _sync_water_to_piss_meter() -> void:
+	if not is_instance_valid(surface_effects) or not is_instance_valid(hud):
+		return
+	if not is_instance_valid(hud.piss_meter):
+		return
+	surface_effects.set_meter_progress(hud.piss_meter.get_progress())
+
+
 func _on_game_over_raid_sequence_finished() -> void:
 	if state != FAILED:
 		return
@@ -769,6 +779,7 @@ func reset_level() -> void:
 	stream.reset_stream()
 	stream.set_live_enabled(true)
 	hud.reset_piss_meter()
+	_sync_water_to_piss_meter()
 	input_controller.reset_input()
 	input_controller.set_target_position(shape_trace.get_checkpoint_position(0))
 	input_controller.set_gameplay_input_enabled(true)

@@ -10,6 +10,7 @@ func test_piss_toilet_layers_use_the_requested_depth_order() -> void:
 
 	assert_eq(toilet.get_node("Outside").z_index, 0)
 	assert_eq(toilet.get_node("Bowl").z_index, 1)
+	assert_gt(toilet.get_node("BowlWater").z_index, toilet.get_node("Bowl").z_index)
 	assert_eq(toilet.get_node("Tank").z_index, 2)
 	assert_eq(toilet.get_node("Seat").z_index, 3)
 
@@ -20,6 +21,10 @@ func test_piss_toilet_layers_use_the_requested_depth_order() -> void:
 	assert_eq(
 		(toilet.get_node("Bowl") as Sprite2D).texture.resource_path,
 		"res://assets/art/drive/Pissbowl.png",
+	)
+	assert_eq(
+		(toilet.get_node("BowlWater") as Sprite2D).texture.resource_path,
+		"res://assets/art/drive/GirlpissWaterin bowl.png",
 	)
 	assert_eq(
 		(toilet.get_node("Tank") as Sprite2D).texture.resource_path,

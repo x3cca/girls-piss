@@ -19,8 +19,13 @@ uniform float wave_frequency : hint_range(1.0, 40.0, 0.5) = 18.0;
 uniform float wave_speed : hint_range(0.0, 6.0, 0.1) = 1.8;
 uniform float wave_amplitude : hint_range(0.0, 0.04, 0.001) = 0.008;
 uniform float noise_strength : hint_range(0.0, 0.04, 0.001) = 0.012;
-uniform vec4 stain_color : source_color = vec4(0.95, 0.83, 0.31, 1.0);
-uniform float stain_opacity = 0.62;
+// The water mask is clear at full meter and becomes more yellow as the meter
+// approaches empty. This is a color/opacity blend, not a radial yellow decal.
+uniform float water_yellowness : hint_range(0.0, 1.0, 0.01) = 0.0;
+uniform vec4 clear_water_color : source_color = vec4(0.18, 0.62, 1.0, 1.0);
+uniform float clear_water_opacity : hint_range(0.0, 1.0, 0.01) = 0.34;
+uniform vec4 water_color : source_color = vec4(0.95, 0.83, 0.31, 1.0);
+uniform float water_opacity : hint_range(0.0, 1.0, 0.01) = 0.48;
 
 
 float water_noise_at(vec2 uv) {
@@ -73,5 +78,14 @@ void fragment() {
 	vec2 distortion = waves + persistent_distortion + impact_distortion + pop_offset;
 	vec4 base = texture(TEXTURE, clamp(UV + distortion, vec2(0.0), vec2(1.0)));
 	base.a *= COLOR.a;
+	float water_shade = mix(0.88, 1.08, local_noise);
+	vec3 liquid_color = mix(clear_water_color.rgb, water_color.rgb, water_yellowness);
+	float liquid_opacity = mix(
+		clear_water_opacity * clear_water_color.a,
+		water_opacity * water_color.a,
+		water_yellowness
+	);
+	base.rgb = liquid_color * water_shade;
+	base.a *= liquid_opacity;
 	COLOR = base;
 }

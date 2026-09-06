@@ -34,8 +34,17 @@ func test_all_bathroom_surfaces_have_independent_reusable_shaders() -> void:
 	)
 	assert_eq(
 		(bowl.shader as Shader).resource_path,
+		"res://shaders/surface_paint.gdshader",
+	)
+	assert_eq(effects.get_surface_node(SurfaceEffects.SURFACE_BOWL).name, "Bowl")
+	assert_eq(bowl.get_shader_parameter("water_mask_enabled"), 1.0)
+	var water := effects.get_water_material(SurfaceEffects.SURFACE_BOWL)
+	assert_not_null(water)
+	assert_eq(
+		(water.shader as Shader).resource_path,
 		"res://shaders/surface_ripple.gdshader",
 	)
+	assert_almost_eq(water.get_shader_parameter("water_yellowness"), 0.0, 0.001)
 	assert_eq(
 		(seat.shader as Shader).resource_path,
 		"res://shaders/surface_paint.gdshader",
@@ -54,8 +63,8 @@ func test_all_bathroom_surfaces_have_independent_reusable_shaders() -> void:
 	)
 	assert_eq(bowl.get_shader_parameter("stain_color"), SurfaceEffects.DEFAULT_STAIN_COLOR)
 	assert_eq(bowl.get_shader_parameter("stain_opacity"), SurfaceEffects.DEFAULT_STAIN_OPACITY)
-	assert_eq(bowl.get_shader_parameter("ripple_strength"), 0.0)
-	assert_eq(bowl.get_shader_parameter("ripple_center"), Vector2(0.5, 0.5))
+	assert_eq(water.get_shader_parameter("ripple_strength"), 0.0)
+	assert_eq(water.get_shader_parameter("ripple_center"), Vector2(0.5, 0.5))
 	assert_eq(seat.get_shader_parameter("stain_color"), SurfaceEffects.DEFAULT_STAIN_COLOR)
 	assert_eq(seat.get_shader_parameter("stain_opacity"), SurfaceEffects.DEFAULT_STAIN_OPACITY)
 
@@ -103,7 +112,7 @@ func test_contact_builds_bowl_noise_and_keeps_one_ripple() -> void:
 	assert_eq(effects.get_bowl_ripple_count(), 1)
 	assert_eq(effects.get_surface_stain_count(SurfaceEffects.SURFACE_BOWL), 1)
 	assert_gt(effects.get_surface_stain_value(SurfaceEffects.SURFACE_BOWL, bowl_position), 0.0)
-	assert_eq(effects.get_surface_material(SurfaceEffects.SURFACE_BOWL).get_shader_parameter("ripple_age"), 0.0)
+	assert_eq(effects.get_water_material(SurfaceEffects.SURFACE_BOWL).get_shader_parameter("ripple_age"), 0.0)
 	var first_ripple_center: Vector2 = effects.get_bowl_ripples()[0]["uv"] as Vector2
 
 	# Continuous endpoint updates add persistent noise without creating another
@@ -119,7 +128,7 @@ func test_contact_builds_bowl_noise_and_keeps_one_ripple() -> void:
 	assert_eq(effects.get_surface_strength(SurfaceEffects.SURFACE_BOWL), 1.0)
 	assert_gt(effects.get_surface_stain_value(SurfaceEffects.SURFACE_BOWL, bowl_position), 0.0)
 	assert_almost_eq(
-		effects.get_surface_material(SurfaceEffects.SURFACE_BOWL).get_shader_parameter("ripple_age"),
+		effects.get_water_material(SurfaceEffects.SURFACE_BOWL).get_shader_parameter("ripple_age"),
 		10.0,
 		0.001,
 	)
@@ -156,3 +165,21 @@ func test_contact_builds_bowl_noise_and_keeps_one_ripple() -> void:
 		assert_eq(effects.get_surface_stain_count(surface), 0)
 		assert_eq(effects.get_surface_stain_value(surface, bowl_position), 0.0)
 	assert_eq(effects.get_bowl_ripple_count(), 0)
+
+
+func test_water_yellowness_tracks_remaining_meter() -> void:
+	var level := _level()
+	var effects := level.surface_effects
+	var water := effects.get_water_material(SurfaceEffects.SURFACE_BOWL)
+
+	effects.set_meter_progress(1.0)
+	assert_almost_eq(effects.get_water_yellowness(), 0.0, 0.001)
+	assert_almost_eq(water.get_shader_parameter("water_yellowness"), 0.0, 0.001)
+
+	effects.set_meter_progress(0.25)
+	assert_almost_eq(effects.get_water_yellowness(), 0.75, 0.001)
+	assert_almost_eq(water.get_shader_parameter("water_yellowness"), 0.75, 0.001)
+
+	effects.set_meter_progress(0.0)
+	assert_almost_eq(effects.get_water_yellowness(), 1.0, 0.001)
+	assert_almost_eq(water.get_shader_parameter("water_yellowness"), 1.0, 0.001)

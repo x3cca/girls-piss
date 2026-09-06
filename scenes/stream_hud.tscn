@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=28 format=3]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scripts/completion_card.gd" id="4_completion"]
@@ -23,6 +23,10 @@
 [ext_resource type="Texture2D" path="res://assets/art/drive/SleepCredit.png" id="24_sleep_credit"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/RayCreditQuote.png" id="25_ray_quote"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/Ray credit.png" id="26_ray_credit"]
+[ext_resource type="Material" path="res://resources/materials/bowl_surface.tres" id="27_bowl_material"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/Pissbowl.png" id="28_bowl"]
+[ext_resource type="Material" path="res://resources/materials/bowl_water_surface.tres" id="29_bowl_water_material"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/GirlpissWaterin bowl.png" id="30_bowl_water"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_transparent_button"]
 bg_color = Color(0, 0, 0, 0)
@@ -102,6 +106,24 @@ offset_right = 1080.0
 offset_bottom = 760.0
 pivot_offset = Vector2(540, 380)
 mouse_filter = 2
+
+[node name="Bowl" type="Sprite2D" parent="CompletionCard/Presentation/Art/GoodJobGroup"]
+z_index = -1
+texture_filter = 1
+material = ExtResource("27_bowl_material")
+position = Vector2(540, 415)
+scale = Vector2(0.75, 0.75)
+modulate = Color(1, 1, 1, 0.3)
+texture = ExtResource("28_bowl")
+
+[node name="BowlWater" type="Sprite2D" parent="CompletionCard/Presentation/Art/GoodJobGroup"]
+z_index = -1
+texture_filter = 1
+material = ExtResource("29_bowl_water_material")
+position = Vector2(542.25, 406.375)
+scale = Vector2(0.75, 0.75)
+modulate = Color(1, 1, 1, 0.3)
+texture = ExtResource("30_bowl_water")
 
 [node name="GoodJerbFinished" type="TextureRect" parent="CompletionCard/Presentation/Art/GoodJobGroup"]
 texture_filter = 1

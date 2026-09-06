@@ -193,8 +193,8 @@ func test_completion_card_shows_while_tracking_replay_runs_behind_it() -> void:
 	level.get_node("LiquidStream").set_process(false)
 	level.line_recorder._strokes = [
 		[
-			{"position": Vector2(0.1, 0.2), "timestamp": 0.0},
-			{"position": Vector2(0.4, 0.2), "timestamp": 5.0},
+			{ "position": Vector2(0.1, 0.2), "timestamp": 0.0 },
+			{ "position": Vector2(0.4, 0.2), "timestamp": 5.0 },
 		],
 	]
 

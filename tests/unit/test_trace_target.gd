@@ -16,6 +16,7 @@ func test_target_uses_the_black_item_outline_material() -> void:
 	assert_eq(material.get_shader_parameter("outline_color"), Color(0, 0, 0, 1))
 	assert_almost_eq(material.get_shader_parameter("outline_width"), 4.0, 0.001)
 
+
 func test_target_has_subtle_idle_float_motion() -> void:
 	var target := TraceTarget.new()
 	add_child_autofree(target)

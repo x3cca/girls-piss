@@ -1,0 +1,12 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://dg7mk1tit2eyr"]
+
+[ext_resource type="Shader" uid="uid://k3mtqi6hw14s" path="res://shaders/surface_paint.gdshader" id="1_bowl_shader"]
+
+[resource]
+shader = ExtResource("1_bowl_shader")
+shader_parameter/splat_threshold = 0.5
+shader_parameter/splat_edge = 0.04
+shader_parameter/stain_color = Color(0.95, 0.83, 0.31, 1)
+shader_parameter/stain_opacity = 0.62
+shader_parameter/water_mask_uv_transform = Vector4(1, 1, 0, 0)
+shader_parameter/water_mask_enabled = 0.0

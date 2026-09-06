@@ -1,0 +1,37 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" uid="uid://buq3olqwoygjw" path="res://shaders/surface_ripple.gdshader" id="1_bowl_water_shader"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_bowl_water"]
+frequency = 0.035
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_bowl_water"]
+width = 256
+height = 256
+noise = SubResource("FastNoiseLite_bowl_water")
+seamless = true
+
+[resource]
+shader = ExtResource("1_bowl_water_shader")
+shader_parameter/water_noise_map = SubResource("NoiseTexture2D_bowl_water")
+shader_parameter/water_noise_map_texel_size = Vector2(0.004, 0.004)
+shader_parameter/ripple_center = Vector2(0.5, 0.5)
+shader_parameter/ripple_age = 0.0
+shader_parameter/ripple_strength = 0.0
+shader_parameter/ripple_frequency = 30.0
+shader_parameter/ripple_speed = 5.0
+shader_parameter/ripple_amplitude = 0.012
+shader_parameter/ripple_decay = 0.7
+shader_parameter/pop_duration = 0.45
+shader_parameter/pop_radius = 0.14
+shader_parameter/pop_ring_width = 0.012
+shader_parameter/pop_distortion_strength = 0.05
+shader_parameter/wave_frequency = 18.0
+shader_parameter/wave_speed = 1.8
+shader_parameter/wave_amplitude = 0.008
+shader_parameter/noise_strength = 0.012
+shader_parameter/water_yellowness = 0.0
+shader_parameter/clear_water_color = Color(0.18, 0.62, 1, 1)
+shader_parameter/clear_water_opacity = 0.34
+shader_parameter/water_color = Color(0.95, 0.83, 0.31, 1)
+shader_parameter/water_opacity = 0.48

@@ -60,11 +60,18 @@ var _splat_image: Image
 var _stain_images: Dictionary = { }
 var _stain_textures: Dictionary = { }
 var _stain_map_sizes: Dictionary = { }
+var _water_nodes: Dictionary = { }
+var _water_materials: Dictionary = { }
+var _water_images: Dictionary = { }
+var _water_textures: Dictionary = { }
+var _water_map_sizes: Dictionary = { }
 var _stain_stamp_counts: Dictionary = { }
 var _noise_stamp_serial := 0
+var _water_yellowness := 0.0
 var _surface_states: Dictionary = { }
 ## Kept as a queryable contact history for bowl ripple tests and tooling. The
-## actual visual state is the persistent bowl stain map, not these positions.
+## actual visual state lives in the persistent bowl splat and water maps, not
+## these positions.
 var _ripples: Array[Dictionary] = []
 
 
@@ -93,7 +100,7 @@ func _process(delta: float) -> void:
 		return
 	bowl_state["ripple_age"] = float(bowl_state.get("ripple_age", 0.0)) + maxf(delta, 0.0)
 	_surface_states[SURFACE_BOWL] = bowl_state
-	_apply_surface_state(SURFACE_BOWL, bowl_state)
+	_apply_water_state(bowl_state)
 
 
 func bind_stream(value: LiquidStream) -> void:
@@ -164,11 +171,12 @@ func _on_drawing_point_updated(position: Vector2, active: bool) -> void:
 			)
 	)
 	if surface == SURFACE_BOWL:
-		# Water noise accumulates along the committed stream endpoint. The ripple
-		# itself is reset only when contact begins, so it never follows the aim.
-		_stamp_bowl_noise(surface, node, position)
+		# The bowl gets ordinary splats, while a separate water map keeps the
+		# ripple shader's accumulated disturbance independent of those splats.
+		_stamp_surface(surface, node, position)
+		_stamp_water_noise(position)
 		if bowl_contact_started:
-			_add_ripple(position, node)
+			_add_ripple(position, _water_nodes.get(SURFACE_BOWL) as Sprite2D)
 	elif not continuous_contact:
 		# Other surfaces, including the seat, still receive their persistent splats.
 		_stamp_surface(surface, node, position)
@@ -181,6 +189,8 @@ func _on_drawing_point_updated(position: Vector2, active: bool) -> void:
 	_time_since_endpoint_signal = 0.0
 	_last_endpoint_surface = surface
 	_apply_surface_state(surface, state)
+	if surface == SURFACE_BOWL:
+		_apply_water_state(state)
 	surface_detected.emit(surface, position)
 
 
@@ -229,7 +239,9 @@ func reset_effects() -> void:
 	_ripples.clear()
 	_stain_stamp_counts.clear()
 	_noise_stamp_serial = 0
+	_water_yellowness = 0.0
 	_clear_stain_maps()
+	_clear_water_maps()
 	for surface in SURFACES:
 		var state: Dictionary = _surface_states[surface]
 		state["active"] = false
@@ -242,6 +254,8 @@ func reset_effects() -> void:
 		state["ripple_strength"] = 0.0
 		_surface_states[surface] = state
 		_apply_surface_state(surface, state)
+		if surface == SURFACE_BOWL:
+			_apply_water_state(state)
 
 
 func reset() -> void:
@@ -332,6 +346,25 @@ func get_surface_materials() -> Dictionary:
 	return _surface_materials.duplicate()
 
 
+func get_water_material(surface := SURFACE_BOWL) -> ShaderMaterial:
+	_resolve_surface_nodes()
+	return _water_materials.get(surface) as ShaderMaterial
+
+
+func set_meter_progress(progress: float) -> void:
+	# Meter progress is full at 1.0 and empty at 0.0, so yellow grows toward
+	# depletion while the water remains clear at the start of an attempt.
+	_water_yellowness = 1.0 - clampf(progress, 0.0, 1.0)
+	for material_variant in _water_materials.values():
+		var material := material_variant as ShaderMaterial
+		if material:
+			material.set_shader_parameter("water_yellowness", _water_yellowness)
+
+
+func get_water_yellowness() -> float:
+	return _water_yellowness
+
+
 func set_surface_nodes(
 		bowl: Sprite2D,
 		seat: Sprite2D,
@@ -346,7 +379,10 @@ func set_surface_nodes(
 		SURFACE_WALL: wall,
 		SURFACE_TANK: tank,
 	}
+	_water_nodes.clear()
+	_water_materials.clear()
 	_prepare_materials()
+	_prepare_water_material()
 
 
 func _init_surface_states() -> void:
@@ -377,19 +413,23 @@ func _resolve_surface_nodes() -> void:
 	var toilet := owner_node.get_node_or_null("PissToilet")
 	var background := owner_node.get_node_or_null("Level1Background")
 	var bowl := toilet.get_node_or_null("Bowl") as Sprite2D if toilet else null
+	var bowl_water := toilet.get_node_or_null("BowlWater") as Sprite2D if toilet else null
 	var seat := toilet.get_node_or_null("Seat") as Sprite2D if toilet else null
 	var tank := toilet.get_node_or_null("Tank") as Sprite2D if toilet else null
 	var floor := background.get_node_or_null("Floor") as Sprite2D if background else null
 	var wall := background.get_node_or_null("BackWall") as Sprite2D if background else null
-	if bowl or seat or floor or wall or tank:
+	if bowl or bowl_water or seat or floor or wall or tank:
 		_surface_nodes = {
+			# Bowl splats and surface detection use the full authored silhouette.
 			SURFACE_BOWL: bowl,
 			SURFACE_SEAT: seat,
 			SURFACE_FLOOR: floor,
 			SURFACE_WALL: wall,
 			SURFACE_TANK: tank,
 		}
+		_water_nodes = { SURFACE_BOWL: bowl_water }
 		_prepare_materials()
+		_prepare_water_material()
 
 
 func _prepare_materials() -> void:
@@ -425,22 +465,56 @@ func _prepare_materials() -> void:
 func _set_common_material_parameters(surface: String, material: ShaderMaterial) -> void:
 	var stain_map: ImageTexture = _stain_textures.get(surface) as ImageTexture
 	if stain_map != null:
-		material.set_shader_parameter(
-			"water_noise_map" if surface == SURFACE_BOWL else "stain_map",
-			stain_map,
-		)
-	var map_size: Vector2i = _stain_map_sizes.get(surface, Vector2i(1, 1))
-	if surface == SURFACE_BOWL:
-		material.set_shader_parameter(
-			"water_noise_map_texel_size",
-			Vector2(1.0 / maxf(map_size.x, 1), 1.0 / maxf(map_size.y, 1)),
-		)
+		material.set_shader_parameter("stain_map", stain_map)
 	material.set_shader_parameter("splat_threshold", splat_threshold)
 	material.set_shader_parameter("splat_edge", splat_edge)
 	material.set_shader_parameter("stain_color", stain_color)
 	material.set_shader_parameter("stain_opacity", stain_opacity)
+	if surface == SURFACE_BOWL:
+		_set_bowl_water_mask(material, _surface_nodes.get(SURFACE_BOWL) as Sprite2D)
 	# Keep a stable material-level label available for deterministic inspection.
 	material.resource_name = "SurfaceEffect_%s" % surface.capitalize()
+
+
+func _set_bowl_water_mask(material: ShaderMaterial, bowl: Sprite2D) -> void:
+	var water_node := _water_nodes.get(SURFACE_BOWL) as Sprite2D
+	if bowl == null or bowl.texture == null or water_node == null or water_node.texture == null:
+		material.set_shader_parameter("water_mask_enabled", 0.0)
+		return
+	material.set_shader_parameter("water_mask", water_node.texture)
+	material.set_shader_parameter("water_mask_uv_transform", _water_mask_uv_transform(bowl, water_node))
+	material.set_shader_parameter("water_mask_enabled", 1.0)
+
+
+func _prepare_water_material() -> void:
+	var node := _water_nodes.get(SURFACE_BOWL) as Sprite2D
+	if node == null:
+		return
+	var material := node.material as ShaderMaterial
+	if material == null:
+		return
+	# Keep the water material independent from the material resource used by the
+	# completion card and from any other scene instance.
+	if _water_materials.get(SURFACE_BOWL) != material:
+		material = material.duplicate() as ShaderMaterial
+		node.material = material
+	_water_materials[SURFACE_BOWL] = material
+	_prepare_water_map(node)
+	_set_water_material_parameters(material)
+	_apply_water_state(_surface_states.get(SURFACE_BOWL, { }))
+
+
+func _set_water_material_parameters(material: ShaderMaterial) -> void:
+	var water_texture: ImageTexture = _water_textures.get(SURFACE_BOWL) as ImageTexture
+	if water_texture != null:
+		material.set_shader_parameter("water_noise_map", water_texture)
+	var map_size: Vector2i = _water_map_sizes.get(SURFACE_BOWL, Vector2i(1, 1))
+	material.set_shader_parameter(
+		"water_noise_map_texel_size",
+		Vector2(1.0 / maxf(map_size.x, 1), 1.0 / maxf(map_size.y, 1)),
+	)
+	material.set_shader_parameter("water_yellowness", _water_yellowness)
+	material.resource_name = "SurfaceEffect_BowlWater"
 
 
 func _apply_surface_state(surface: String, state: Dictionary) -> void:
@@ -449,14 +523,20 @@ func _apply_surface_state(surface: String, state: Dictionary) -> void:
 		return
 	var stain_map: ImageTexture = _stain_textures.get(surface) as ImageTexture
 	if stain_map != null:
-		material.set_shader_parameter(
-			"water_noise_map" if surface == SURFACE_BOWL else "stain_map",
-			stain_map,
-		)
-	if surface == SURFACE_BOWL:
-		material.set_shader_parameter("ripple_center", state.get("ripple_uv", Vector2(0.5, 0.5)))
-		material.set_shader_parameter("ripple_age", state.get("ripple_age", 0.0))
-		material.set_shader_parameter("ripple_strength", state.get("ripple_strength", 0.0))
+		material.set_shader_parameter("stain_map", stain_map)
+
+
+func _apply_water_state(state: Dictionary) -> void:
+	var material: ShaderMaterial = _water_materials.get(SURFACE_BOWL) as ShaderMaterial
+	if material == null:
+		return
+	var water_texture: ImageTexture = _water_textures.get(SURFACE_BOWL) as ImageTexture
+	if water_texture != null:
+		material.set_shader_parameter("water_noise_map", water_texture)
+	material.set_shader_parameter("water_yellowness", _water_yellowness)
+	material.set_shader_parameter("ripple_center", state.get("ripple_uv", Vector2(0.5, 0.5)))
+	material.set_shader_parameter("ripple_age", state.get("ripple_age", 0.0))
+	material.set_shader_parameter("ripple_strength", state.get("ripple_strength", 0.0))
 
 
 func _add_ripple(position: Vector2, node: Sprite2D) -> void:
@@ -479,10 +559,13 @@ func _add_ripple(position: Vector2, node: Sprite2D) -> void:
 	_surface_states[SURFACE_BOWL] = state
 
 
-func _stamp_bowl_noise(surface: String, node: Sprite2D, position: Vector2) -> void:
-	_prepare_stain_map(surface, node)
-	var noise_image: Image = _stain_images.get(surface) as Image
-	var noise_texture: ImageTexture = _stain_textures.get(surface) as ImageTexture
+func _stamp_water_noise(position: Vector2) -> void:
+	var node := _water_nodes.get(SURFACE_BOWL) as Sprite2D
+	if node == null:
+		return
+	_prepare_water_map(node)
+	var noise_image: Image = _water_images.get(SURFACE_BOWL) as Image
+	var noise_texture: ImageTexture = _water_textures.get(SURFACE_BOWL) as ImageTexture
 	if noise_image == null or noise_texture == null or noise_image.is_empty():
 		return
 	var uv := _world_to_uv(node, position)
@@ -517,7 +600,6 @@ func _stamp_bowl_noise(surface: String, node: Sprite2D, position: Vector2) -> vo
 				noise_image.set_pixel(x, y, Color(updated, 0.0, 0.0, 1.0))
 	_noise_stamp_serial += 1
 	noise_texture.update(noise_image)
-	_stain_stamp_counts[surface] = int(_stain_stamp_counts.get(surface, 0)) + 1
 
 
 func _stamp_noise(pixel: Vector2i, serial: int) -> float:
@@ -545,6 +627,24 @@ func _prepare_stain_map(surface: String, node: Sprite2D) -> void:
 		var stain_texture: ImageTexture = _stain_textures.get(surface) as ImageTexture
 		if stain_texture == null:
 			_stain_textures[surface] = ImageTexture.create_from_image(stain_image)
+
+
+func _prepare_water_map(node: Sprite2D) -> void:
+	if node == null or node.texture == null:
+		return
+	var source_size := node.texture.get_size()
+	var map_size := _get_stain_map_size(source_size)
+	var water_image: Image = _water_images.get(SURFACE_BOWL) as Image
+	if water_image == null or _water_map_sizes.get(SURFACE_BOWL) != map_size:
+		water_image = Image.create(map_size.x, map_size.y, false, Image.FORMAT_RGBA8)
+		water_image.fill(Color(0.0, 0.0, 0.0, 1.0))
+		_water_images[SURFACE_BOWL] = water_image
+		_water_map_sizes[SURFACE_BOWL] = map_size
+		_water_textures[SURFACE_BOWL] = ImageTexture.create_from_image(water_image)
+	else:
+		var water_texture: ImageTexture = _water_textures.get(SURFACE_BOWL) as ImageTexture
+		if water_texture == null:
+			_water_textures[SURFACE_BOWL] = ImageTexture.create_from_image(water_image)
 
 
 func _get_stain_map_size(source_size: Vector2) -> Vector2i:
@@ -615,6 +715,18 @@ func _clear_stain_maps() -> void:
 		stain_texture.update(stain_image)
 
 
+func _clear_water_maps() -> void:
+	for water_image_variant in _water_images.values():
+		var water_image := water_image_variant as Image
+		if water_image == null or water_image.is_empty():
+			continue
+		water_image.fill(Color(0.0, 0.0, 0.0, 1.0))
+	var water_texture: ImageTexture = _water_textures.get(SURFACE_BOWL) as ImageTexture
+	var water_image: Image = _water_images.get(SURFACE_BOWL) as Image
+	if water_texture != null and water_image != null:
+		water_texture.update(water_image)
+
+
 func _get_wall_floor_boundary() -> float:
 	var floor: Sprite2D = _surface_nodes.get(SURFACE_FLOOR) as Sprite2D
 	if floor != null and floor.texture != null:
@@ -649,6 +761,24 @@ func _world_to_uv(sprite: Sprite2D, position: Vector2) -> Vector2:
 	if sprite.flip_v:
 		uv.y = 1.0 - uv.y
 	return uv
+
+
+func _water_mask_uv_transform(bowl: Sprite2D, water: Sprite2D) -> Vector4:
+	var center := _world_to_uv(water, bowl.to_global(Vector2.ZERO))
+	var x_sample := _world_to_uv(
+		water,
+		bowl.to_global(Vector2(bowl.texture.get_width() * 0.5, 0.0)),
+	)
+	var y_sample := _world_to_uv(
+		water,
+		bowl.to_global(Vector2(0.0, bowl.texture.get_height() * 0.5)),
+	)
+	var scale := Vector2(
+		(x_sample.x - center.x) * 2.0,
+		(y_sample.y - center.y) * 2.0,
+	)
+	var offset := center - scale * 0.5
+	return Vector4(scale.x, scale.y, offset.x, offset.y)
 
 
 func _sprite_contains_alpha(sprite: Sprite2D, position: Vector2) -> bool:
