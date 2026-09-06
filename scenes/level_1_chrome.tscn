@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/level_1_chrome.gd" id="1_chrome"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/Volume1.png" id="2_volume"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/Back1Shadow.png" id="3_back_shadow"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/Back1.png" id="4_back"]
+[ext_resource type="AudioStream" path="res://assets/audio/orchestra_hit.ogg" id="5_volume_sound"]
 
 [node name="Level1Chrome" type="Node2D"]
 z_index = 6
@@ -16,6 +17,9 @@ texture = ExtResource("2_volume")
 [node name="VolumeHitbox" type="Control" parent="."]
 mouse_filter = 0
 mouse_default_cursor_shape = 0
+
+[node name="VolumeSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("5_volume_sound")
 
 [node name="BackShadow" type="Sprite2D" parent="."]
 visible = false

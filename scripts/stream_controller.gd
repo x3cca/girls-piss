@@ -48,8 +48,10 @@ var depth_map: DepthMap2D
 @export var distal_fade_start := 0.78
 @export_range(0.1, 1.0, 0.01) var distal_end_alpha := 0.5
 @export var normal_emission_rate := 60.0
-@export var pulse_preview_enabled := true
-@export_range(30.0, 240.0, 1.0) var pulse_preview_bpm := 120.0
+## Kept as a fallback for isolated stream previews. In the game scene the
+## MusicController supplies the beat events from the actual audio position.
+@export var pulse_preview_enabled := false
+@export_range(30.0, 240.0, 1.0) var pulse_preview_bpm := 153.0
 @export_range(1.0, 3.0, 0.01) var pulse_width_multiplier := 2.0
 @export_range(0.01, 0.2, 0.005) var pulse_width_seconds := 0.06
 
@@ -172,6 +174,9 @@ func _process(delta: float) -> void:
 		# A cancelled stream still owns its already-emitted parcels. Let those
 		# parcels finish their committed flight before hiding the live ribbon.
 		if not _stream_draining:
+			# Music pulses can arrive while the player is idle. Age them here so
+			# an old beat cannot stay at full width when the next hold begins.
+			_advance_pulses(delta)
 			drawing_point_updated.emit(Vector2.ZERO, false)
 			return
 		update_parcels(delta)
@@ -182,6 +187,7 @@ func _process(delta: float) -> void:
 			_set_live_visuals(false)
 	var is_pissing := false
 	var target := _stream_target_position
+	var parcels_updated := false
 	if _live_enabled:
 		if input_controller == null:
 			return
@@ -208,6 +214,7 @@ func _process(delta: float) -> void:
 	if is_pissing:
 		_stream_hold_was_active = true
 		update_parcels(delta)
+		parcels_updated = true
 		_update_initial_shot_state()
 		_update_preview_pulses(delta)
 		emit_parcels(_stream_target_position, delta)
@@ -219,9 +226,14 @@ func _process(delta: float) -> void:
 		_stream_hold_was_active = false
 		if _stream_draining:
 			update_parcels(delta)
+			parcels_updated = true
 			_prune_parcel_chain(_parcels, true)
 			_prune_parcel_chain(_double_parcels)
 			_update_stream_draining_state()
+	if not parcels_updated:
+		# update_parcels() also advances pulse ages for direct stream callers and
+		# active parcels. Idle frames need the same clock without moving parcels.
+		_advance_pulses(delta)
 	if not _double_stream_active and not _stream_draining:
 		_double_parcels.clear()
 	var stream_visual_active := (is_pissing and _live_enabled) or _stream_draining

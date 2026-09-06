@@ -24,6 +24,7 @@ const CURSOR_TEXTURE: Texture2D = preload(
 
 @onready var _overlay: Control = $Overlay
 @onready var _composition: TitleComposition = $Overlay/TitleComposition
+@onready var _start_sound: AudioStreamPlayer = $StartSound
 
 var active := false
 var start_locked := false
@@ -72,6 +73,7 @@ func request_start(source: int) -> bool:
 		return false
 	start_locked = true
 	_start_source = source
+	_start_sound.play()
 	start_requested.emit(source)
 
 	if _exit_tween:

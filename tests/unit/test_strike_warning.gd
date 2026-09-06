@@ -157,3 +157,30 @@ func test_fourth_strike_is_not_a_warning() -> void:
 	assert_false(warning.yellow_warning.visible)
 	assert_false(warning.orange_warning.visible)
 	assert_false(warning.red_warning.visible)
+
+
+func test_each_warning_plays_its_three_pound_variant() -> void:
+	var warning := _make_warning()
+	var variants := {
+		StrikeWarning.YELLOW_WARNING: [
+			"LightPounds",
+			"res://assets/audio/wall/wall_pound_light.ogg",
+		],
+		StrikeWarning.ORANGE_WARNING: [
+			"MediumPounds",
+			"res://assets/audio/wall/wall_pound_medium.ogg",
+		],
+		StrikeWarning.RED_WARNING: [
+			"HeavyPounds",
+			"res://assets/audio/wall/wall_pound_heavy.ogg",
+		],
+	}
+
+	for strike in variants:
+		warning.show_warning(strike, 4.0)
+		var player := warning.get_node(variants[strike][0]) as AudioStreamPlayer
+		assert_eq(player.stream.resource_path, variants[strike][1])
+		assert_almost_eq(player.stream.get_length(), 0.6, 0.01)
+		assert_true(player.playing)
+		warning.hide_warning()
+		assert_false(player.playing)

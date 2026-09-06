@@ -26,6 +26,9 @@ const RED_WARNING := 3
 @onready var yellow_warning: Control = $YellowWarning
 @onready var orange_warning: Control = $OrangeWarning
 @onready var red_warning: Control = $RedWarning
+@onready var _light_pounds: AudioStreamPlayer = $LightPounds
+@onready var _medium_pounds: AudioStreamPlayer = $MediumPounds
+@onready var _heavy_pounds: AudioStreamPlayer = $HeavyPounds
 
 var _active_warning := 0
 var _remaining := 0.0
@@ -63,6 +66,7 @@ func show_warning(strike: int, duration := -1.0) -> void:
 	_active_warning = strike
 	_remaining = warning_duration if duration < 0.0 else maxf(duration, 0.0)
 	_warning_for(strike).visible = true
+	_play_pounding_warning(strike)
 	_start_entrance_shake()
 	_layout_warnings()
 	if _remaining <= 0.0:
@@ -72,6 +76,7 @@ func show_warning(strike: int, duration := -1.0) -> void:
 func hide_warning() -> void:
 	_active_warning = 0
 	_remaining = 0.0
+	_stop_pounding_warnings()
 	_reset_entrance_shake()
 	if is_instance_valid(yellow_warning):
 		yellow_warning.visible = false
@@ -134,6 +139,29 @@ func _warning_for(strike: int) -> Control:
 			return orange_warning
 		RED_WARNING:
 			return red_warning
+	return null
+
+
+func _play_pounding_warning(strike: int) -> void:
+	var player := _pounding_player_for(strike)
+	if is_instance_valid(player):
+		player.play()
+
+
+func _stop_pounding_warnings() -> void:
+	for player in [_light_pounds, _medium_pounds, _heavy_pounds]:
+		if is_instance_valid(player):
+			player.stop()
+
+
+func _pounding_player_for(strike: int) -> AudioStreamPlayer:
+	match strike:
+		YELLOW_WARNING:
+			return _light_pounds
+		ORANGE_WARNING:
+			return _medium_pounds
+		RED_WARNING:
+			return _heavy_pounds
 	return null
 
 

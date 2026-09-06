@@ -16,6 +16,7 @@
 [ext_resource type="PackedScene" path="res://scenes/piss_toilet.tscn" id="16_piss_toilet"]
 [ext_resource type="Script" path="res://scripts/surface_effects.gd" id="17_surface_effects"]
 [ext_resource type="PackedScene" path="res://scenes/music_controller.tscn" id="18_music"]
+[ext_resource type="AudioStream" path="res://assets/audio/spray_loop.ogg" id="19_spray_sound"]
 
 [sub_resource type="Gradient" id="Gradient_light"]
 colors = PackedColorArray(1, 1, 1, 0.95, 1, 1, 1, 0)
@@ -97,3 +98,7 @@ enabled = false
 [node name="TitleScreen" parent="TitleLayer" unique_id=2068530869 instance=ExtResource("11_title")]
 
 [node name="MusicController" parent="." instance=ExtResource("18_music")]
+
+[node name="SpraySound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("19_spray_sound")
+pitch_scale = 1.122462

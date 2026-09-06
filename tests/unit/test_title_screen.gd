@@ -85,6 +85,24 @@ func test_request_start_locks_duplicate_requests_until_exit_completes() -> void:
 	assert_eq(completed, [InputController.AimSource.MOUSE])
 
 
+func test_request_start_plays_the_beer_sound() -> void:
+	var title := TITLE_SCENE.instantiate() as TitleScreen
+	title.autoplay = false
+	add_child_autofree(title)
+	title.show_title()
+
+	var start_sound := title.get_node("StartSound") as AudioStreamPlayer
+	assert_eq(
+		start_sound.stream.resource_path,
+		"res://assets/audio/beer_can_open_and_drink.ogg",
+	)
+	assert_false(start_sound.playing)
+
+	assert_true(title.request_start(InputController.AimSource.KEYBOARD))
+	assert_true(start_sound.playing)
+	assert_false(title.request_start(InputController.AimSource.MOUSE))
+
+
 func test_skip_to_gameplay_finishes_once_without_waiting_for_tween() -> void:
 	var title := TITLE_SCENE.instantiate() as TitleScreen
 	title.autoplay = false

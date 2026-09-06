@@ -7,6 +7,12 @@ const MIN_VOLUME_LEVEL := 1
 const MAX_VOLUME_LEVEL := 3
 const MUTED_VOLUME_LEVEL := 0
 const VOLUME_LEVELS := [1.0 / 3.0, 2.0 / 3.0, 1.0]
+const VOLUME_PITCH_SCALES := [0.0, 1.0, 1.122462, 1.259921]
+const MUTED_VOLUME_SOUND_DB := -18.0
+const MUTED_VOLUME_PITCH_SCALE := 0.5
+const MUTED_VOLUME_SOUND_AUDIBLE_SECONDS := 0.12
+const VOLUME_AUTHORED_POSITION := Vector2(875.0, 16.0)
+const VOLUME_HITBOX_SIZE := Vector2(242.0, 181.0)
 const VOLUME_TEXTURES := [
 	preload("res://assets/art/drive/Volume1.png"),
 	preload("res://assets/art/drive/Volume2.png"),
@@ -22,6 +28,7 @@ signal volume_changed(level: int, muted: bool)
 signal volume_pointer_changed(active: bool)
 
 @onready var _volume: Sprite2D = $Volume
+@onready var _volume_sound: AudioStreamPlayer = $VolumeSound
 @onready var _back_shadow: Sprite2D = $BackShadow
 @onready var _back: Sprite2D = $Back
 @onready var _volume_hitbox: Control = $VolumeHitbox
@@ -30,6 +37,7 @@ var _volume_level := MAX_VOLUME_LEVEL
 var _master_bus_index := -1
 var _wobble_tween: Tween
 var _volume_pointer_active := false
+var _muted_volume_cue_id := 0
 
 
 func _ready() -> void:
@@ -44,6 +52,7 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	_muted_volume_cue_id += 1
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 
@@ -62,9 +71,9 @@ func _layout() -> void:
 		viewport_size.x / REFERENCE_SIZE.x,
 		viewport_size.y / REFERENCE_SIZE.y,
 	)
-	_set_volume_layout(Vector2(875.0, 16.0), composition_scale)
-	_volume_hitbox.position = Vector2(875.0, 16.0) * composition_scale
-	_volume_hitbox.size = Vector2(242.0, 181.0)
+	_set_volume_layout(VOLUME_AUTHORED_POSITION, composition_scale)
+	_volume_hitbox.position = VOLUME_AUTHORED_POSITION * composition_scale
+	_volume_hitbox.size = VOLUME_HITBOX_SIZE
 	_volume_hitbox.scale = composition_scale
 	_set_sprite_layout(_back_shadow, Vector2(816.0, 1690.0), composition_scale)
 	_set_sprite_layout(_back, Vector2(824.0, 1698.0), composition_scale)
@@ -82,9 +91,7 @@ func _set_sprite_layout(
 
 func _set_volume_layout(authored_position: Vector2, composition_scale: Vector2) -> void:
 	_volume.centered = true
-	_volume.position = (
-			authored_position + Vector2(_volume.texture.get_width(), _volume.texture.get_height()) * 0.5
-	) * composition_scale
+	_volume.position = (authored_position + VOLUME_HITBOX_SIZE * 0.5) * composition_scale
 	_volume.scale = composition_scale
 
 
@@ -93,6 +100,7 @@ func cycle_volume() -> void:
 	if _volume_level > MAX_VOLUME_LEVEL:
 		_volume_level = MUTED_VOLUME_LEVEL
 	_apply_volume()
+	_play_volume_sound()
 	_wobble_volume()
 
 
@@ -123,6 +131,42 @@ func _apply_volume() -> void:
 				linear_to_db(VOLUME_LEVELS[_volume_level - 1]),
 			)
 	volume_changed.emit(_volume_level, is_muted())
+
+
+func _play_volume_sound() -> void:
+	if not is_instance_valid(_volume_sound):
+		return
+	_muted_volume_cue_id += 1
+	var cue_id := _muted_volume_cue_id
+	if is_muted():
+		# The master bus is muted below, so briefly open it after this frame to
+		# let the quiet error cue make it through. It is closed again almost
+		# immediately and never leaves the game audio unmuted.
+		_volume_sound.volume_db = MUTED_VOLUME_SOUND_DB
+		_volume_sound.pitch_scale = MUTED_VOLUME_PITCH_SCALE
+		_volume_sound.play()
+		call_deferred("_open_muted_volume_cue", cue_id)
+		return
+	_volume_sound.volume_db = 0.0
+	_volume_sound.pitch_scale = VOLUME_PITCH_SCALES[_volume_level]
+	_volume_sound.play()
+
+
+func _open_muted_volume_cue(cue_id: int) -> void:
+	if cue_id != _muted_volume_cue_id or not is_muted():
+		return
+	if _master_bus_index >= 0:
+		AudioServer.set_bus_mute(_master_bus_index, false)
+	var timer := get_tree().create_timer(MUTED_VOLUME_SOUND_AUDIBLE_SECONDS)
+	timer.timeout.connect(_close_muted_volume_cue.bind(cue_id), CONNECT_ONE_SHOT)
+
+
+func _close_muted_volume_cue(cue_id: int) -> void:
+	if cue_id != _muted_volume_cue_id or not is_muted():
+		return
+	_volume_sound.stop()
+	if _master_bus_index >= 0:
+		AudioServer.set_bus_mute(_master_bus_index, true)
 
 
 func _wobble_volume() -> void:

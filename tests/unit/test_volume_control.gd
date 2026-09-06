@@ -40,8 +40,10 @@ func test_volume_control_cycles_three_even_levels_and_mute() -> void:
 		chrome.get_node("Volume").texture.resource_path,
 		"res://assets/art/drive/MuteVolumeX.svg",
 	)
-
+	var mute_position := (chrome.get_node("Volume") as Sprite2D).position
 	chrome.cycle_volume()
+	assert_eq((chrome.get_node("Volume") as Sprite2D).position, mute_position)
+
 	assert_eq(chrome.get_volume_level(), 1)
 	assert_false(chrome.is_muted())
 	assert_false(AudioServer.is_bus_mute(master_bus))
@@ -81,3 +83,33 @@ func test_mute_click_is_consumed_without_starting_the_stream() -> void:
 	AudioServer.set_bus_volume_db(master_bus, original_volume_db)
 	AudioServer.set_bus_mute(master_bus, original_muted)
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+
+func test_volume_cycle_plays_pitch_rising_orchestra_cue() -> void:
+	var level := LEVEL_SCENE.instantiate() as Level1
+	level.skip_title_screen = true
+	add_child_autofree(level)
+	var chrome := level.get_node("Level1Chrome") as Level1Chrome
+	var cue := chrome.get_node("VolumeSound") as AudioStreamPlayer
+	var master_bus := AudioServer.get_bus_index(&"Master")
+	var original_volume_db := AudioServer.get_bus_volume_db(master_bus)
+	var original_muted := AudioServer.is_bus_mute(master_bus)
+
+	assert_eq(cue.stream.resource_path, "res://assets/audio/orchestra_hit.ogg")
+	chrome.set_volume_level(0)
+	assert_false(cue.playing)
+
+	chrome.cycle_volume()
+	assert_true(cue.playing)
+	assert_almost_eq(cue.pitch_scale, Level1Chrome.VOLUME_PITCH_SCALES[1], 0.001)
+	chrome.cycle_volume()
+	assert_almost_eq(cue.pitch_scale, Level1Chrome.VOLUME_PITCH_SCALES[2], 0.001)
+	chrome.cycle_volume()
+	assert_almost_eq(cue.pitch_scale, Level1Chrome.VOLUME_PITCH_SCALES[3], 0.001)
+	chrome.cycle_volume()
+	assert_true(cue.playing)
+	assert_almost_eq(cue.pitch_scale, Level1Chrome.MUTED_VOLUME_PITCH_SCALE, 0.001)
+	assert_almost_eq(cue.volume_db, Level1Chrome.MUTED_VOLUME_SOUND_DB, 0.001)
+
+	AudioServer.set_bus_volume_db(master_bus, original_volume_db)
+	AudioServer.set_bus_mute(master_bus, original_muted)

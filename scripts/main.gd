@@ -18,6 +18,7 @@ class_name Main
 @onready var _hud_layer: CanvasLayer = $HUDLayer
 @onready var title_screen: TitleScreen = $TitleLayer/TitleScreen
 @onready var music_controller: MusicController = $MusicController
+@onready var _spray_sound: AudioStreamPlayer = $SpraySound
 @onready var screen_overlay: ScreenOverlay = $ScreenOverlay
 @onready var _ambient: CanvasModulate = $Ambient
 @onready var surface_effects: SurfaceEffects = get_node_or_null("SurfaceEffects") as SurfaceEffects
@@ -38,6 +39,7 @@ const GAME_OVER := State.FAILED
 const CONTACT_DURATION := 0.0
 const SAFETY_COOLDOWN := 4.0
 const MAX_STRIKES := 4
+const SPRAY_SILENT_VOLUME_DB := -80.0
 
 var state := PLAYING
 var game_state := PLAYING
@@ -55,8 +57,10 @@ var targets: Array[WettableTarget] = []
 @export_range(0.0, 2.0, 0.05) var target_hit_scale_punch := 0.55
 @export_range(0.05, 1.0, 0.01) var target_hit_light_duration := 0.28
 @export var target_hit_light_color := Color.WHITE
-@export_range(0.0, 20.0, 0.1) var pulse_shake_strength := 2.5
+@export_range(0.0, 80.0, 0.5) var pulse_shake_strength := 19.0
 @export_range(0.05, 0.5, 0.01) var pulse_shake_duration := 0.14
+@export_range(-40.0, 0.0, 0.5) var spray_volume_db := -12.0
+@export_range(0.01, 2.0, 0.01) var spray_fade_duration := 0.2
 var _world_size := Vector2(720.0, 1280.0)
 var _layout_signature := Vector2.ZERO
 var _elapsed := 0.0
@@ -92,6 +96,7 @@ var _strike_cooldown_remaining := 0.0
 var _frame_delta := 1.0 / 60.0
 var _last_stream_endpoint := Vector2.ZERO
 var _has_stream_endpoint := false
+var _spray_fade_tween: Tween
 
 var strikes: int:
 	get:
@@ -114,6 +119,8 @@ func _ready() -> void:
 				collision_body.collision_layer = 0
 	stream.input_controller = input_controller
 	stream.set_depth_map(depth_map)
+	_set_spray_looping()
+	_spray_sound.volume_db = SPRAY_SILENT_VOLUME_DB
 	if is_instance_valid(surface_effects):
 		surface_effects.bind_stream(stream)
 	if enable_negative_zones:
@@ -124,6 +131,8 @@ func _ready() -> void:
 	stream.wet_target_hit.connect(_on_wet_target_hit)
 	stream.drawing_point_updated.connect(_on_drawing_point_updated)
 	stream.pulse_triggered.connect(_on_stream_pulse)
+	if not music_controller.beat_started.is_connected(_on_music_beat):
+		music_controller.beat_started.connect(_on_music_beat)
 	input_controller.stream_hold_changed.connect(_on_stream_hold_changed)
 	shape_trace.checkpoint_completed.connect(_on_checkpoint_completed)
 	shape_trace.trace_completed.connect(_on_trace_completed)
@@ -306,6 +315,15 @@ func _on_stream_pulse(amplitude: float) -> void:
 	_pulse_shake_phase += 1.618
 
 
+func _on_music_beat(_beat_index: int, strength: float) -> void:
+	if not gameplay_started or state != PLAYING:
+		return
+	# LiquidStream owns the beat pulse so its ribbon and the camera shake are
+	# driven by the same event. It emits pulse_triggered even while idle, which
+	# keeps the room moving to the music before the player starts a hold.
+	stream.trigger_pulse(strength)
+
+
 func _advance_pulse_feedback(delta: float) -> void:
 	# A first frame can be long while a scene/imported texture is settling. Keep
 	# a pulse visible for at least one rendered frame instead of consuming the
@@ -387,7 +405,10 @@ func _advance_pulse_feedback(delta: float) -> void:
 				jitter * pulse_shake_strength * _pulse_shake_amplitude * shake_envelope
 		)
 	position = _base_position + shake_offset
-	_hud_layer.offset = _base_hud_offset + shake_offset
+	# HUDLayer is a screen-space CanvasLayer. Keep it out of the world shake so
+	# the crosshair stays put while the stream and negative zones can drift under
+	# it, making a beat-timed miss possible.
+	_hud_layer.offset = _base_hud_offset
 
 	if _pulse_shake_remaining <= 0.0:
 		_pulse_shake_amplitude = 0.0
@@ -431,6 +452,7 @@ func _on_drawing_point_updated(position: Vector2, active: bool) -> void:
 
 func _on_stream_hold_changed(active: bool) -> void:
 	music_controller.set_pissing(active)
+	_set_spray_sound_active(active)
 	if active:
 		return
 	# A release can be followed by a re-press before LiquidStream gets another
@@ -518,6 +540,10 @@ func _observe_negative_contact(position: Vector2, delta: float) -> void:
 
 
 func _negative_zone_at(position: Vector2) -> NegativeZone:
+	# The stream reports its endpoint in the unshaken gameplay canvas. Keep that
+	# coordinate in this query while the world nodes carry the beat transform;
+	# the resulting displacement is what lets a hard beat turn a near miss into
+	# a negative-zone contact beneath the stationary crosshair.
 	_collect_negative_zones_if_needed()
 	for zone in negative_zones:
 		if is_instance_valid(zone) and zone.contains_point(position):
@@ -574,6 +600,7 @@ func _fail_attempt() -> void:
 	if state != PLAYING:
 		return
 	_set_state(FAILED)
+	_stop_spray_sound()
 	_reset_pulse_feedback()
 	_strike_light_remaining = strike_light_duration
 	line_recorder.finish_recording()
@@ -593,6 +620,7 @@ func _on_trace_completed() -> void:
 		return
 	_reset_pulse_feedback()
 	_set_state(REPLAYING)
+	_stop_spray_sound()
 	line_recorder.finish_recording()
 	input_controller.set_process_unhandled_input(false)
 	input_controller.set_process(false)
@@ -621,6 +649,7 @@ func _on_piss_meter_depleted() -> void:
 
 func reset_level() -> void:
 	_set_state(PLAYING)
+	_stop_spray_sound()
 	_reset_pulse_feedback()
 	_target_hit_light_remaining = 0.0
 	strike_count = 0
@@ -655,6 +684,62 @@ func reset_level() -> void:
 func _set_state(next_state: int) -> void:
 	state = next_state
 	game_state = next_state
+
+
+func _set_spray_looping() -> void:
+	var spray_stream := _spray_sound.stream as AudioStreamOggVorbis
+	if not spray_stream:
+		return
+	spray_stream.loop = true
+	spray_stream.loop_offset = 0.0
+
+
+func _set_spray_sound_active(active: bool) -> void:
+	if not is_instance_valid(_spray_sound):
+		return
+	if active and gameplay_started and state == PLAYING:
+		if _spray_fade_tween:
+			_spray_fade_tween.kill()
+		if not _spray_sound.playing:
+			_spray_sound.volume_db = SPRAY_SILENT_VOLUME_DB
+			_spray_sound.play()
+		_spray_fade_tween = create_tween()
+		_spray_fade_tween.tween_property(
+			_spray_sound,
+			"volume_db",
+			spray_volume_db,
+			spray_fade_duration,
+		).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		return
+	_fade_spray_sound_out()
+
+
+func _stop_spray_sound() -> void:
+	_fade_spray_sound_out()
+
+
+func _fade_spray_sound_out() -> void:
+	if is_instance_valid(_spray_sound):
+		if _spray_fade_tween:
+			_spray_fade_tween.kill()
+		if not _spray_sound.playing:
+			_spray_sound.volume_db = SPRAY_SILENT_VOLUME_DB
+			return
+		_spray_fade_tween = create_tween()
+		_spray_fade_tween.tween_property(
+			_spray_sound,
+			"volume_db",
+			SPRAY_SILENT_VOLUME_DB,
+			spray_fade_duration,
+		).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+		_spray_fade_tween.tween_callback(_finish_spray_sound_fade_out)
+
+
+func _finish_spray_sound_fade_out() -> void:
+	if is_instance_valid(_spray_sound):
+		_spray_sound.stop()
+		_spray_sound.volume_db = SPRAY_SILENT_VOLUME_DB
+	_spray_fade_tween = null
 
 
 func _on_wet_target_hit(

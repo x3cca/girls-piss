@@ -175,8 +175,8 @@ func test_music_controller_crossfades_preloaded_looping_tracks() -> void:
 	assert_lt(gameplay_music.volume_db, -70.0)
 	await get_tree().create_timer(0.1).timeout
 	assert_true(room_music.playing)
-	assert_true(gameplay_music.playing)
 	assert_true(oomph_music.playing)
+	assert_true(gameplay_music.playing)
 	await get_tree().create_timer(0.2).timeout
 	assert_false(room_music.playing)
 	assert_almost_eq(oomph_music.volume_db, music_controller.oomph_volume_db, 0.01)
@@ -190,6 +190,59 @@ func test_music_controller_crossfades_preloaded_looping_tracks() -> void:
 	music_controller._apply_intensity_crossfade(0.0)
 	assert_almost_eq(oomph_music.volume_db, music_controller.oomph_volume_db, 0.01)
 	assert_lt(gameplay_music.volume_db, -70.0)
+
+
+func test_music_controller_emits_beats_from_audio_position() -> void:
+	var instance := SMOKE_TEST_SCENE.instantiate()
+	add_child_autofree(instance)
+	var music_controller := instance.get_node("MusicController") as MusicController
+	var beat_indices: Array[int] = []
+	music_controller.beat_started.connect(
+		func(beat_index: int, _strength: float): beat_indices.append(beat_index),
+	)
+
+	music_controller._advance_beat_clock(0.06)
+	music_controller._advance_beat_clock(0.46)
+	music_controller._advance_beat_clock(0.86)
+
+	assert_eq(beat_indices, [0, 1, 2])
+
+
+func test_spray_sound_loops_while_the_player_is_peeing() -> void:
+	var instance := SMOKE_TEST_SCENE.instantiate() as Main
+	instance.skip_title_screen = true
+	instance.spray_fade_duration = 0.1
+	add_child_autofree(instance)
+	var spray_sound := instance.get_node("SpraySound") as AudioStreamPlayer
+	var input_controller := instance.input_controller
+	input_controller.set_process(false)
+
+	assert_eq(spray_sound.stream.resource_path, "res://assets/audio/spray_loop.ogg")
+	assert_almost_eq(spray_sound.pitch_scale, 1.122462, 0.001)
+	assert_true(spray_sound.stream is AudioStreamOggVorbis)
+	if spray_sound.stream is AudioStreamOggVorbis:
+		assert_true((spray_sound.stream as AudioStreamOggVorbis).loop)
+	assert_false(spray_sound.playing)
+	assert_almost_eq(spray_sound.volume_db, Main.SPRAY_SILENT_VOLUME_DB, 0.001)
+	assert_lt(instance.spray_volume_db, 0.0)
+
+	var space_down := InputEventKey.new()
+	space_down.physical_keycode = KEY_SPACE
+	space_down.pressed = true
+	input_controller.handle_input_event(space_down)
+	assert_true(spray_sound.playing)
+	assert_lt(spray_sound.volume_db, instance.spray_volume_db)
+	await get_tree().create_timer(0.15).timeout
+	assert_almost_eq(spray_sound.volume_db, instance.spray_volume_db, 0.1)
+
+	var space_up := InputEventKey.new()
+	space_up.physical_keycode = KEY_SPACE
+	space_up.pressed = false
+	input_controller.handle_input_event(space_up)
+	assert_true(spray_sound.playing)
+	await get_tree().create_timer(0.15).timeout
+	assert_false(spray_sound.playing)
+	assert_almost_eq(spray_sound.volume_db, Main.SPRAY_SILENT_VOLUME_DB, 0.001)
 
 
 func test_stream_pulse_drives_shake_without_pulsing_lights() -> void:
@@ -218,6 +271,25 @@ func test_stream_pulse_drives_shake_without_pulsing_lights() -> void:
 
 	assert_almost_eq(broad_light.energy, base_energy, 0.001)
 	assert_eq(instance.position, base_position)
+
+
+func test_stream_pulse_shakes_world_without_moving_crosshair() -> void:
+	var instance := SMOKE_TEST_SCENE.instantiate() as Main
+	instance.skip_title_screen = true
+	add_child_autofree(instance)
+	instance.music_controller.beat_sync_enabled = false
+	instance.input_controller.set_process(false)
+	var base_position := instance.position
+	var reticle := instance.hud.aim_reticle
+	var target := instance.input_controller.get_target_position()
+	var hud_offset := instance._hud_layer.offset
+
+	instance._on_music_beat(0, 1.0)
+	await get_tree().process_frame
+
+	assert_true(instance.position != base_position)
+	assert_eq(reticle.position, target)
+	assert_eq(instance._hud_layer.offset, hud_offset)
 
 
 func test_title_is_active_and_gameplay_is_gated_by_default() -> void:
