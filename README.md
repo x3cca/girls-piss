@@ -52,6 +52,7 @@ is intentionally ignored for prompt source changes.
   `tools/`.
 - A reusable title screen and contextual input-prompt HUD that transition in
   place over the same Level 1 scene.
+- An authored game-over overlay with failure feedback and retry behavior.
 - Agent and MCP workflow notes.
 
 Open the folder in Godot 4.7.2+ and run the project; it starts at

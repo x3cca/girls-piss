@@ -84,7 +84,9 @@ three strikes show a
 yellow, orange, or red warning bubble in the top-right corner, and each bubble
 is hidden when that cooldown ends. If the endpoint remains in the bad region,
 another strike is possible as soon as that grace period ends. Four strikes stop
-the attempt and show the retry card.
+the attempt and show the authored game-over treatment: the dread frame,
+emergency message, failure sound, and retry button. Retry resets the trace,
+meter, strike count, stream, and all overlay effects.
 
 The Level 1 Piss-O-Meter begins with one minute of stream time and drains only
 while the stream input is held. The stream uses the baked

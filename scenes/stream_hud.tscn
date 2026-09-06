@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scripts/completion_card.gd" id="4_completion"]
@@ -8,6 +8,7 @@
 [ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="7_boil"]
 [ext_resource type="PackedScene" path="res://scenes/strike_warning.tscn" id="8_strikes"]
 [ext_resource type="PackedScene" path="res://scenes/piss_meter.tscn" id="9_meter"]
+[ext_resource type="PackedScene" path="res://scenes/game_over.tscn" id="10_game_over"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_button"]
 bg_color = Color(0.945, 0.827, 0.329, 1)
@@ -80,3 +81,5 @@ theme_override_font_sizes/font_size = 18
 theme_override_styles/normal = SubResource("StyleBox_button")
 theme_override_styles/hover = SubResource("StyleBox_button_hover")
 text = "PLAY AGAIN"
+
+[node name="GameOver" parent="." instance=ExtResource("10_game_over")]

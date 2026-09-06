@@ -222,7 +222,8 @@ func _wire_hud() -> void:
 	if is_instance_valid(hud.piss_meter):
 		hud.piss_meter.input_controller = input_controller
 		hud.piss_meter.stream = stream
-	hud.completion_card.play_again_pressed.connect(_on_play_again_pressed)
+	if not hud.retry_pressed.is_connected(_on_play_again_pressed):
+		hud.retry_pressed.connect(_on_play_again_pressed)
 	if is_instance_valid(hud.piss_meter) and not hud.piss_meter.depleted.is_connected(
 		_on_piss_meter_depleted,
 	):
@@ -548,7 +549,7 @@ func _fail_attempt() -> void:
 	stream.set_live_enabled(false)
 	shape_trace.set_trace_visible(false)
 	hud.set_aim_zone_state(TouchReticle.ReticleState.NEUTRAL)
-	hud.show_failure_card()
+	hud.show_game_over()
 	_set_effect_lights_enabled(false)
 
 

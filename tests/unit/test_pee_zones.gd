@@ -125,8 +125,14 @@ func test_four_strikes_stop_gameplay_and_show_retry_state() -> void:
 	assert_eq(level.get_strikes(), 4)
 	assert_eq(level.state, Main.FAILED)
 	assert_false(level.input_controller.is_gameplay_input_enabled())
-	assert_true(level.hud.completion_card.visible)
-	assert_true(level.hud.completion_card.is_failure_card())
+	assert_true(level.hud.game_over.visible)
+	assert_true(level.hud.game_over.is_showing())
+
+	var retry_button := level.hud.game_over.get_node("Presentation/RetryButton") as Button
+	retry_button.pressed.emit()
+	assert_eq(level.state, Main.PLAYING)
+	assert_eq(level.get_strikes(), 0)
+	assert_false(level.hud.game_over.visible)
 
 
 func test_strike_forces_the_stream_input_to_release() -> void:
