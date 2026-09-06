@@ -108,7 +108,7 @@ func get_warning_assets(strike: int) -> Dictionary:
 				],
 				"emergency": $RedWarning/RedText4.texture,
 			}
-	return {}
+	return { }
 
 
 func get_warning_rect(strike: int) -> Rect2:
