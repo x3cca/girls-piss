@@ -1,8 +1,8 @@
 # Gameplay reference
 
-`scenes/smoke_test.tscn` is the project's main scene. The filename is retained
-for existing export and tooling references; it is the playable portrait sample,
-not a disposable test scene.
+`scenes/level_1.tscn` is the project's main scene. It shares the startup and
+gameplay controller with `scenes/smoke_test.tscn`, which remains available as a
+debug scene with authored negative zones.
 
 ## Startup flow
 
@@ -10,12 +10,13 @@ not a disposable test scene.
 behind the high-layer `TitleScreen` CanvasLayer, but gameplay input and the
 gameplay HUD are disabled until the title transition finishes.
 
-The title uses `assets/placeholders/logo.png` and
-`assets/placeholders/start.png`, both with
-`resources/materials/boil_effect.tres`. The logo is centered around one-third
-down from the top of the viewport (two-thirds up from the bottom), and the
-press-start image sits lower in the frame. The elements slide into place on
-entry and slide out on the first recognized input.
+The title uses the transparent `TitleComposition` scene over the Level 1
+scene. It layers `GirlsTitle.png` and `PissTitle.png` over the three title
+flares, then swaps the matching `StartBacker1`/`Start1` and
+`StartBacker2`/`Start2` pairs as a small press-start treatment. The authored
+layers retain their 1080x1920 reference positions and receive the shared boil
+material. `StartMenuExample.png` remains a visual reference only. The title
+composition fades out on the first recognized input.
 
 The first input is handled by `InputController`, starts the title exit, and is
 consumed. Duplicate requests are ignored while the exit tween is running. Once
@@ -68,8 +69,10 @@ emitted parcels preserve their launch velocity while the visible ribbon eases
 toward the current target. Completing the path stops live input, replays the
 recorded line as a time-lapse, and then shows the completion card.
 
-The visible target sprites are the only checkpoint labels. Open space is neutral;
-the authored `NegativeZone` polygon/area nodes mark bad regions. The reticle uses
+Level 1 uses the small bathroom-object sprites as its ordered checkpoint
+targets. The authored floor is a bad region, while the wall, tank, and seat
+remain neutral; the smoke-test scene retains its separate `NegativeZone`
+polygon/area nodes for validating bad-region behavior. The reticle uses
 `Crosshair2.png` for neutral space, `Crosshair1.png` over a bad region, and
 `Crosshair3.png` for the short success burst. Actual contact is evaluated from
 the stream endpoint rather than the requested reticle position.
@@ -81,7 +84,9 @@ region, another strike is possible as soon as that grace period ends. Three
 strikes stop the attempt and show the retry card; the three small HUD markers
 show the remaining attempts.
 
-The stream uses the baked `resources/depth_map_baked.png` through `DepthMap2D`.
+The Level 1 Piss-O-Meter begins with five minutes of stream time and drains only
+while the stream input is held. The stream uses the baked
+`resources/depth_map_baked.png` through `DepthMap2D`.
 The environment is split into four depth bands so stream ribbons, particles,
 and the world can be ordered consistently in the portrait scene. The offline
 depth baker and normal-map baker live in `tools/`.

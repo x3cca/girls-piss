@@ -8,13 +8,16 @@ func test_prompt_mappings_use_the_requested_kenney_assets() -> void:
 	var prompt := PROMPT_SCENE.instantiate() as InputPrompt
 	add_child_autofree(prompt)
 
-	assert_eq(prompt.get_texture_paths(InputPrompt.PromptSource.KEYBOARD), [
-		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_w.png",
-		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_a.png",
-		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_s.png",
-		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_d.png",
-		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_space.png",
-	])
+	assert_eq(
+		prompt.get_texture_paths(InputPrompt.PromptSource.KEYBOARD),
+		[
+			"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_w.png",
+			"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_a.png",
+			"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_s.png",
+			"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_d.png",
+			"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_space.png",
+		],
+	)
 	assert_eq(prompt.get_texture_paths(InputPrompt.PromptSource.MOUSE).size(), 1)
 	assert_eq(prompt.get_texture_paths(InputPrompt.PromptSource.TOUCH).size(), 1)
 	assert_eq(prompt.get_texture_paths(InputPrompt.PromptSource.CONTROLLER).size(), 2)

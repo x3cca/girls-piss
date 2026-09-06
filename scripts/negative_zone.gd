@@ -13,6 +13,11 @@ class_name NegativeZone
 		Vector2(0.07, 0.30),
 	],
 )
+## Optional neutral cutout inside this bad-area polygon. This is useful for a
+## floor region that sits behind an authored object such as the toilet seat.
+## The cutout affects gameplay geometry; the debug fill remains the authored
+## outer polygon when show_zone is enabled.
+@export var excluded_normalized_points := PackedVector2Array()
 @export var zone_color := Color(0.86, 0.20, 0.34, 0.16)
 @export var outline_color := Color(1.0, 0.34, 0.46, 0.42)
 @export var outline_width := 3.0
@@ -20,7 +25,9 @@ class_name NegativeZone
 
 var _viewport_signature := Vector2.ZERO
 var _normalized_signature := PackedVector2Array()
+var _excluded_signature := PackedVector2Array()
 var _viewport_polygon := PackedVector2Array()
+var _viewport_excluded_polygon := PackedVector2Array()
 var _polygon_node: Polygon2D
 var _collision_polygon: CollisionPolygon2D
 
@@ -46,7 +53,13 @@ func contains_point(world_position: Vector2) -> bool:
 	_sync_polygon()
 	if _viewport_polygon.size() < 3:
 		return false
-	return Geometry2D.is_point_in_polygon(to_local(world_position), _viewport_polygon)
+	var local_position := to_local(world_position)
+	if (
+			_viewport_excluded_polygon.size() >= 3
+			and Geometry2D.is_point_in_polygon(local_position, _viewport_excluded_polygon)
+	):
+		return false
+	return Geometry2D.is_point_in_polygon(local_position, _viewport_polygon)
 
 
 func is_point_inside(world_position: Vector2) -> bool:
@@ -65,14 +78,19 @@ func _sync_polygon() -> void:
 	if (
 			_viewport_signature == viewport_size
 			and _normalized_signature == normalized_points
+			and _excluded_signature == excluded_normalized_points
 			and _viewport_polygon.size() == normalized_points.size()
 	):
 		return
 	_viewport_signature = viewport_size
 	_normalized_signature = normalized_points.duplicate()
+	_excluded_signature = excluded_normalized_points.duplicate()
 	_viewport_polygon = PackedVector2Array()
 	for point in normalized_points:
 		_viewport_polygon.append(point * viewport_size)
+	_viewport_excluded_polygon = PackedVector2Array()
+	for point in excluded_normalized_points:
+		_viewport_excluded_polygon.append(point * viewport_size)
 	if _polygon_node:
 		_polygon_node.polygon = _viewport_polygon
 		_polygon_node.color = zone_color

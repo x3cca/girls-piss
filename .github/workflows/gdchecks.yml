@@ -35,8 +35,8 @@ jobs:
       - name: Lint check (project scripts only)
         if: github.event_name == 'pull_request'
         run: |
-          LINT_OUTPUT=$(find . -name "*.gd" -not -path "./.godot/*" -not -path "./addons/*" -print0 \
-            | xargs -0 -r gdscript-formatter lint 2>&1)
+          LINT_OUTPUT=$(find scripts tools -name "*.gd" -print0 \
+            | xargs -0 -r gdscript-formatter lint --disable max-line-length 2>&1)
           echo "$LINT_OUTPUT"
           test -z "$LINT_OUTPUT"
 

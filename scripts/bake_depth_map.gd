@@ -16,7 +16,7 @@ class_name DepthMapBaker
 @export var minimum_depth := 0.0
 @export var maximum_depth := 1.0
 @export_range(0.0, 1.0, 0.01) var alpha_threshold := 0.01
-var _sprite_images: Dictionary = {}
+var _sprite_images: Dictionary = { }
 
 
 func bake(

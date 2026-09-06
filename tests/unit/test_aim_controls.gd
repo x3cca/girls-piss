@@ -11,6 +11,22 @@ func test_target_position_is_the_only_aim_value() -> void:
 	assert_false(controller.is_pissing())
 
 
+func test_music_cursor_jiggle_is_smoothed_and_small() -> void:
+	var controller := InputController.new()
+	add_child_autofree(controller)
+	controller.set_process(false)
+
+	controller._update_music_target_offset(0.1, 1.0)
+	var first_offset := controller._music_target_offset_position
+	controller._update_music_target_offset(0.1, 1.0)
+	var second_offset := controller._music_target_offset_position
+
+	assert_almost_eq(controller.music_target_offset_max, 24.0, 0.001)
+	assert_lt(first_offset.length(), controller.music_target_offset_max)
+	assert_lt(second_offset.length(), controller.music_target_offset_max)
+	assert_lt(first_offset.distance_to(second_offset), controller.music_target_offset_max)
+
+
 func test_wasd_moves_the_crosshair_in_two_dimensions() -> void:
 	var controller := InputController.new()
 	add_child_autofree(controller)
@@ -391,18 +407,24 @@ func test_meaningful_input_reports_each_source() -> void:
 	stick.axis_value = 0.75
 	controller.handle_input_event(stick)
 
-	assert_eq(detected, [
-		InputController.AimSource.KEYBOARD,
-		InputController.AimSource.MOUSE,
-		InputController.AimSource.TOUCH,
-		InputController.AimSource.CONTROLLER,
-		InputController.AimSource.CONTROLLER,
-	])
-	assert_eq(changed, [
-		InputController.AimSource.MOUSE,
-		InputController.AimSource.TOUCH,
-		InputController.AimSource.CONTROLLER,
-	])
+	assert_eq(
+		detected,
+		[
+			InputController.AimSource.KEYBOARD,
+			InputController.AimSource.MOUSE,
+			InputController.AimSource.TOUCH,
+			InputController.AimSource.CONTROLLER,
+			InputController.AimSource.CONTROLLER,
+		],
+	)
+	assert_eq(
+		changed,
+		[
+			InputController.AimSource.MOUSE,
+			InputController.AimSource.TOUCH,
+			InputController.AimSource.CONTROLLER,
+		],
+	)
 	assert_eq(controller.get_current_input_source(), InputController.AimSource.CONTROLLER)
 
 

@@ -36,31 +36,31 @@ const ICON_PATHS := {
 }
 const ICON_TEXTURES := {
 	"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_w.png": preload(
-		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_w.png",
+		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_w.png"
 	),
 	"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_a.png": preload(
-		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_a.png",
+		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_a.png"
 	),
 	"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_s.png": preload(
-		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_s.png",
+		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_s.png"
 	),
 	"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_d.png": preload(
-		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_d.png",
+		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_d.png"
 	),
 	"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_space.png": preload(
-		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_space.png",
+		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/keyboard_space.png"
 	),
 	"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/mouse_left.png": preload(
-		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/mouse_left.png",
+		"res://assets/placeholders/input_prompts/Keyboard & Mouse/Default/mouse_left.png"
 	),
 	"res://assets/placeholders/input_prompts/Touch/Default/touch_tap.png": preload(
-		"res://assets/placeholders/input_prompts/Touch/Default/touch_tap.png",
+		"res://assets/placeholders/input_prompts/Touch/Default/touch_tap.png"
 	),
 	"res://assets/placeholders/input_prompts/Generic/Default/generic_joystick.png": preload(
-		"res://assets/placeholders/input_prompts/Generic/Default/generic_joystick.png",
+		"res://assets/placeholders/input_prompts/Generic/Default/generic_joystick.png"
 	),
 	"res://assets/placeholders/input_prompts/Generic/Default/generic_button_trigger_a.png": preload(
-		"res://assets/placeholders/input_prompts/Generic/Default/generic_button_trigger_a.png",
+		"res://assets/placeholders/input_prompts/Generic/Default/generic_button_trigger_a.png"
 	),
 }
 const AIM_ICON_PATHS := {
