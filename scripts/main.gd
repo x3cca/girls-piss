@@ -33,7 +33,7 @@ const FAILURE := State.FAILED
 const GAME_OVER := State.FAILED
 
 const CONTACT_DURATION := 0.35
-const SAFETY_COOLDOWN := 0.75
+const SAFETY_COOLDOWN := 4.0
 const MAX_STRIKES := 4
 
 var state := PLAYING
@@ -75,7 +75,7 @@ var _target_hit_light_remaining := 0.0
 var gameplay_started := false
 var initial_input_source := InputController.AimSource.KEYBOARD
 @export_range(0.01, 2.0, 0.01) var negative_contact_duration := CONTACT_DURATION
-@export_range(0.0, 3.0, 0.01) var safety_cooldown := SAFETY_COOLDOWN
+@export_range(0.0, 10.0, 0.01) var safety_cooldown := SAFETY_COOLDOWN
 @export_range(1, 9, 1) var max_strikes := MAX_STRIKES
 var negative_zones: Array[NegativeZone] = []
 var strike_count := 0
@@ -522,6 +522,8 @@ func _take_strike() -> void:
 	_reset_negative_contact()
 	_strike_light_remaining = strike_light_duration
 	_set_effect_lights_enabled(false)
+	input_controller.stop_pissing()
+	stream.reset_stream()
 	hud.set_strikes(strike_count)
 	if strike_count < max_strikes:
 		hud.show_strike_warning(strike_count, safety_cooldown)

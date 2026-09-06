@@ -275,6 +275,20 @@ func is_stream_input_held() -> bool:
 	return _pissing
 
 
+func stop_pissing() -> void:
+	## Clear every active stream input after a strike. The player must release and
+	## press again before another stream can start, even when force-pissing mode
+	## would normally keep the visual stream alive after release.
+	_touch_index = -1
+	_touch_position = Vector2.ZERO
+	_space_pressed = false
+	_mouse_pressed = false
+	_clear_controller_state()
+	_has_started_pissing = false
+	_set_stream_input_held(false)
+	touch_target_changed.emit(Vector2.ZERO, false)
+
+
 func is_touch_active() -> bool:
 	return _touch_index != -1
 

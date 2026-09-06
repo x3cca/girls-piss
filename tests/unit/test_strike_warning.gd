@@ -55,6 +55,20 @@ func test_red_warning_places_three_textures_in_one_row() -> void:
 	assert_lte(text_3.position.x + text_3.size.x, text_4.position.x)
 
 
+func test_orange_text_is_shifted_up_in_its_bubble() -> void:
+	var warning := _make_warning()
+	var yellow_text := warning.get_node("YellowWarning/Text") as TextureRect
+	var orange_text := warning.get_node("OrangeWarning/Text") as TextureRect
+
+	assert_lt(orange_text.position.y, yellow_text.position.y)
+
+
+func test_default_warning_duration_is_four_seconds() -> void:
+	var warning := _make_warning()
+
+	assert_eq(warning.warning_duration, 4.0)
+
+
 func test_warning_is_visible_immediately_and_expires_after_cooldown() -> void:
 	var warning := _make_warning()
 	warning.show_warning(StrikeWarning.YELLOW_WARNING, 0.75)
