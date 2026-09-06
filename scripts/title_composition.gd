@@ -15,6 +15,9 @@ const REFERENCE_SIZE := Vector2(1080.0, 1920.0)
 @export_range(0.1, 2.0, 0.05) var title_entry_duration := 0.35
 @export_range(0.0, 1.0, 0.05) var start_entry_delay := 0.5
 @export_range(0.1, 2.0, 0.05) var start_entry_duration := 0.25
+@export_range(0.0, 12.0, 0.5) var title_wobble_distance := 6.0
+@export_range(0.0, 5.0, 0.1) var title_wobble_angle_degrees := 2.0
+@export_range(0.0, 4.0, 0.05) var title_wobble_speed := 0.8
 
 var _frame := 0
 var _frame_elapsed := 0.0
@@ -23,6 +26,7 @@ var _layout_signature := Vector2.ZERO
 var _intro_id := 0
 var _title_entry_tween: Tween
 var _start_entry_tween: Tween
+var _wobble_elapsed := 0.0
 var _start_frame_1_rest_position := Vector2.ZERO
 var _start_frame_2_rest_position := Vector2.ZERO
 var _title_flare_left_rest_rotation := 0.0
@@ -58,6 +62,8 @@ func _process(delta: float) -> void:
 	_layout()
 	if not _title_active:
 		return
+	_wobble_elapsed += maxf(delta, 0.0)
+	_apply_title_wobble()
 	_frame_elapsed += maxf(delta, 0.0)
 	if _frame_elapsed < frame_duration:
 		return
@@ -191,9 +197,8 @@ func _on_start_entry_delay_finished(intro_id: int) -> void:
 
 
 func _reset_entry_state() -> void:
-	# Keep every title layer at its authored position. The transition is an
-	# opacity change, which eases the eye in without making the composition feel
-	# like a comic-book entrance.
+	# Reset every title layer before the opacity-only entrance transition. The
+	# ongoing wobble is applied separately once the title is active.
 	_title_flare_left.offset = Vector2.ZERO
 	_title_flare_right.offset = Vector2.ZERO
 	_title_flare_bottom.offset = Vector2.ZERO
@@ -206,6 +211,7 @@ func _reset_entry_state() -> void:
 	_piss_title.rotation = _piss_title_rest_rotation
 	_start_frame_1.position = _start_frame_1_rest_position
 	_start_frame_2.position = _start_frame_2_rest_position
+	_wobble_elapsed = 0.0
 	_title_flare_left.modulate.a = 0.0
 	_title_flare_right.modulate.a = 0.0
 	_title_flare_bottom.modulate.a = 0.0
@@ -213,6 +219,38 @@ func _reset_entry_state() -> void:
 	_piss_title.modulate.a = 0.0
 	_start_frame_1.modulate.a = 0.0
 	_start_frame_2.modulate.a = 0.0
+
+
+func _apply_title_wobble() -> void:
+	var time := _wobble_elapsed * title_wobble_speed
+	var angle := deg_to_rad(title_wobble_angle_degrees)
+	_apply_sprite_wobble(_title_flare_left, time, 0.0, 0.8)
+	_apply_sprite_wobble(_title_flare_right, time, 1.7, 0.9)
+	_apply_sprite_wobble(_title_flare_bottom, time, 3.1, 0.7)
+	_apply_sprite_wobble(_girls_title, time, 0.8, 1.0)
+	_apply_sprite_wobble(_piss_title, time, 2.4, 1.1)
+	_start_frame_1.position = _start_frame_1_rest_position + Vector2(
+		sin(time * 0.9 + 1.2) * title_wobble_distance * 0.35,
+		cos(time * 0.8 + 0.4) * title_wobble_distance * 0.25,
+	)
+	_start_frame_2.position = _start_frame_2_rest_position + Vector2(
+		sin(time * 0.9 + 2.0) * title_wobble_distance * 0.35,
+		cos(time * 0.8 + 1.1) * title_wobble_distance * 0.25,
+	)
+
+	_title_flare_left.rotation = _title_flare_left_rest_rotation + sin(time * 0.85) * angle * 0.7
+	_title_flare_right.rotation = _title_flare_right_rest_rotation + sin(time * 0.9 + 1.7) * angle * 0.7
+	_title_flare_bottom.rotation = _title_flare_bottom_rest_rotation + sin(time * 0.7 + 3.1) * angle * 0.7
+
+
+func _apply_sprite_wobble(sprite: Sprite2D, time: float, phase: float, amplitude: float) -> void:
+	sprite.offset = Vector2(
+		sin(time * (0.85 + amplitude * 0.05) + phase) * title_wobble_distance * amplitude,
+		cos(time * (0.7 + amplitude * 0.04) + phase * 1.23) * title_wobble_distance * amplitude * 0.6,
+	)
+	sprite.rotation = sin(time * (0.8 + amplitude * 0.04) + phase) * deg_to_rad(
+		title_wobble_angle_degrees * amplitude,
+	)
 
 
 func _center_start_frames_in_title_gap() -> void:
