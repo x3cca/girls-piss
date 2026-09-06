@@ -88,6 +88,7 @@ func test_stream_starts_at_the_aim_position_when_hold_begins() -> void:
 	stream.process_frame(1.0 / 60.0)
 
 	assert_eq(stream.get_stream_target_position(), start_target)
+	assert_eq(stream.get_stream_target_speed(), 0.0)
 	assert_eq(stream.get_aim_bloom_radius(), 0.0)
 	assert_eq(stream.get_aim_bloom_offset(), Vector2.ZERO)
 	assert_eq(stream.parcel_at(0)["launch_target"], start_target)

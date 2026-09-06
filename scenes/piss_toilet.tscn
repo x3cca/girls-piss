@@ -1,26 +1,48 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/art/drive/ToiletShadowOnFloor.png" id="1_outside"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/Pissbowl.png" id="2_bowl"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/Pisstank.png" id="3_tank"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/Pissseat.png" id="4_seat"]
+[ext_resource type="Shader" path="res://shaders/surface_ripple.gdshader" id="5_ripple"]
+[ext_resource type="Shader" path="res://shaders/surface_drips.gdshader" id="6_drips"]
+[ext_resource type="Shader" path="res://shaders/surface_paint.gdshader" id="7_paint"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bowl_surface"]
+shader = ExtResource("5_ripple")
+shader_parameter/stain_color = Color(0.95, 0.83, 0.31, 1)
+shader_parameter/stain_opacity = 0.62
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_tank_surface"]
+shader = ExtResource("6_drips")
+shader_parameter/stain_color = Color(0.95, 0.83, 0.31, 1)
+shader_parameter/stain_opacity = 0.62
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_seat_surface"]
+shader = ExtResource("7_paint")
+shader_parameter/stain_color = Color(0.95, 0.83, 0.31, 1)
+shader_parameter/stain_opacity = 0.62
 
 [node name="PissToilet" type="Node2D"]
 
 [node name="Outside" type="Sprite2D" parent="."]
 position = Vector2(0, 32)
 texture = ExtResource("1_outside")
+modulate = Color(1, 1, 1, 0.2)
 z_index = 0
 
 [node name="Bowl" type="Sprite2D" parent="."]
 texture = ExtResource("2_bowl")
+material = SubResource("ShaderMaterial_bowl_surface")
 z_index = 1
 
 [node name="Tank" type="Sprite2D" parent="."]
 position = Vector2(0, -470)
 texture = ExtResource("3_tank")
+material = SubResource("ShaderMaterial_tank_surface")
 z_index = 2
 
 [node name="Seat" type="Sprite2D" parent="."]
 texture = ExtResource("4_seat")
+material = SubResource("ShaderMaterial_seat_surface")
 z_index = 3

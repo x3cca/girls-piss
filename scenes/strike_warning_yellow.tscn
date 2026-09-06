@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://cn7itptevtiij"]
+
+[ext_resource type="Texture2D" uid="uid://caj13qfkmluvp" path="res://assets/art/drive/YellowTextBubble.png" id="1_bubble"]
+[ext_resource type="Texture2D" uid="uid://5h1xn7ok4usw" path="res://assets/art/drive/YellowText.png" id="2_text"]
+
+[node name="YellowWarning" type="Control" unique_id=2004993717]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 320.0
+offset_bottom = 292.493
+mouse_filter = 2
+
+[node name="Bubble" type="TextureRect" parent="." unique_id=436957270]
+texture_filter = 1
+layout_mode = 0
+offset_right = 320.0
+offset_bottom = 292.493
+mouse_filter = 2
+texture = ExtResource("1_bubble")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="TextureRect" parent="." unique_id=1818424434]
+texture_filter = 1
+layout_mode = 0
+offset_left = 40.0
+offset_top = 66.0
+offset_right = 258.0
+offset_bottom = 155.0
+mouse_filter = 2
+texture = ExtResource("2_text")
+expand_mode = 1
+stretch_mode = 5

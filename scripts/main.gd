@@ -17,6 +17,8 @@ class_name Main
 @onready var _hud_layer: CanvasLayer = $HUDLayer
 @onready var title_screen: TitleScreen = $TitleLayer/TitleScreen
 @onready var screen_overlay: ScreenOverlay = $ScreenOverlay
+@onready var _ambient: CanvasModulate = $Ambient
+@onready var surface_effects: SurfaceEffects = get_node_or_null("SurfaceEffects") as SurfaceEffects
 
 @export var skip_title_screen := false
 @export var enable_negative_zones := true
@@ -31,17 +33,25 @@ const FAILURE := State.FAILED
 const GAME_OVER := State.FAILED
 
 const CONTACT_DURATION := 0.35
-const SAFETY_COOLDOWN := 0.75
-const MAX_STRIKES := 3
+const SAFETY_COOLDOWN := 4.0
+const MAX_STRIKES := 4
 
 var state := PLAYING
 var game_state := PLAYING
 var targets: Array[WettableTarget] = []
 @onready var _broad_light: PointLight2D = $BroadMoonLight
 @onready var _impact_light: PointLight2D = $StreamImpactLight
-@export_range(0.0, 1.0, 0.01) var pulse_bloom_energy_punch := 0.18
-@export_range(0.0, 1.0, 0.01) var pulse_bloom_scale_punch := 0.12
-@export_range(0.05, 1.0, 0.01) var pulse_bloom_duration := 0.22
+## The bowl light dims with the strike art so a mistake briefly collapses the
+## room around the player before the normal light returns.
+@export_range(0.05, 1.0, 0.01) var strike_light_energy_scale := 0.12
+@export_range(0.05, 1.0, 0.01) var strike_ambient_scale := 0.42
+@export_range(0.05, 1.0, 0.01) var strike_light_duration := 0.34
+## A successful checkpoint moves the impact light onto the object and gives it
+## a short warm burst, making the hit readable against the brighter room.
+@export_range(0.0, 3.0, 0.05) var target_hit_energy_punch := 1.15
+@export_range(0.0, 2.0, 0.05) var target_hit_scale_punch := 0.55
+@export_range(0.05, 1.0, 0.01) var target_hit_light_duration := 0.28
+@export var target_hit_light_color := Color.WHITE
 @export_range(0.0, 20.0, 0.1) var pulse_shake_strength := 2.5
 @export_range(0.05, 0.5, 0.01) var pulse_shake_duration := 0.14
 var _world_size := Vector2(720.0, 1280.0)
@@ -49,20 +59,23 @@ var _layout_signature := Vector2.ZERO
 var _elapsed := 0.0
 var _base_position := Vector2.ZERO
 var _base_hud_offset := Vector2.ZERO
+var _base_ambient_color := Color.WHITE
 var _base_broad_light_energy := 0.0
 var _base_broad_light_scale := 1.0
+var _base_broad_light_color := Color.WHITE
 var _base_impact_light_energy := 0.0
 var _base_impact_light_scale := 1.0
-var _pulse_bloom_remaining := 0.0
-var _pulse_bloom_amplitude := 0.0
+var _base_impact_light_color := Color.WHITE
 var _pulse_shake_remaining := 0.0
 var _pulse_shake_elapsed := 0.0
 var _pulse_shake_amplitude := 0.0
 var _pulse_shake_phase := 0.0
+var _strike_light_remaining := 0.0
+var _target_hit_light_remaining := 0.0
 var gameplay_started := false
 var initial_input_source := InputController.AimSource.KEYBOARD
 @export_range(0.01, 2.0, 0.01) var negative_contact_duration := CONTACT_DURATION
-@export_range(0.0, 3.0, 0.01) var safety_cooldown := SAFETY_COOLDOWN
+@export_range(0.0, 10.0, 0.01) var safety_cooldown := SAFETY_COOLDOWN
 @export_range(1, 9, 1) var max_strikes := MAX_STRIKES
 var negative_zones: Array[NegativeZone] = []
 var strike_count := 0
@@ -94,6 +107,8 @@ func _ready() -> void:
 				collision_body.collision_layer = 0
 	stream.input_controller = input_controller
 	stream.set_depth_map(depth_map)
+	if is_instance_valid(surface_effects):
+		surface_effects.bind_stream(stream)
 	if enable_negative_zones:
 		_collect_negative_zones()
 	else:
@@ -114,10 +129,13 @@ func _ready() -> void:
 	line_recorder.start_recording()
 	_base_position = position
 	_base_hud_offset = _hud_layer.offset
+	_base_ambient_color = _ambient.color
 	_base_broad_light_energy = _broad_light.energy
 	_base_broad_light_scale = _broad_light.texture_scale
+	_base_broad_light_color = _broad_light.color
 	_base_impact_light_energy = _impact_light.energy
 	_base_impact_light_scale = _impact_light.texture_scale
+	_base_impact_light_color = _impact_light.color
 	_layout_world()
 	hud.set_strikes(strike_count)
 	_refresh_reticle_preview()
@@ -177,12 +195,23 @@ func _layout_world() -> void:
 	# The source stays just below the visible rectangle; only the jet enters frame.
 	stream.source_position = Vector2(_world_size.x * 0.5, _world_size.y + 48.0)
 	depth_map.world_rect = Rect2(Vector2.ZERO, _world_size)
+	_align_bowl_light()
 	if _layout_signature != _world_size:
 		_layout_signature = _world_size
-		if _broad_light:
-			_broad_light.position = Vector2(_world_size.x * 0.50, _world_size.y * 0.34)
 		if _impact_light:
 			_impact_light.position = stream.source_position
+
+
+func _align_bowl_light() -> void:
+	if not is_instance_valid(_broad_light):
+		return
+	var bowl := get_node_or_null("PissToilet/Bowl") as Sprite2D
+	if bowl:
+		# PointLight2D.position is local to Main; to_local keeps this correct while
+		# the root is offset by the stream-pulse camera shake.
+		_broad_light.position = to_local(bowl.global_position)
+		return
+	_broad_light.position = Vector2(_world_size.x * 0.5, _world_size.y * 0.55)
 
 
 func _wire_hud() -> void:
@@ -236,8 +265,6 @@ func _start_gameplay(source: int) -> void:
 
 func _on_stream_pulse(amplitude: float) -> void:
 	var safe_amplitude := clampf(amplitude, 0.0, 1.0)
-	_pulse_bloom_remaining = maxf(_pulse_bloom_remaining, pulse_bloom_duration)
-	_pulse_bloom_amplitude = maxf(_pulse_bloom_amplitude, safe_amplitude)
 	_pulse_shake_remaining = maxf(_pulse_shake_remaining, pulse_shake_duration)
 	_pulse_shake_elapsed = 0.0
 	_pulse_shake_amplitude = maxf(_pulse_shake_amplitude, safe_amplitude)
@@ -249,11 +276,6 @@ func _advance_pulse_feedback(delta: float) -> void:
 	# a pulse visible for at least one rendered frame instead of consuming the
 	# entire shake envelope in a single hitch.
 	var safe_delta := clampf(delta, 0.0, 1.0 / 30.0)
-	_pulse_bloom_remaining = move_toward(
-		_pulse_bloom_remaining,
-		0.0,
-		safe_delta,
-	)
 	_pulse_shake_remaining = move_toward(
 		_pulse_shake_remaining,
 		0.0,
@@ -262,26 +284,55 @@ func _advance_pulse_feedback(delta: float) -> void:
 	if _pulse_shake_remaining > 0.0:
 		_pulse_shake_elapsed += safe_delta
 
-	var bloom_progress := clampf(
-		_pulse_bloom_remaining / maxf(pulse_bloom_duration, 0.001),
+	_strike_light_remaining = move_toward(
+		_strike_light_remaining,
+		0.0,
+		safe_delta,
+	)
+	_target_hit_light_remaining = move_toward(
+		_target_hit_light_remaining,
+		0.0,
+		safe_delta,
+	)
+	var strike_amount := smoothstep(
 		0.0,
 		1.0,
+		_strike_light_remaining / maxf(strike_light_duration, 0.001),
 	)
-	var bloom_envelope := smoothstep(0.0, 1.0, bloom_progress)
-	var bloom_amount := bloom_envelope * _pulse_bloom_amplitude
-	_broad_light.energy = _base_broad_light_energy * (
-			1.0 + pulse_bloom_energy_punch * bloom_amount
+	var target_hit_amount := smoothstep(
+		0.0,
+		1.0,
+		_target_hit_light_remaining / maxf(target_hit_light_duration, 0.001),
 	)
-	_broad_light.texture_scale = _base_broad_light_scale * (
-			1.0 + pulse_bloom_scale_punch * bloom_amount
+	_set_effect_lights_enabled(
+		strike_amount <= 0.0
+		and target_hit_amount > 0.0,
 	)
-	_impact_light.energy = _base_impact_light_energy * (
-			1.0 + pulse_bloom_energy_punch * 1.35 * bloom_amount
+	var light_energy_multiplier := (
+			lerpf(1.0, strike_light_energy_scale, strike_amount)
+			* (1.0 + target_hit_energy_punch * target_hit_amount)
 	)
-	_impact_light.texture_scale = _base_impact_light_scale * (
-			1.0 + pulse_bloom_scale_punch * 1.35 * bloom_amount
+	var light_scale_multiplier := (
+			1.0 + target_hit_scale_punch * target_hit_amount
 	)
-
+	_broad_light.energy = _base_broad_light_energy * light_energy_multiplier
+	_broad_light.texture_scale = _base_broad_light_scale * light_scale_multiplier
+	_broad_light.color = _base_broad_light_color.lerp(
+		target_hit_light_color,
+		target_hit_amount,
+	)
+	_impact_light.energy = _base_impact_light_energy * light_energy_multiplier
+	_impact_light.texture_scale = _base_impact_light_scale * light_scale_multiplier
+	_impact_light.color = _base_impact_light_color.lerp(
+		target_hit_light_color,
+		target_hit_amount,
+	)
+	if is_instance_valid(_ambient):
+		_ambient.color = _base_ambient_color * lerpf(
+			1.0,
+			strike_ambient_scale,
+			strike_amount,
+		)
 	var shake_offset := Vector2.ZERO
 	if _pulse_shake_remaining > 0.0:
 		var shake_progress := clampf(
@@ -303,24 +354,32 @@ func _advance_pulse_feedback(delta: float) -> void:
 	position = _base_position + shake_offset
 	_hud_layer.offset = _base_hud_offset + shake_offset
 
-	if _pulse_bloom_remaining <= 0.0:
-		_pulse_bloom_amplitude = 0.0
 	if _pulse_shake_remaining <= 0.0:
 		_pulse_shake_amplitude = 0.0
 
 
 func _reset_pulse_feedback() -> void:
-	_pulse_bloom_remaining = 0.0
-	_pulse_bloom_amplitude = 0.0
 	_pulse_shake_remaining = 0.0
 	_pulse_shake_elapsed = 0.0
 	_pulse_shake_amplitude = 0.0
+	_strike_light_remaining = 0.0
 	position = _base_position
 	_hud_layer.offset = _base_hud_offset
+	if is_instance_valid(_ambient):
+		_ambient.color = _base_ambient_color
 	_broad_light.energy = _base_broad_light_energy
 	_broad_light.texture_scale = _base_broad_light_scale
+	_broad_light.color = _base_broad_light_color
 	_impact_light.energy = _base_impact_light_energy
 	_impact_light.texture_scale = _base_impact_light_scale
+	_impact_light.color = _base_impact_light_color
+
+
+func _set_effect_lights_enabled(enabled: bool) -> void:
+	if is_instance_valid(_broad_light):
+		_broad_light.enabled = enabled
+	if is_instance_valid(_impact_light):
+		_impact_light.enabled = enabled
 
 
 func _on_drawing_point_updated(position: Vector2, active: bool) -> void:
@@ -341,6 +400,8 @@ func _on_stream_hold_changed(active: bool) -> void:
 	# A release can be followed by a re-press before LiquidStream gets another
 	# process tick. Reset contact synchronously so the two holds cannot merge.
 	_reset_negative_contact()
+	if is_instance_valid(surface_effects):
+		surface_effects.observe_stream_endpoint(Vector2.ZERO, false)
 	_has_stream_endpoint = false
 	if state == PLAYING:
 		shape_trace.observe_drawing_point(Vector2.ZERO, false, 0.0)
@@ -459,7 +520,13 @@ func _take_strike() -> void:
 	strike_count = mini(strike_count + 1, max_strikes)
 	_strike_cooldown_remaining = maxf(safety_cooldown, 0.0)
 	_reset_negative_contact()
+	_strike_light_remaining = strike_light_duration
+	_set_effect_lights_enabled(false)
+	input_controller.stop_pissing()
+	stream.reset_stream()
 	hud.set_strikes(strike_count)
+	if strike_count < max_strikes:
+		hud.show_strike_warning(strike_count, safety_cooldown)
 	if is_instance_valid(screen_overlay):
 		screen_overlay.play_strike_feedback()
 	stream.play_strike_flash()
@@ -472,6 +539,7 @@ func _fail_attempt() -> void:
 		return
 	_set_state(FAILED)
 	_reset_pulse_feedback()
+	_strike_light_remaining = strike_light_duration
 	line_recorder.finish_recording()
 	line_replay.stop()
 	input_controller.set_gameplay_input_enabled(false)
@@ -481,7 +549,7 @@ func _fail_attempt() -> void:
 	shape_trace.set_trace_visible(false)
 	hud.set_aim_zone_state(TouchReticle.ReticleState.NEUTRAL)
 	hud.show_failure_card()
-	_impact_light.enabled = false
+	_set_effect_lights_enabled(false)
 
 
 func _on_trace_completed() -> void:
@@ -495,7 +563,8 @@ func _on_trace_completed() -> void:
 	stream.set_live_enabled(false)
 	shape_trace.set_trace_visible(false)
 	hud.set_gameplay_controls_visible(false)
-	_impact_light.enabled = false
+	if _target_hit_light_remaining <= 0.0:
+		_set_effect_lights_enabled(false)
 	line_replay.play(line_recorder.get_strokes())
 
 
@@ -517,9 +586,12 @@ func _on_piss_meter_depleted() -> void:
 func reset_level() -> void:
 	_set_state(PLAYING)
 	_reset_pulse_feedback()
+	_target_hit_light_remaining = 0.0
 	strike_count = 0
 	_strike_cooldown_remaining = 0.0
 	_reset_negative_contact()
+	if is_instance_valid(surface_effects):
+		surface_effects.reset_effects()
 	_has_stream_endpoint = false
 	_last_stream_endpoint = Vector2.ZERO
 	_elapsed = 0.0
@@ -539,7 +611,7 @@ func reset_level() -> void:
 	hud.set_strikes(strike_count)
 	hud.set_aim_zone_state(TouchReticle.ReticleState.NEUTRAL)
 	hud.set_gameplay_controls_visible(true)
-	_impact_light.enabled = true
+	_set_effect_lights_enabled(false)
 	if is_instance_valid(screen_overlay):
 		screen_overlay.stop_all_effects()
 
@@ -558,12 +630,17 @@ func _on_wet_target_hit(
 	if is_instance_valid(target):
 		target.apply_liquid(amount, position)
 		_impact_light.position = position + normal * 12.0
+		_target_hit_light_remaining = target_hit_light_duration
+		_set_effect_lights_enabled(true)
 
 
 func _on_checkpoint_completed(_index: int) -> void:
 	if state != PLAYING:
 		return
 	hud.play_success_burst()
+	_target_hit_light_remaining = target_hit_light_duration
+	_impact_light.position = shape_trace.get_checkpoint_position(_index)
+	_set_effect_lights_enabled(true)
 	if is_instance_valid(screen_overlay):
 		screen_overlay.play_success_feedback()
 

@@ -10,15 +10,18 @@
 script = ExtResource("2_level_1")
 draw_neutral_canvas = false
 
-[node name="NegativeZone01" parent="." index="6" unique_id=2103637511]
+[node name="NegativeZone01" parent="." index="7" unique_id=2103637511]
 visible = false
 normalized_points = PackedVector2Array()
 show_zone = false
 
-[node name="NegativeZone02" parent="." index="7" unique_id=776967907]
+[node name="NegativeZone02" parent="." index="8" unique_id=776967907]
 visible = false
 normalized_points = PackedVector2Array()
 show_zone = false
+
+[node name="BroadMoonLight" parent="." index="12" unique_id=687514520]
+energy = 1.0
 
 [node name="Level1Background" parent="." index="16" unique_id=980382921 instance=ExtResource("3_background")]
 
@@ -27,4 +30,4 @@ show_zone = false
 [node name="FloorNegativeZone" parent="." index="18" unique_id=633917642 instance=ExtResource("5_floor_zone")]
 normalized_points = PackedVector2Array(0, 0.33, 1, 0.33, 1, 1, 0, 1)
 excluded_normalized_points = PackedVector2Array(0.5, 0.31, 0.665, 0.319, 0.785, 0.361, 0.853, 0.443, 0.868, 0.563, 0.845, 0.676, 0.755, 0.743, 0.635, 0.766, 0.5, 0.769, 0.358, 0.766, 0.245, 0.736, 0.17, 0.668, 0.14, 0.563, 0.148, 0.443, 0.208, 0.361, 0.328, 0.319)
-show_zone = false
+show_zone = true

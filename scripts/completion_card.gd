@@ -60,7 +60,7 @@ func _draw() -> void:
 	draw_string(
 		ThemeDB.fallback_font,
 		card.position + Vector2(0.0, 92.0),
-		"THREE STRIKES" if failure_state else "LEVEL COMPLETE",
+		"TOO MANY MISTAKES" if failure_state else "LEVEL COMPLETE",
 		HORIZONTAL_ALIGNMENT_CENTER,
 		card.size.x,
 		30,

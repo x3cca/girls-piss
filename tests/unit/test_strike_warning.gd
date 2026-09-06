@@ -1,0 +1,125 @@
+extends GutTest
+
+const WARNING_SCENE := preload("res://scenes/strike_warning.tscn")
+const YELLOW_BUBBLE := preload("res://assets/art/drive/YellowTextBubble.png")
+const YELLOW_TEXT := preload("res://assets/art/drive/YellowText.png")
+const ORANGE_BUBBLE := preload("res://assets/art/drive/OrangeTextBubble.png")
+const ORANGE_TEXT := preload("res://assets/art/drive/OrangeText.png")
+const RED_BUBBLE := preload("res://assets/art/drive/RedWarningBubble.png")
+const RED_TEXT_1 := preload("res://assets/art/drive/RedText1.png")
+const RED_TEXT_2 := preload("res://assets/art/drive/RedText2.png")
+const RED_TEXT_3 := preload("res://assets/art/drive/RedText3.png")
+const RED_TEXT_4 := preload("res://assets/art/drive/RedText4.png")
+
+
+func _make_warning() -> StrikeWarning:
+	var warning := WARNING_SCENE.instantiate() as StrikeWarning
+	add_child_autofree(warning)
+	return warning
+
+
+func test_warning_assets_are_selected_for_each_strike() -> void:
+	var warning := _make_warning()
+
+	var yellow := warning.get_warning_assets(StrikeWarning.YELLOW_WARNING)
+	assert_eq(yellow["bubble"], YELLOW_BUBBLE)
+	assert_eq(yellow["text"], YELLOW_TEXT)
+
+	var orange := warning.get_warning_assets(StrikeWarning.ORANGE_WARNING)
+	assert_eq(orange["bubble"], ORANGE_BUBBLE)
+	assert_eq(orange["text"], ORANGE_TEXT)
+
+	var red := warning.get_warning_assets(StrikeWarning.RED_WARNING)
+	assert_eq(red["bubble"], RED_BUBBLE)
+	assert_eq(red["text"], RED_TEXT_1)
+	assert_eq(red["row"], [RED_TEXT_2, RED_TEXT_3])
+	assert_eq(red["emergency"], RED_TEXT_4)
+
+
+func test_red_warning_places_its_text_in_two_rows() -> void:
+	var warning := _make_warning()
+	var red := warning.get_node("RedWarning") as Control
+	var row := red.get_node("RedTextRow") as Control
+	var text_2 := row.get_node("RedText2") as TextureRect
+	var text_3 := row.get_node("RedText3") as TextureRect
+	var emergency := red.get_node("RedText4") as TextureRect
+
+	assert_gt(row.size.x, 0.0)
+	assert_gt(row.size.y, 0.0)
+	assert_gt(text_2.size.x, 0.0)
+	assert_gt(text_3.size.x, 0.0)
+	assert_gt(emergency.size.x, 0.0)
+	assert_gte(text_2.position.y, 0.0)
+	assert_gte(text_3.position.y, 0.0)
+	assert_lte(text_2.position.y + text_2.size.y, row.size.y)
+	assert_lte(text_3.position.y + text_3.size.y, row.size.y)
+	assert_lte(text_2.position.x + text_2.size.x, text_3.position.x)
+	assert_gt(emergency.size.x, row.size.x * 0.8)
+	assert_gt(emergency.position.y, row.position.y + row.size.y)
+
+
+func test_yellow_text_is_shifted_up_in_its_bubble() -> void:
+	var warning := _make_warning()
+	var yellow := warning.get_node("YellowWarning") as Control
+	var bubble := yellow.get_node("Bubble") as TextureRect
+	var text := yellow.get_node("Text") as TextureRect
+
+	assert_lt(text.position.y, bubble.size.y * 0.25)
+
+
+func test_red_first_line_is_shifted_up_above_emergency() -> void:
+	var warning := _make_warning()
+	var red := warning.get_node("RedWarning") as Control
+	var row := red.get_node("RedTextRow") as Control
+	var emergency := red.get_node("RedText4") as TextureRect
+
+	assert_lt(row.position.y, red.size.y * 0.5)
+	assert_gt(emergency.position.y, row.position.y)
+
+
+func test_orange_text_is_shifted_up_in_its_bubble() -> void:
+	var warning := _make_warning()
+	var yellow_text := warning.get_node("YellowWarning/Text") as TextureRect
+	var orange_text := warning.get_node("OrangeWarning/Text") as TextureRect
+
+	assert_lt(orange_text.position.y, yellow_text.position.y)
+
+
+func test_default_warning_duration_is_four_seconds() -> void:
+	var warning := _make_warning()
+
+	assert_eq(warning.warning_duration, 4.0)
+
+
+func test_warning_is_visible_immediately_and_expires_after_cooldown() -> void:
+	var warning := _make_warning()
+	warning.show_warning(StrikeWarning.YELLOW_WARNING, 0.75)
+
+	assert_eq(warning.get_active_warning(), StrikeWarning.YELLOW_WARNING)
+	assert_true(warning.is_warning_visible(StrikeWarning.YELLOW_WARNING))
+	warning.process_frame(0.74)
+	assert_true(warning.is_warning_visible(StrikeWarning.YELLOW_WARNING))
+	warning.process_frame(0.01)
+	assert_eq(warning.get_active_warning(), 0)
+	assert_false(warning.is_warning_visible(StrikeWarning.YELLOW_WARNING))
+
+
+func test_first_three_warnings_use_their_own_panel() -> void:
+	var warning := _make_warning()
+	for strike in [1, 2, 3]:
+		warning.show_warning(strike, 1.0)
+		assert_eq(warning.get_active_warning(), strike)
+		assert_true(warning.is_warning_visible(strike))
+		for other_strike in [1, 2, 3]:
+			if other_strike != strike:
+				assert_false(warning.is_warning_visible(other_strike))
+
+
+func test_fourth_strike_is_not_a_warning() -> void:
+	var warning := _make_warning()
+	warning.show_warning(4, 1.0)
+
+	assert_eq(warning.get_active_warning(), 0)
+	assert_false(warning.yellow_warning.visible)
+	assert_false(warning.orange_warning.visible)
+	assert_false(warning.red_warning.visible)
