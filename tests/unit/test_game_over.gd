@@ -9,6 +9,7 @@ const GAME_OVER_CHAULK := preload("res://assets/art/drive/GameOverChaulk.png")
 const PISS_AGAIN_ARROW_ONE := preload("res://assets/art/drive/PissAgainArrow1.png")
 const PISS_AGAIN_ARROW_TWO := preload("res://assets/art/drive/PissAgainArrow2.png")
 const FAILURE_SOUND := preload("res://assets/audio/cute_cozy_ui/Sounds/Failure.wav")
+const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
 
 
 func test_game_over_starts_hidden_and_uses_authored_failure_assets() -> void:
@@ -17,6 +18,15 @@ func test_game_over_starts_hidden_and_uses_authored_failure_assets() -> void:
 
 	assert_false(game_over.visible)
 	assert_eq(game_over.get_node("DreadFrame").texture, DREAD_FRAME)
+	for layer_path in [
+		"DreadFrame",
+		"Presentation/GameOver1",
+		"Presentation/GameOverPiss",
+		"Presentation/GameOver2",
+		"Presentation/GameOverChaulk",
+		"Presentation/RetryButton",
+	]:
+		assert_eq(game_over.get_node(layer_path).material, BOIL_MATERIAL)
 	assert_eq(game_over.get_node("Presentation/GameOver1").texture, GAME_OVER_ONE)
 	assert_eq(game_over.get_node("Presentation/GameOverPiss").texture, GAME_OVER_PISS)
 	assert_eq(game_over.get_node("Presentation/GameOver2").texture, GAME_OVER_TWO)
