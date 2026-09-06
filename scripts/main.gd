@@ -211,7 +211,8 @@ func _process(delta: float) -> void:
 	if state == PLAYING:
 		_layout_world()
 		_refresh_reticle_preview()
-	queue_redraw()
+	if state == PLAYING:
+		queue_redraw()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -695,6 +696,13 @@ func _fail_attempt() -> void:
 	input_controller.set_process_unhandled_input(false)
 	input_controller.set_process(false)
 	stream.set_live_enabled(false)
+	# The failed stream no longer needs to finish its parcel simulation. Clearing
+	# it here removes the ribbon/depth-band rebuilds that would otherwise compete
+	# with the full-level exit tween.
+	stream.reset_stream()
+	stream.set_live_enabled(false)
+	if is_instance_valid(screen_overlay):
+		screen_overlay.stop_all_effects()
 	shape_trace.set_trace_visible(false)
 	hud.set_aim_zone_state(TouchReticle.ReticleState.NEUTRAL)
 	hud.show_game_over()

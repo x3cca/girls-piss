@@ -84,7 +84,8 @@ func _clear_inherited_test_zones() -> void:
 
 func _process(delta: float) -> void:
 	super._process(delta)
-	_layout_level1()
+	if state == PLAYING:
+		_layout_level1()
 
 
 func _layout_level1() -> void:

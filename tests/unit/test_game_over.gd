@@ -131,3 +131,22 @@ func test_show_card_reveals_retry_state_and_emits_retry() -> void:
 
 	game_over.hide_card()
 	assert_false(game_over.is_showing())
+
+
+func test_failure_art_waits_for_raid_sequence_before_reveal() -> void:
+	var game_over := GAME_OVER_SCENE.instantiate() as GameOver
+	add_child_autofree(game_over)
+	await get_tree().process_frame
+
+	game_over.show_card()
+	assert_true(game_over.visible)
+	assert_false(game_over.get_node("Backdrop").visible)
+	assert_false(game_over.get_node("DreadFrame").visible)
+	assert_false(game_over.get_node("Presentation").visible)
+
+	game_over.reveal_card()
+	assert_true(game_over.get_node("Backdrop").visible)
+	assert_true(game_over.get_node("DreadFrame").visible)
+	assert_true(game_over.get_node("Presentation").visible)
+
+	game_over.hide_card()

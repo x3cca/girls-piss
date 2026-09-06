@@ -51,6 +51,10 @@ func process_frame(_delta: float) -> void:
 
 func set_gameplay_controls_visible(enabled: bool) -> void:
 	gameplay_controls_visible = enabled
+	# Once gameplay controls are hidden, the HUD has no per-frame aim preview to
+	# update. Keeping this process loop alive during the failure launch only adds
+	# redraw work on top of the rotating level and game-over card.
+	set_process(enabled)
 	if is_instance_valid(aim_reticle):
 		aim_reticle.set_aim_target(
 			aim_reticle.position,

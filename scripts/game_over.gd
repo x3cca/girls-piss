@@ -23,6 +23,7 @@ const CURSOR_TEXTURE: Texture2D = preload(
 @export_range(0.0, 1.0, 0.05) var game_over_piss_opacity := 0.5
 @export_range(0.0, 2.0, 0.05) var door_bang_delay := 1.1
 @export_range(0.0, 2.0, 0.05) var launch_delay_after_door := 0.92
+@export_range(0.0, 0.2, 0.01) var door_smash_audio_delay := 0.06
 
 const DOOR_KNOCK_OFFSETS := [0.0, 0.19, 0.54]
 const DOOR_BANG_HOLD_AFTER_LAST := 0.18
@@ -42,6 +43,8 @@ const DOOR_BANG_HOLD_AFTER_LAST := 0.18
 var _entry_tween: Tween
 var _raid_sequence_tween: Tween
 var _door_knock_tween: Tween
+var _door_smash_delay_tween: Tween
+var _card_revealed := false
 
 
 func _ready() -> void:
@@ -59,6 +62,7 @@ func _ready() -> void:
 	_door_bang.visible = false
 	_layout_door_bang()
 	visible = false
+	set_process(false)
 
 
 func _exit_tree() -> void:
@@ -76,6 +80,9 @@ func show_card() -> void:
 		_entry_tween.kill()
 	_stop_raid_sequence()
 	visible = true
+	set_process(true)
+	_card_revealed = false
+	_set_card_art_visible(false)
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	_presentation.pivot_offset = get_viewport().get_visible_rect().size * 0.5
@@ -83,6 +90,19 @@ func show_card() -> void:
 	_presentation.scale = Vector2.ONE * entry_start_scale
 	_retry_button.grab_focus()
 	_start_raid_sequence()
+
+
+func reveal_card() -> void:
+	## Keep the expensive full-screen failure art culled while the raid audio and
+	## knock sprites play underneath the live level. Reveal it only when that
+	## sequence is complete, on the same frame that the level begins its exit
+	## launch.
+	if not visible or _card_revealed:
+		return
+	_card_revealed = true
+	_set_card_art_visible(true)
+	_presentation.modulate.a = 0.0
+	_presentation.scale = Vector2.ONE * entry_start_scale
 	_entry_tween = create_tween()
 	_entry_tween.set_parallel(true)
 	_entry_tween.tween_property(_presentation, "modulate:a", 1.0, entry_duration)
@@ -97,6 +117,9 @@ func hide_card() -> void:
 		_entry_tween = null
 	_stop_raid_sequence()
 	visible = false
+	set_process(false)
+	_card_revealed = false
+	_set_card_art_visible(true)
 	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 	_presentation.modulate = Color.WHITE
 	_presentation.scale = Vector2.ONE
@@ -147,15 +170,24 @@ func _stop_raid_sequence() -> void:
 	if _door_knock_tween:
 		_door_knock_tween.kill()
 		_door_knock_tween = null
+	if _door_smash_delay_tween:
+		_door_smash_delay_tween.kill()
+		_door_smash_delay_tween = null
 	_fbi_voice.stop()
 	_door_smash.stop()
+	_door_kick.stop()
 	_hide_door_bang()
 
 
 func _play_door_smash() -> void:
-	_door_smash.play()
 	_door_bang.visible = true
 	_show_door_bang_frame(0)
+	# Put the authored impact art just ahead of the clip. This compensates for
+	# the audio output path without changing the relative spacing of the three
+	# knock cues.
+	_door_smash_delay_tween = create_tween()
+	_door_smash_delay_tween.tween_interval(maxf(door_smash_audio_delay, 0.0))
+	_door_smash_delay_tween.tween_callback(_play_delayed_door_smash)
 	_door_knock_tween = create_tween()
 	for frame_index in range(1, DOOR_KNOCK_OFFSETS.size()):
 		_door_knock_tween.tween_interval(
@@ -164,6 +196,11 @@ func _play_door_smash() -> void:
 		_door_knock_tween.tween_callback(_show_door_bang_frame.bind(frame_index))
 	_door_knock_tween.tween_interval(DOOR_BANG_HOLD_AFTER_LAST)
 	_door_knock_tween.tween_callback(_hide_door_bang)
+
+
+func _play_delayed_door_smash() -> void:
+	_door_smash_delay_tween = null
+	_door_smash.play()
 
 
 func _show_door_bang_frame(frame_index: int) -> void:
@@ -183,7 +220,15 @@ func _hide_door_bang() -> void:
 func _finish_raid_sequence() -> void:
 	_hide_door_bang()
 	_raid_sequence_tween = null
+	set_process(false)
+	reveal_card()
 	raid_sequence_finished.emit()
+
+
+func _set_card_art_visible(enabled: bool) -> void:
+	_backdrop.visible = enabled
+	_dread_frame.visible = enabled
+	_presentation.visible = enabled
 
 
 func _layout_door_bang() -> void:
