@@ -18,6 +18,7 @@ const CURSOR_TEXTURE: Texture2D = preload(
 
 @export var autoplay := true
 @export_range(0.1, 2.0, 0.05) var entry_duration := 0.75
+@export_range(0.0, 2.0, 0.05) var title_entry_delay := 1.0
 @export_range(0.0, 1.0, 0.05) var start_delay := 0.2
 @export_range(0.1, 1.5, 0.05) var exit_duration := 0.5
 
@@ -60,6 +61,9 @@ func show_title() -> void:
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	_composition.modulate.a = 1.0
+	_composition.intro_delay = title_entry_delay
+	_composition.title_entry_duration = entry_duration
+	_composition.start_entry_delay = start_delay
 	_composition.show_title()
 
 
