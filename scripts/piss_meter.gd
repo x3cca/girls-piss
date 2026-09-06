@@ -63,8 +63,8 @@ func _process(delta: float) -> void:
 			return
 		time_remaining = maxf(time_remaining - safe_delta, 0.0)
 	else:
-		# Releasing the stream, including the forced release after depletion, lets
-		# the player build the meter back up for the next hold.
+		# An explicit stop, including the forced release after depletion, lets the
+		# player build the meter back up for the next attempt.
 		time_remaining = minf(
 			duration_seconds,
 			time_remaining + safe_delta * maxf(recharge_rate, 0.0),

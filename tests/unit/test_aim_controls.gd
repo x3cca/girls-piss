@@ -56,7 +56,7 @@ func test_wasd_moves_the_crosshair_in_two_dimensions() -> void:
 	controller.handle_input_event(up_up)
 
 
-func test_space_starts_pissing_and_release_does_not_stop_by_default() -> void:
+func test_space_starts_pissing_and_release_does_not_stop() -> void:
 	var controller := InputController.new()
 	add_child_autofree(controller)
 	controller.set_process(false)
@@ -75,6 +75,7 @@ func test_space_starts_pissing_and_release_does_not_stop_by_default() -> void:
 	space_up.pressed = false
 	controller.handle_input_event(space_up)
 	assert_true(controller.is_pissing())
+	assert_true(controller.is_stream_input_held())
 
 
 func test_one_touch_places_crosshair_directly_and_keeps_stream_active() -> void:
@@ -142,11 +143,10 @@ func test_mouse_motion_places_crosshair_directly_and_clamps_it() -> void:
 	assert_eq(controller.get_target_position(), Vector2(0.0, viewport_size.y))
 
 
-func test_left_mouse_button_is_an_additive_pissing_input() -> void:
+func test_left_mouse_button_starts_pissing() -> void:
 	var controller := InputController.new()
 	add_child_autofree(controller)
 	controller.set_process(false)
-	controller.force_pissing_after_start = false
 
 	var mouse_down := InputEventMouseButton.new()
 	mouse_down.button_index = MOUSE_BUTTON_LEFT
@@ -170,7 +170,7 @@ func test_left_mouse_button_is_an_additive_pissing_input() -> void:
 	space_up.physical_keycode = KEY_SPACE
 	space_up.pressed = false
 	controller.handle_input_event(space_up)
-	assert_false(controller.is_pissing())
+	assert_true(controller.is_pissing())
 
 
 func test_left_stick_moves_crosshair_with_analog_strength() -> void:
@@ -198,11 +198,10 @@ func test_left_stick_moves_crosshair_with_analog_strength() -> void:
 	assert_almost_eq(controller.get_target_position().x, 391.0, 0.001)
 
 
-func test_right_trigger_is_an_additive_pissing_input() -> void:
+func test_right_trigger_starts_pissing() -> void:
 	var controller := InputController.new()
 	add_child_autofree(controller)
 	controller.set_process(false)
-	controller.force_pissing_after_start = false
 
 	var trigger_down := InputEventJoypadMotion.new()
 	trigger_down.device = 0
@@ -224,7 +223,7 @@ func test_right_trigger_is_an_additive_pissing_input() -> void:
 
 	mouse_down.pressed = false
 	controller.handle_input_event(mouse_down)
-	assert_false(controller.is_pissing())
+	assert_true(controller.is_pissing())
 
 
 func test_last_aim_source_wins_when_inputs_overlap() -> void:
@@ -272,7 +271,6 @@ func test_controller_disconnect_clears_stick_and_trigger_state() -> void:
 	var controller := InputController.new()
 	add_child_autofree(controller)
 	controller.set_process(false)
-	controller.force_pissing_after_start = false
 	controller.set_target_position(Vector2(360.0, 640.0))
 	var keyboard_down := InputEventKey.new()
 	keyboard_down.physical_keycode = KEY_D
@@ -295,15 +293,13 @@ func test_controller_disconnect_clears_stick_and_trigger_state() -> void:
 	controller.handle_joy_connection_changed(0, false)
 	controller.process_frame(0.1)
 	assert_almost_eq(controller.get_target_position().x, target_before_disconnect.x + 62.0, 0.001)
-	assert_false(controller.is_pissing())
+	assert_true(controller.is_pissing())
 
 
-func test_disabling_force_pissing_restores_release_gating() -> void:
+func test_explicit_stop_is_required_to_end_pissing() -> void:
 	var controller := InputController.new()
 	add_child_autofree(controller)
 	controller.set_process(false)
-	controller.force_pissing_after_start = false
-
 	var space_down := InputEventKey.new()
 	space_down.physical_keycode = KEY_SPACE
 	space_down.pressed = true
@@ -314,7 +310,11 @@ func test_disabling_force_pissing_restores_release_gating() -> void:
 	space_up.physical_keycode = KEY_SPACE
 	space_up.pressed = false
 	controller.handle_input_event(space_up)
+	assert_true(controller.is_pissing())
+
+	controller.stop_pissing()
 	assert_false(controller.is_pissing())
+	assert_false(controller.is_stream_input_held())
 
 
 func test_reset_clears_controller_and_pointer_state() -> void:

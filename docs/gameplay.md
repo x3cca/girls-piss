@@ -32,10 +32,10 @@ both paths leave the scene in the same playable state.
 
 | Source | Aim | Stream |
 | --- | --- | --- |
-| Keyboard | W/A/S/D | Space held |
-| Mouse | Motion | Left click held |
-| Touch | Tap or drag | Touch held |
-| Controller | Left stick | Right trigger held |
+| Keyboard | W/A/S/D | Space |
+| Mouse | Motion | Left click |
+| Touch | Tap or drag | Tap |
+| Controller | Left stick | Right trigger |
 
 `InputController` emits `input_detected` for recognized activity and
 `input_source_changed` only when the source changes. Keyboard key presses,
@@ -98,8 +98,10 @@ artwork, failure sound, and Piss Again arrow. Retry resets the trace, meter,
 strike count, stream, and all overlay effects.
 
 The Level 1 Piss-O-Meter begins with thirty seconds of stream time and drains
-only while the stream input is held. When it empties, the stream stops and the
-meter recharges while idle; running out of pee does not end the attempt. The ten
+while the stream is active. The first stream input starts it permanently for
+that attempt; releasing the input does not stop the stream. When the meter
+empties, the stream stops and the meter recharges while idle; running out of
+pee does not end the attempt. The ten
 bathroom-object targets are randomly assigned to the ten bowl positions on each
 attempt. The stream uses the baked
 `resources/depth_map_baked.png` through `DepthMap2D`.

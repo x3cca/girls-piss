@@ -204,9 +204,8 @@ func _process(delta: float) -> void:
 	if _live_enabled:
 		if input_controller == null:
 			return
-		# The input controller keeps its public visual-start state persistent for
-		# compatibility, but gameplay streams are hold-based. A release starts a
-		# drain instead of clearing the old parcel chain.
+		# The input controller latches the stream on its first start. A release is
+		# intentionally ignored; only an explicit reset can begin the drain.
 		is_pissing = input_controller.is_stream_input_held()
 		target = input_controller.get_target_position()
 		_update_aim_bloom(target, delta)
@@ -232,8 +231,8 @@ func _process(delta: float) -> void:
 		_update_preview_pulses(delta)
 		emit_parcels(_stream_target_position, delta)
 	else:
-		# Releasing Space/a finger closes the live stream immediately. Its existing
-		# parcels continue to the targets they were already committed to.
+		# An explicit reset closes the live stream immediately. Its existing parcels
+		# continue to the targets they were already committed to.
 		if _stream_hold_was_active:
 			cancel_stream()
 		_stream_hold_was_active = false
@@ -554,7 +553,8 @@ func _set_live_visuals(enabled: bool) -> void:
 		_impact.emitting = false
 		_impact_secondary.emitting = false
 	else:
-		# The stream only starts when Space/a finger is held.
+		# The stream starts on the first Space/touch input and stays active until a
+		# gameplay reset.
 		_droplets.emitting = false
 
 

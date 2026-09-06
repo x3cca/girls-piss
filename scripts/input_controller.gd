@@ -18,6 +18,8 @@ signal input_source_changed(source: int)
 @export var music_target_offset_angle_increment := 45.0
 @export var music_target_offset_power := 3
 @export var music_target_offset_response := 8.0
+# Kept for scene/tool compatibility. Stream input is always latched after its
+# first start, so this legacy flag no longer changes release behavior.
 @export var force_pissing_after_start := true
 @export var bus_name: String = "Master"
 
@@ -280,12 +282,12 @@ func get_target_position() -> Vector2:
 
 
 func is_pissing() -> bool:
-	return _has_started_pissing if force_pissing_after_start else _pissing
+	return _has_started_pissing
 
 
 func is_stream_input_held() -> bool:
-	## Raw hold state, before force_pissing_after_start is applied. Gameplay
-	## contact rules use this boundary instead of the persistent visual stream.
+	## Once the stream starts, it remains active until an explicit gameplay reset
+	## (such as a strike, depletion, retry, or completion) stops it.
 	return _pissing
 
 
@@ -294,9 +296,8 @@ func get_stream_start_position() -> Vector2:
 
 
 func stop_pissing() -> void:
-	## Clear every active stream input after a strike. The player must release and
-	## press again before another stream can start, even when force-pissing mode
-	## would normally keep the visual stream alive after release.
+	## Clear the latched stream state after a strike or another gameplay reset.
+	## The next stream can start only from a fresh stream-start input.
 	_touch_index = -1
 	_touch_position = Vector2.ZERO
 	_space_pressed = false
@@ -409,6 +410,10 @@ func _update_touch_target(position: Vector2) -> void:
 
 
 func _update_pissing() -> void:
+	# Pissing is a one-way action during an attempt. The individual controls are
+	# only used to start it; releasing them must not turn the stream off.
+	if _pissing:
+		return
 	var next_pissing := (
 			_space_pressed
 			or _mouse_pressed

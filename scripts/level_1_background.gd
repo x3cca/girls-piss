@@ -16,6 +16,7 @@ const REFERENCE_SIZE := Vector2(1080.0, 1920.0)
 @onready var _floor: Sprite2D = $Floor
 @onready var _wall_shadow: Sprite2D = $WallShadow
 @onready var _wall_paper: Sprite2D = $WallPaper
+@onready var _toilet_paper: Sprite2D = $ToiletPaper
 var _layout_signature := Vector2.ZERO
 
 
@@ -46,6 +47,8 @@ func _layout() -> void:
 	_set_sprite_layout(_wall_shadow, wall_shadow_y, composition_scale)
 	_set_sprite_layout(_wall_paper, 118.0, composition_scale)
 	_wall_paper.position.x = 887.0 * composition_scale.x
+	_set_sprite_layout(_toilet_paper, 118.0, composition_scale)
+	_toilet_paper.position.x = 887.0 * composition_scale.x
 
 
 func _set_sprite_layout(sprite: Sprite2D, y: float, composition_scale: Vector2) -> void:

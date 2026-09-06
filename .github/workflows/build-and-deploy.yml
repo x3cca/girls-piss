@@ -62,6 +62,6 @@ jobs:
 
       - name: Push to itch.io (staging channel)
         run: |
-          butler push build/web ${{ secrets.ITCH_USERNAME }}/${{ secrets.ITCH_GAME }}:html-staging
+          butler push build/web ${{ secrets.ITCH_USERNAME }}/girls-piss:html-staging
         env:
           BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}

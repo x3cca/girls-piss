@@ -25,9 +25,8 @@ const CURSOR_TEXTURE: Texture2D = preload(
 @export_range(0.1, 1.0, 0.05) var retry_slide_duration := 0.45
 @export_range(0.0, 40.0, 1.0) var retry_wobble_distance := 14.0
 @export_range(0.05, 1.0, 0.05) var retry_wobble_duration := 0.12
-@export_range(0.0, 2.0, 0.05) var door_bang_delay := 1.1
+@export_range(0.0, 2.0, 0.05) var door_smash_delay := 0.9
 @export_range(0.0, 2.0, 0.05) var launch_delay_after_door := 0.92
-@export_range(0.0, 0.2, 0.01) var door_smash_audio_delay := 0.06
 
 const DOOR_KNOCK_OFFSETS := [0.0, 0.19, 0.54]
 const DOOR_BANG_HOLD_AFTER_LAST := 0.18
@@ -55,6 +54,7 @@ const RETRY_TEXT_TWO_DESIGN_SIZE := Vector2(556.0, 197.0)
 @onready var _retry_button: TextureButton = $Presentation/RetryButton
 @onready var _piss_again_text_one: TextureRect = $Presentation/PissAgainText1
 @onready var _piss_again_text_two: TextureRect = $Presentation/PissAgainText2
+@onready var _action_lines: ScreenOverlayEffect = $RaidOverlay/ActionLines
 @onready var _door_bang: AnimatedSprite2D = $RaidOverlay/DoorBang
 @onready var _fbi_voice: AudioStreamPlayer = $FbiVoice
 @onready var _door_smash: AudioStreamPlayer = $DoorSmash
@@ -64,7 +64,6 @@ var _entry_tween: Tween
 var _retry_tween: Tween
 var _raid_sequence_tween: Tween
 var _door_knock_tween: Tween
-var _door_smash_delay_tween: Tween
 var _card_revealed := false
 var _door_bang_layout_size := Vector2.ZERO
 var _door_bang_frame_positions: Array[Vector2] = []
@@ -87,6 +86,7 @@ func _ready() -> void:
 	_backdrop.color.a = backdrop_opacity
 	_dread_frame.modulate.a = dread_opacity
 	_game_over_piss.modulate.a = game_over_piss_opacity
+	_action_lines.stop()
 	_door_bang.visible = false
 	_layout_card_art()
 	_layout_door_bang()
@@ -143,7 +143,13 @@ func reveal_card() -> void:
 	_entry_tween.tween_property(_presentation, "scale", Vector2.ONE, entry_duration).set_trans(
 		Tween.TRANS_BACK,
 	).set_ease(Tween.EASE_OUT)
-	_entry_tween.finished.connect(_start_retry_animation)
+	_entry_tween.finished.connect(_on_entry_animation_finished)
+
+
+func _on_entry_animation_finished() -> void:
+	_entry_tween = null
+	_action_lines.stop()
+	_start_retry_animation()
 
 
 func hide_card() -> void:
@@ -312,10 +318,17 @@ func _layout_control(control: Control, position: Vector2, size: Vector2) -> void
 
 
 func _start_raid_sequence() -> void:
-	_fbi_voice.play()
+	# Explicitly reset the player so a repeated failure/retry can never resume a
+	# stale decoder position. The visual knock FX start with the voice; the
+	# existing smash recording waits until the voice has finished because it
+	# contains overlapping room/vocal material rather than isolated knocks.
+	_fbi_voice.stop()
+	_fbi_voice.play(0.0)
+	_action_lines.play()
+	_start_door_bang_fx()
 	_raid_sequence_tween = create_tween()
-	_raid_sequence_tween.tween_interval(maxf(door_bang_delay, 0.0))
-	_raid_sequence_tween.tween_callback(_play_door_smash)
+	_raid_sequence_tween.tween_interval(maxf(door_smash_delay, 0.0))
+	_raid_sequence_tween.tween_callback(_play_door_smash_audio)
 	_raid_sequence_tween.tween_interval(maxf(launch_delay_after_door, 0.0))
 	_raid_sequence_tween.tween_callback(_finish_raid_sequence)
 
@@ -327,24 +340,28 @@ func _stop_raid_sequence() -> void:
 	if _door_knock_tween:
 		_door_knock_tween.kill()
 		_door_knock_tween = null
-	if _door_smash_delay_tween:
-		_door_smash_delay_tween.kill()
-		_door_smash_delay_tween = null
 	_fbi_voice.stop()
 	_door_smash.stop()
 	_door_kick.stop()
+	_action_lines.stop()
 	_hide_door_bang()
 
 
 func _play_door_smash() -> void:
+	_play_door_smash_audio()
+	_start_door_bang_fx()
+
+
+func _play_door_smash_audio() -> void:
+	_door_smash.stop()
+	_door_smash.play(0.0)
+
+
+func _start_door_bang_fx() -> void:
 	_door_bang.visible = true
 	_show_door_bang_frame(0)
-	# Put the authored impact art just ahead of the clip. This compensates for
-	# the audio output path without changing the relative spacing of the three
-	# knock cues.
-	_door_smash_delay_tween = create_tween()
-	_door_smash_delay_tween.tween_interval(maxf(door_smash_audio_delay, 0.0))
-	_door_smash_delay_tween.tween_callback(_play_delayed_door_smash)
+	if _door_knock_tween:
+		_door_knock_tween.kill()
 	_door_knock_tween = create_tween()
 	for frame_index in range(1, DOOR_KNOCK_OFFSETS.size()):
 		_door_knock_tween.tween_interval(
@@ -353,12 +370,6 @@ func _play_door_smash() -> void:
 		_door_knock_tween.tween_callback(_show_door_bang_frame.bind(frame_index))
 	_door_knock_tween.tween_interval(DOOR_BANG_HOLD_AFTER_LAST)
 	_door_knock_tween.tween_callback(_hide_door_bang)
-
-
-func _play_delayed_door_smash() -> void:
-	_door_smash_delay_tween = null
-	_door_smash.play()
-
 
 func _show_door_bang_frame(frame_index: int) -> void:
 	if not _door_bang.visible:

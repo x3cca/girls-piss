@@ -174,7 +174,7 @@ func test_mouse_hold_keeps_its_start_position_through_input_processing() -> void
 	assert_eq(stream.parcel_at(0)["launch_target"], click_position)
 
 
-func test_player_release_lets_emitted_parcels_finish_their_arc() -> void:
+func test_player_release_keeps_the_stream_active() -> void:
 	var stream := STREAM_SCENE.instantiate() as LiquidStream
 	add_child_autofree(stream)
 	var controller := InputController.new()
@@ -202,9 +202,17 @@ func test_player_release_lets_emitted_parcels_finish_their_arc() -> void:
 	controller.handle_input_event(space_up)
 	stream.process_frame(0.01)
 
-	assert_true(stream._stream_draining)
-	assert_true(stream.parcel_at(0)["position"] != position_at_release)
+	assert_false(stream._stream_draining)
+	# The active stream emits a fresh parcel at the source each frame; the older
+	# parcel is the one that should have continued along its committed arc.
+	assert_true(stream.parcel_at(1)["position"] != position_at_release)
 	assert_true((stream.get_node("BodyRibbon").mesh as ArrayMesh).get_surface_count() > 0)
+
+	# An explicit gameplay reset is still allowed to stop the stream and drain
+	# the already-emitted parcels.
+	controller.stop_pissing()
+	stream.process_frame(0.01)
+	assert_true(stream._stream_draining)
 
 	stream.process_frame(0.13)
 	assert_false(stream._stream_draining)

@@ -18,6 +18,8 @@ const FBI_VOICE := preload("res://assets/audio/fbi_open_up_voice.ogg")
 const DOOR_SMASH := preload("res://assets/audio/fbi_door_smash.ogg")
 const DOOR_KICK := preload("res://assets/audio/door_kick.ogg")
 const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
+const ACTION_LINES := preload("res://assets/art/drive/ActionLines.png")
+const ACTION_LINES_FLIP := preload("res://assets/art/drive/actionWiggleFlipForAffect.png")
 
 
 func test_game_over_starts_hidden_and_uses_authored_failure_assets() -> void:
@@ -81,6 +83,13 @@ func test_game_over_starts_hidden_and_uses_authored_failure_assets() -> void:
 	assert_eq(door_bang.sprite_frames.get_frame_texture(&"default", 1), DOOR_BANG_TWO)
 	assert_eq(door_bang.sprite_frames.get_frame_texture(&"default", 2), DOOR_BANG_THREE)
 	assert_false(door_bang.visible)
+	var action_lines := game_over.get_node("RaidOverlay/ActionLines") as ScreenOverlayEffect
+	var action_line_frames: SpriteFrames = action_lines.get_node("AnimatedSprite2D").sprite_frames
+	assert_false(action_lines.visible)
+	assert_true(action_line_frames.get_animation_loop(&"default"))
+	assert_eq(action_line_frames.get_frame_texture(&"default", 0), ACTION_LINES)
+	assert_eq(action_line_frames.get_frame_texture(&"default", 1), ACTION_LINES_FLIP)
+	assert_true(action_lines.get_node("AnimatedSprite2D").material == BOIL_MATERIAL)
 	var retry_button := game_over.get_node("Presentation/RetryButton") as TextureButton
 	assert_eq(retry_button.texture_normal, PISS_AGAIN_ARROW_ONE)
 	assert_eq(retry_button.texture_hover, PISS_AGAIN_ARROW_TWO)
@@ -105,6 +114,31 @@ func test_door_bang_hides_after_the_impact_animation() -> void:
 
 	assert_false(door_bang.visible)
 	assert_eq(knock_count[0], 3)
+
+
+func test_raid_knocks_start_with_fbi_voice() -> void:
+	var game_over := GAME_OVER_SCENE.instantiate() as GameOver
+	add_child_autofree(game_over)
+	await get_tree().process_frame
+	var door_bang := game_over.get_node("RaidOverlay/DoorBang") as AnimatedSprite2D
+	var action_lines := game_over.get_node("RaidOverlay/ActionLines") as ScreenOverlayEffect
+	var knock_count := [0]
+	game_over.raid_knock.connect(func() -> void: knock_count[0] += 1)
+
+	game_over.show_card()
+
+	assert_true(door_bang.visible)
+	assert_true(action_lines.visible)
+	assert_eq(door_bang.frame, 0)
+	assert_eq(knock_count[0], 1)
+	assert_true(game_over.get_node("FbiVoice").playing)
+	assert_false(game_over.get_node("DoorSmash").playing)
+
+	await get_tree().create_timer(game_over.door_smash_delay + 0.1).timeout
+	assert_true(game_over.get_node("DoorSmash").playing)
+
+	game_over.hide_card()
+	assert_false(action_lines.visible)
 
 
 func test_retry_text_tracks_hover_state() -> void:

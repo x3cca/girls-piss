@@ -203,7 +203,8 @@ func test_piss_meter_has_a_thirty_second_continuous_stream_budget() -> void:
 	space_up.pressed = false
 	controller.handle_input_event(space_up)
 	meter._process(10.0)
-	assert_almost_eq(meter.get_time_remaining(), 30.0, 0.001)
+	# Releasing the start control does not pause or recharge the latched stream.
+	assert_almost_eq(meter.get_time_remaining(), 10.0, 0.001)
 
 
 func test_piss_meter_art_uses_the_shared_boil_material() -> void:

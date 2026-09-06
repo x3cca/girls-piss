@@ -92,10 +92,9 @@ Set these under Repository → Settings → Secrets and variables → Actions:
 | --- | --- |
 | BUTLER_API_KEY | itch.io API key from Account → Developer → API Keys |
 | ITCH_USERNAME | itch.io account name |
-| ITCH_GAME | itch.io game slug |
 
-The current page is https://cooldotty.itch.io/girl-pisser, so the latter two
-values are cooldotty and girl-pisser.
+The current page is https://cooldotty.itch.io/girls-piss, and the deployment
+workflow targets the `girls-piss` slug directly.
 
 The kc9y... secret URL token is not a Butler API key. Keep it out of GitHub
 Actions unless a separate workflow explicitly needs it.

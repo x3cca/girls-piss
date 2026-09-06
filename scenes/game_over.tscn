@@ -19,6 +19,9 @@
 [ext_resource type="AudioStream" uid="uid://ddsorejd6gb2x" path="res://assets/audio/fbi_door_smash.ogg" id="17_door_smash"]
 [ext_resource type="AudioStream" uid="uid://c8fquwfq6fdpk" path="res://assets/audio/door_kick.ogg" id="18_door_kick"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/yougotkickedouttext.png" id="19_kick_out_text"]
+[ext_resource type="Script" path="res://scripts/screen_overlay_effect.gd" id="20_action_lines_effect"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/ActionLines.png" id="21_action_lines"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/actionWiggleFlipForAffect.png" id="22_action_lines_flip"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_oye1b"]
 
@@ -52,6 +55,14 @@ animations = [{
 "loop": 0,
 "name": &"default",
 "speed": 12.0
+}]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_action_lines"]
+animations = [{
+"frames": [{"duration": 1.0, "texture": ExtResource("21_action_lines")}, {"duration": 1.0, "texture": ExtResource("22_action_lines_flip")}],
+"loop": true,
+"name": &"default",
+"speed": 9.0
 }]
 
 [node name="GameOver" type="CanvasLayer" unique_id=489489663]
@@ -214,6 +225,24 @@ stretch_mode = 5
 
 [node name="RaidOverlay" type="CanvasLayer" parent="." unique_id=481380156]
 layer = 21
+
+[node name="ActionLines" type="Control" parent="RaidOverlay"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("20_action_lines_effect")
+sprite_frames = SubResource("SpriteFrames_action_lines")
+opacity = 0.9
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="RaidOverlay/ActionLines"]
+sprite_frames = SubResource("SpriteFrames_action_lines")
+material = ExtResource("10_boil")
+animation = &"default"
 
 [node name="DoorBang" type="AnimatedSprite2D" parent="RaidOverlay" unique_id=2011204474]
 visible = false

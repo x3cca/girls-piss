@@ -128,6 +128,7 @@ func test_request_start_plays_the_beer_sound() -> void:
 		start_sound.stream.resource_path,
 		"res://assets/audio/beer_can_open_and_drink.ogg",
 	)
+	assert_almost_eq(start_sound.volume_db, -8.0, 0.001)
 	assert_false(start_sound.playing)
 
 	assert_true(title.request_start(InputController.AimSource.KEYBOARD))

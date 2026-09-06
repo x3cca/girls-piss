@@ -22,16 +22,20 @@ prompt, and scene behavior reference.
 
 ## Controls
 
-| Input source | Aim | Start or maintain the stream |
+| Input source | Aim | Start the stream |
 | --- | --- | --- |
 | Keyboard | WASD | Space |
 | Mouse | Mouse motion | Left mouse button |
-| Touch | Tap or drag | Touch held down |
+| Touch | Tap or drag | Tap |
 | Controller | Left stick | Right trigger |
 
 Keyboard, mouse-click, touch-down, controller-button, and meaningful controller
 axis events select the corresponding prompt scheme. Mouse motion still aims but
 is intentionally ignored for prompt source changes.
+
+The stream starts on the first stream input and keeps going after that control
+is released. It ends only when the pee meter is empty or gameplay explicitly
+resets it (for example after a strike, retry, or completion).
 
 ## Included
 
@@ -105,10 +109,9 @@ main or master. Add these GitHub Actions secrets:
 
 - BUTLER_API_KEY
 - ITCH_USERNAME
-- ITCH_GAME
 
-For the current itch page, ITCH_USERNAME is cooldotty and ITCH_GAME is
-girl-pisser. See docs/pipeline.md for setup details.
+The workflow deploys to `https://cooldotty.itch.io/girls-piss`. Set
+`ITCH_USERNAME` to `cooldotty`. See docs/pipeline.md for setup details.
 
 ## Layout
 

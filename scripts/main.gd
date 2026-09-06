@@ -490,13 +490,13 @@ func _set_effect_lights_enabled(enabled: bool) -> void:
 func _on_drawing_point_updated(position: Vector2, active: bool) -> void:
 	if state != PLAYING:
 		return
-	# InputController can keep the visual stream alive after the first hold, but
-	# contact timers and the recorder must still observe actual hold boundaries.
-	var hold_active := active and input_controller.is_stream_input_held()
+	# InputController latches the stream after the first start, so this active
+	# state remains true when the player releases the start control.
+	var stream_active := active and input_controller.is_stream_input_held()
 	# Record before observing the shape: trace_completed is synchronous, so the
 	# final endpoint must be part of the replay before the state changes.
-	line_recorder.capture_point(position, hold_active, _elapsed)
-	evaluate_stream_endpoint(position, hold_active, _frame_delta)
+	line_recorder.capture_point(position, stream_active, _elapsed)
+	evaluate_stream_endpoint(position, stream_active, _frame_delta)
 
 
 func _on_stream_hold_changed(active: bool) -> void:
@@ -504,8 +504,8 @@ func _on_stream_hold_changed(active: bool) -> void:
 	_set_spray_sound_active(active)
 	if active:
 		return
-	# A release can be followed by a re-press before LiquidStream gets another
-	# process tick. Reset contact synchronously so the two holds cannot merge.
+	# A gameplay reset ends the latched stream. Reset contact synchronously so a
+	# later stream start begins with a clean contact state.
 	_reset_negative_contact()
 	if is_instance_valid(surface_effects):
 		surface_effects.observe_stream_endpoint(Vector2.ZERO, false)
@@ -752,8 +752,8 @@ func _on_piss_meter_depleted() -> void:
 	if state != PLAYING:
 		return
 	# An empty meter is a temporary pause in the stream, not a failed attempt.
-	# Clear the raw hold too, so a still-held key/button cannot restart the stream
-	# until the player begins a fresh hold after the meter has recovered.
+	# Clear the latched stream too, so the player must begin a fresh stream after
+	# the meter has recovered.
 	input_controller.stop_pissing()
 	stream.cancel_stream()
 

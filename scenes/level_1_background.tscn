@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://d2045wqncpwcy" path="res://assets/art/drive/ToiletPaperShadowOnWall.png" id="5_paper"]
 [ext_resource type="Shader" uid="uid://k3mtqi6hw14s" path="res://shaders/surface_paint.gdshader" id="6_paint"]
 [ext_resource type="Shader" uid="uid://m2dyqpue21da" path="res://shaders/surface_drips.gdshader" id="7_drips"]
+[ext_resource type="Texture2D" uid="uid://8cdma47i3cgt" path="res://assets/art/drive/Toilet paper.png" id="8_toilet_paper"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_wall_surface"]
 shader = ExtResource("7_drips")
@@ -41,3 +42,8 @@ texture = ExtResource("4_shadow")
 modulate = Color(1, 1, 1, 0.2)
 texture_filter = 1
 texture = ExtResource("5_paper")
+
+[node name="ToiletPaper" type="Sprite2D" parent="." unique_id=1715672251]
+z_index = 1
+texture_filter = 1
+texture = ExtResource("8_toilet_paper")

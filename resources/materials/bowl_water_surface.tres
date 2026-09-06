@@ -1,4 +1,4 @@
-[gd_resource type="ShaderMaterial" format=3]
+[gd_resource type="ShaderMaterial" format=3 uid="uid://cvk7jcop0x0hg"]
 
 [ext_resource type="Shader" uid="uid://buq3olqwoygjw" path="res://shaders/surface_ripple.gdshader" id="1_bowl_water_shader"]
 

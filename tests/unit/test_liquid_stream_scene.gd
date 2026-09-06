@@ -252,6 +252,11 @@ func test_spray_sound_loops_while_the_player_is_peeing() -> void:
 	input_controller.handle_input_event(space_up)
 	assert_true(spray_sound.playing)
 	await get_tree().create_timer(0.15).timeout
+	assert_true(spray_sound.playing)
+	assert_almost_eq(spray_sound.volume_db, instance.spray_volume_db, 0.1)
+
+	input_controller.stop_pissing()
+	await get_tree().create_timer(0.15).timeout
 	assert_false(spray_sound.playing)
 	assert_almost_eq(spray_sound.volume_db, Main.SPRAY_SILENT_VOLUME_DB, 0.001)
 
