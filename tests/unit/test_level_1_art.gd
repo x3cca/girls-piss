@@ -29,7 +29,7 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 		level.shape_trace.target_textures[9].resource_path,
 		"res://assets/art/drive/Tampon.png",
 	)
-	assert_almost_eq(level.shape_trace.native_target_scale, 0.75, 0.001)
+	assert_almost_eq(level.shape_trace.native_target_scale, 0.9375, 0.001)
 	assert_eq(level.target_offsets.size(), 10)
 	assert_false(level.draw_neutral_canvas)
 	assert_false(level.get_node("DepthMap").debug_visualization)
@@ -38,7 +38,7 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 	assert_gt(level.line_replay.z_index, level.get_node("Level1Chrome").z_index)
 	assert_gt(level.line_replay.z_index, level.shape_trace.z_index)
 	assert_eq(level.get_node("PissToilet/Outside").scale, Vector2.ONE * 0.75)
-	assert_eq(level.get_node("PissToilet/Bowl").scale, Vector2.ONE * 0.75)
+	assert_eq(level.get_node("PissToilet/Bowl").scale, Vector2.ONE * 0.9375)
 	assert_eq(level.get_node("PissToilet/Seat").scale, Vector2.ONE * 0.75)
 	assert_eq(level.get_node("PissToilet/Tank").scale, Vector2.ONE)
 	# These transforms are authored in piss_toilet.tscn. The runtime layout pass

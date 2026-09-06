@@ -148,9 +148,14 @@ Hose, Mist Mode_Nicholas Judy_TDC by designerschoice](https://freesound.org/s/81
 under Creative Commons Attribution 4.0. It is high-passed and pitch-raised for
 gameplay; see `licenses/` for the attribution note.
 
-The unused `door_kick.ogg` asset is derived from [Kicking/Forcing/Breaking
+The launch crash uses `door_kick.ogg`, derived from [Kicking/Forcing/Breaking
 Wooden Door by qubodup](https://freesound.org/people/qubodup/sounds/160213/) and
-is available under CC0. See `licenses/door_kick.md` for provenance.
+available under CC0. See `licenses/door_kick.md` for provenance.
+
+The failure transition uses the spoken line and three knock excerpts from
+[Gaming Sound FX's FBI Open Up - Sound Effect (HD)](https://www.youtube.com/watch?v=QQR7t712Mhg).
+These source-video excerpts are not marked with a permissive license; see
+`licenses/fbi_open_up.md` before redistributing the project.
 
 The strike warning wall-pound variants are derived from [Heavy Wall Pounding by
 LunaFarrowe](https://freesound.org/people/LunaFarrowe/sounds/448374/) and are

@@ -755,6 +755,7 @@ func _launch_failed_level() -> void:
 	# the transform around the viewport center keeps the whole composition
 	# together while it accelerates upward through several full rotations.
 	_apply_failure_launch(0.0)
+	hud.game_over.play_door_kick()
 	_failure_exit_tween = create_tween()
 	_failure_exit_tween.tween_method(
 		_apply_failure_launch,
@@ -772,11 +773,11 @@ func _apply_failure_launch(progress: float) -> void:
 	# origins around the viewport center so the visible game, including its HUD,
 	# performs the spin around screen center rather than the top-left corner.
 	position = _failure_exit_center + launch_offset + (
-		_base_position - _failure_exit_center
+			_base_position - _failure_exit_center
 	).rotated(launch_angle)
 	rotation = _base_rotation + launch_angle
 	_hud_layer.offset = _failure_exit_center + launch_offset + (
-		_base_hud_offset - _failure_exit_center
+			_base_hud_offset - _failure_exit_center
 	).rotated(launch_angle)
 	_hud_layer.rotation = _base_hud_rotation + launch_angle
 

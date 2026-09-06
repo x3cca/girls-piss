@@ -172,8 +172,8 @@ func _advance_pound_timing(delta: float) -> void:
 		return
 	_pound_elapsed += delta
 	while (
-		_next_pound_index < POUND_TIMINGS.size()
-		and _pound_elapsed >= POUND_TIMINGS[_next_pound_index]
+			_next_pound_index < POUND_TIMINGS.size()
+			and _pound_elapsed >= POUND_TIMINGS[_next_pound_index]
 	):
 		pound_triggered.emit(_active_warning, _next_pound_index)
 		_next_pound_index += 1

@@ -102,10 +102,10 @@ func apply_layout() -> void:
 	## Repeated calls are safe and do not touch any gameplay state.
 	_resolve_parts()
 	if (
-		not is_instance_valid(_outside)
-		or not is_instance_valid(_bowl)
-		or not is_instance_valid(_tank)
-		or not is_instance_valid(_seat)
+			not is_instance_valid(_outside)
+			or not is_instance_valid(_bowl)
+			or not is_instance_valid(_tank)
+			or not is_instance_valid(_seat)
 	):
 		return
 

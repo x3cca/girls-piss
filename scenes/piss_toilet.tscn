@@ -58,7 +58,7 @@ texture = ExtResource("1_outside")
 z_index = 1
 material = SubResource("ShaderMaterial_bowl_surface")
 position = Vector2(0, -236.125)
-scale = Vector2(0.75, 0.75)
+scale = Vector2(0.9375, 0.9375)
 texture = ExtResource("2_bowl")
 
 [node name="Tank" type="Sprite2D" parent="." unique_id=1206500093]
