@@ -11,6 +11,7 @@ class_name Main
 @onready var depth_map: DepthMap2D = $DepthMap
 @onready var stream: LiquidStream = $LiquidStream
 @onready var shape_trace: ShapeTrace = $ShapeTrace
+@onready var piss_toilet: PissToilet = get_node_or_null("PissToilet") as PissToilet
 @onready var line_recorder: PissLineRecorder = $PissLineRecorder
 @onready var line_replay: PissLineReplay = $PissLineReplay
 @onready var hud: StreamHUD = $HUDLayer/HUD
@@ -204,6 +205,9 @@ func _layout_world() -> void:
 	# The source stays just below the visible rectangle; only the jet enters frame.
 	stream.source_position = Vector2(_world_size.x * 0.5, _world_size.y + 48.0)
 	depth_map.world_rect = Rect2(Vector2.ZERO, _world_size)
+	if is_instance_valid(piss_toilet):
+		piss_toilet.apply_layout()
+		shape_trace.target_center_position = piss_toilet.get_bowl_anchor_global()
 	_align_bowl_light()
 	if _layout_signature != _world_size:
 		_layout_signature = _world_size
@@ -662,7 +666,10 @@ func _on_checkpoint_completed(_index: int) -> void:
 		return
 	hud.play_success_burst()
 	_target_hit_light_remaining = target_hit_light_duration
-	_impact_light.position = shape_trace.get_checkpoint_position(_index)
+	var hit_light_position := shape_trace.get_checkpoint_position(_index)
+	if is_instance_valid(piss_toilet):
+		hit_light_position = piss_toilet.get_bowl_anchor_global()
+	_impact_light.position = to_local(hit_light_position)
 	_set_effect_lights_enabled(true)
 	if is_instance_valid(screen_overlay):
 		screen_overlay.play_success_feedback()

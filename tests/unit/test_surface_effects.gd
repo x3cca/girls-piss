@@ -74,7 +74,7 @@ func test_endpoint_classification_uses_alpha_and_wall_floor_boundary() -> void:
 	assert_eq(effects.detect_surface(bowl.global_position), SurfaceEffects.SURFACE_BOWL)
 	assert_eq(
 		effects.detect_surface(
-			seat.to_global(Vector2(0.0, -seat.texture.get_height() * 0.5 + 20.0)),
+			seat.to_global(Vector2(0.0, seat.texture.get_height() * 0.5 - 20.0)),
 		),
 		SurfaceEffects.SURFACE_SEAT,
 	)
@@ -139,7 +139,7 @@ func test_contact_builds_bowl_noise_and_keeps_one_ripple() -> void:
 
 	# Non-bowl surfaces use their own permanent map as well.
 	effects.observe_stream_endpoint(Vector2.ZERO, false)
-	var seat_position := seat.to_global(Vector2(0.0, -seat.texture.get_height() * 0.5 + 20.0))
+	var seat_position := seat.to_global(Vector2(0.0, seat.texture.get_height() * 0.5 - 20.0))
 	effects.observe_stream_endpoint(seat_position, true)
 	assert_eq(effects.get_surface_stain_count(SurfaceEffects.SURFACE_SEAT), 1)
 	assert_gt(effects.get_surface_stain_value(SurfaceEffects.SURFACE_SEAT, seat_position), 0.0)

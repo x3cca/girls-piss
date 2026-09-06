@@ -1,48 +1,75 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene format=3 uid="uid://dargvn33ideep"]
 
-[ext_resource type="Texture2D" path="res://assets/art/drive/ToiletShadowOnFloor.png" id="1_outside"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/Pissbowl.png" id="2_bowl"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/Pisstank.png" id="3_tank"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/Pissseat.png" id="4_seat"]
-[ext_resource type="Shader" path="res://shaders/surface_ripple.gdshader" id="5_ripple"]
-[ext_resource type="Shader" path="res://shaders/surface_drips.gdshader" id="6_drips"]
-[ext_resource type="Shader" path="res://shaders/surface_paint.gdshader" id="7_paint"]
+[ext_resource type="Script" uid="uid://ccp2dyng3se4r" path="res://scripts/piss_toilet.gd" id="1_layout"]
+[ext_resource type="Texture2D" uid="uid://cjdm8vvoeg02g" path="res://assets/art/drive/ToiletShadowOnFloor.png" id="1_outside"]
+[ext_resource type="Texture2D" uid="uid://c88ibb2gxdka3" path="res://assets/art/drive/Pissbowl.png" id="2_bowl"]
+[ext_resource type="Texture2D" uid="uid://dslgsy34i5mfc" path="res://assets/art/drive/Pisstank.png" id="3_tank"]
+[ext_resource type="Texture2D" uid="uid://bmf80tn6gm11c" path="res://assets/art/drive/Pissseat.png" id="4_seat"]
+[ext_resource type="Shader" uid="uid://buq3olqwoygjw" path="res://shaders/surface_ripple.gdshader" id="5_ripple"]
+[ext_resource type="Shader" uid="uid://m2dyqpue21da" path="res://shaders/surface_drips.gdshader" id="6_drips"]
+[ext_resource type="Shader" uid="uid://k3mtqi6hw14s" path="res://shaders/surface_paint.gdshader" id="7_paint"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bowl_surface"]
 shader = ExtResource("5_ripple")
+shader_parameter/water_noise_map_texel_size = Vector2(0.004, 0.004)
+shader_parameter/ripple_center = Vector2(0.5, 0.5)
+shader_parameter/ripple_age = 0.0
+shader_parameter/ripple_strength = 0.0
+shader_parameter/ripple_frequency = 30.0
+shader_parameter/ripple_speed = 5.0
+shader_parameter/ripple_amplitude = 0.012
+shader_parameter/ripple_decay = 0.7
+shader_parameter/pop_duration = 0.45
+shader_parameter/pop_radius = 0.14
+shader_parameter/pop_ring_width = 0.012
+shader_parameter/pop_distortion_strength = 0.05
+shader_parameter/wave_frequency = 18.0
+shader_parameter/wave_speed = 1.8
+shader_parameter/wave_amplitude = 0.008
+shader_parameter/noise_strength = 0.012
 shader_parameter/stain_color = Color(0.95, 0.83, 0.31, 1)
 shader_parameter/stain_opacity = 0.62
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_tank_surface"]
 shader = ExtResource("6_drips")
+shader_parameter/splat_threshold = 0.5
+shader_parameter/splat_edge = 0.04
 shader_parameter/stain_color = Color(0.95, 0.83, 0.31, 1)
 shader_parameter/stain_opacity = 0.62
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_seat_surface"]
 shader = ExtResource("7_paint")
+shader_parameter/splat_threshold = 0.5
+shader_parameter/splat_edge = 0.04
 shader_parameter/stain_color = Color(0.95, 0.83, 0.31, 1)
 shader_parameter/stain_opacity = 0.62
 
-[node name="PissToilet" type="Node2D"]
+[node name="PissToilet" type="Node2D" unique_id=1964202888]
+script = ExtResource("1_layout")
+floor_exclusion_offsets = PackedVector2Array(0, -446.925, 178.2, -429.645, 307.8, -349.005, 381.24, -191.565, 397.44, 38.835, 372.6, 255.795, 275.4, 384.435, 145.8, 428.595, 0, 434.355, -153.36, 428.595, -275.4, 370.995, -356.4, 240.435, -388.8, 38.835, -380.16, -191.565, -315.36, -349.005, -185.76, -429.645)
 
-[node name="Outside" type="Sprite2D" parent="."]
-position = Vector2(0, 32)
-texture = ExtResource("1_outside")
+[node name="Outside" type="Sprite2D" parent="." unique_id=513352600]
 modulate = Color(1, 1, 1, 0.2)
-z_index = 0
+position = Vector2(0, -125.875)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("1_outside")
 
-[node name="Bowl" type="Sprite2D" parent="."]
-texture = ExtResource("2_bowl")
-material = SubResource("ShaderMaterial_bowl_surface")
+[node name="Bowl" type="Sprite2D" parent="." unique_id=1541688367]
 z_index = 1
+material = SubResource("ShaderMaterial_bowl_surface")
+position = Vector2(0, -236.125)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("2_bowl")
 
-[node name="Tank" type="Sprite2D" parent="."]
-position = Vector2(0, -470)
-texture = ExtResource("3_tank")
-material = SubResource("ShaderMaterial_tank_surface")
+[node name="Tank" type="Sprite2D" parent="." unique_id=1206500093]
 z_index = 2
+material = SubResource("ShaderMaterial_tank_surface")
+position = Vector2(0, -900)
+texture = ExtResource("3_tank")
 
-[node name="Seat" type="Sprite2D" parent="."]
-texture = ExtResource("4_seat")
-material = SubResource("ShaderMaterial_seat_surface")
+[node name="Seat" type="Sprite2D" parent="." unique_id=1453341359]
 z_index = 3
+material = SubResource("ShaderMaterial_seat_surface")
+position = Vector2(0, -236.875)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("4_seat")

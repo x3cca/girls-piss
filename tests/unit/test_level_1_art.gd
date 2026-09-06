@@ -30,23 +30,7 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 		"res://assets/art/drive/Tampon.png",
 	)
 	assert_almost_eq(level.shape_trace.native_target_scale, 0.75, 0.001)
-	assert_eq(
-		level.target_points,
-		PackedVector2Array(
-			[
-				Vector2(0.354, 0.474),
-				Vector2(0.398, 0.391),
-				Vector2(0.456, 0.397),
-				Vector2(0.628, 0.467),
-				Vector2(0.475, 0.646),
-				Vector2(0.571, 0.410),
-				Vector2(0.589, 0.607),
-				Vector2(0.622, 0.525),
-				Vector2(0.513, 0.512),
-				Vector2(0.360, 0.550),
-			],
-		),
-	)
+	assert_eq(level.target_offsets.size(), 10)
 	assert_false(level.draw_neutral_canvas)
 	assert_false(level.get_node("DepthMap").debug_visualization)
 	assert_gt(level.shape_trace.z_index, level.get_node("PissToilet/Bowl").z_index)
@@ -57,11 +41,11 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 	assert_eq(level.get_node("PissToilet/Bowl").scale, Vector2.ONE * 0.75)
 	assert_eq(level.get_node("PissToilet/Seat").scale, Vector2.ONE * 0.75)
 	assert_eq(level.get_node("PissToilet/Tank").scale, Vector2.ONE)
-	var seat := level.get_node("PissToilet/Seat") as Sprite2D
-	var tank := level.get_node("PissToilet/Tank") as Sprite2D
-	var seat_top := seat.position.y - seat.texture.get_height() * seat.scale.y * 0.5
-	var tank_bottom := tank.position.y + tank.texture.get_height() * tank.scale.y * 0.5
-	assert_almost_eq(seat_top, tank_bottom, 0.001)
+	# These transforms are authored in piss_toilet.tscn. The runtime layout pass
+	# must preserve the hand-tuned bowl/seat placement.
+	assert_eq(level.get_node("PissToilet/Bowl").position, Vector2(0.0, -236.125))
+	assert_eq(level.get_node("PissToilet/Seat").position, Vector2(0.0, -236.875))
+	assert_eq(level.get_node("PissToilet/Tank").position, Vector2(0.0, -900.0))
 	assert_eq(
 		level.get_node("Level1Background/BackWall").texture.resource_path,
 		"res://assets/art/drive/BackWalll.png",
@@ -100,6 +84,15 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 		assert_eq(
 			level.shape_trace._targets[index].position,
 			level.shape_trace.get_checkpoint_position(index),
+		)
+		var toilet := level.get_node("PissToilet") as PissToilet
+		var expected_position := toilet.to_global(
+			toilet.get_bowl_anchor_local() + level.target_offsets[index],
+		)
+		assert_almost_eq(
+			level.shape_trace.get_checkpoint_position(index).distance_to(expected_position),
+			0.0,
+			0.001,
 		)
 
 

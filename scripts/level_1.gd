@@ -2,11 +2,6 @@ extends Main
 
 class_name Level1
 
-const BOWL_ART_SCALE := 0.75
-# The tank remains anchored to the wall. Move the scaled bowl assembly up until
-# the seat's top edge meets the tank's bottom edge in the authored artwork.
-const TOILET_BOWL_OFFSET_Y := -157.875
-
 const TARGET_TEXTURES: Array[Texture2D] = [
 	preload("res://assets/art/drive/RedTicket.png"),
 	preload("res://assets/art/drive/Floss.png"),
@@ -20,24 +15,22 @@ const TARGET_TEXTURES: Array[Texture2D] = [
 	preload("res://assets/art/drive/Tampon.png"),
 ]
 
-var target_points := PackedVector2Array(
+var target_offsets := PackedVector2Array(
 	[
-		# Centers match the ordered objects from Example of play Screen.png,
-		# then compress 25% toward the bowl center to fit the smaller bowl and
-		# keep the target sprites readable beneath the seat. The whole bowl
-		# assembly is then scooted upward to meet the tank.
-		Vector2(0.354, 0.474), # RedTicket
-		Vector2(0.398, 0.391), # Floss
-		Vector2(0.456, 0.397), # Gum
-		Vector2(0.628, 0.467), # Cigarette
-		Vector2(0.475, 0.646), # Lollipop
-		Vector2(0.571, 0.410), # Condom
-		Vector2(0.589, 0.607), # Bandaid
-		Vector2(0.622, 0.525), # Fly
-		Vector2(0.513, 0.512), # Straw
-		Vector2(0.360, 0.550), # Tampon
+		Vector2(-157.68, -132.045), # RedTicket
+		Vector2(-110.16, -291.405), # Floss
+		Vector2(-47.52, -279.885), # Gum
+		Vector2(138.24, -145.485), # Cigarette
+		Vector2(-27.0, 198.195), # Lollipop
+		Vector2(76.68, -254.925), # Condom
+		Vector2(96.12, 123.315), # Bandaid
+		Vector2(131.76, -34.125), # Fly
+		Vector2(14.04, -59.085), # Straw
+		Vector2(-151.2, 13.875), # Tampon
 	],
 )
+
+var target_points := PackedVector2Array()
 
 
 func _ready() -> void:
@@ -48,6 +41,7 @@ func _ready() -> void:
 	draw_neutral_canvas = false
 	enable_negative_zones = true
 	_clear_inherited_test_zones()
+	_layout_level1()
 	shape_trace.normalized_points = target_points
 	shape_trace.closed_path = false
 	shape_trace.show_outline = false
@@ -59,7 +53,8 @@ func _ready() -> void:
 	shape_trace.use_native_target_sizes = true
 	# These crops are already authored at the size used by the play-screen
 	# reference. Scaling them only by the viewport keeps their visual weight.
-	shape_trace.native_target_scale = BOWL_ART_SCALE
+	var toilet := get_node_or_null("PissToilet") as PissToilet
+	shape_trace.native_target_scale = toilet.get_bowl_art_scale() if toilet else 1.0
 	# The target sprites sit inside the toilet: above the bowl (z=1) but below
 	# the seat/lid (z=3), so the authored seat edge can naturally overlap them.
 	shape_trace.z_index = 2
@@ -95,27 +90,32 @@ func _layout_level1() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	if viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
 		return
-	var toilet := get_node_or_null("PissToilet") as Node2D
+	var toilet := get_node_or_null("PissToilet") as PissToilet
 	if toilet:
 		# The raw toilet art is authored for the 1080x1920 reference. Keep the
 		# drain and the first target visually centered when the viewport changes.
 		toilet.position = Vector2(viewport_size.x * 0.5, viewport_size.y * 0.625)
 		var art_scale := viewport_size.x / 1080.0
 		toilet.scale = Vector2.ONE * art_scale
-		for part_name in [&"Outside", &"Bowl", &"Seat"]:
-			var part := toilet.get_node_or_null(NodePath(String(part_name))) as Sprite2D
-			if part:
-				part.scale = Vector2.ONE * BOWL_ART_SCALE
-				part.position.y = TOILET_BOWL_OFFSET_Y
-				if part_name == &"Outside":
-					part.position.y += 32.0
-		# The tank is the high wall panel in the reference composition. Its
-		# authored layer is offset above the bowl rather than centered on it.
-		var tank := toilet.get_node_or_null("Tank") as Sprite2D
-		if tank:
-			tank.position = Vector2(0.0, -900.0)
+		toilet.apply_layout()
+		var target_local_points := PackedVector2Array()
+		for offset in target_offsets:
+			target_local_points.append(toilet.get_bowl_anchor_local() + offset)
+		var next_target_points := toilet.to_viewport_normalized(
+			target_local_points,
+			viewport_size,
+		)
+		if target_points != next_target_points:
+			target_points = next_target_points
+			shape_trace.normalized_points = target_points
+		var floor_zone := get_node_or_null("FloorNegativeZone") as NegativeZone
+		if floor_zone:
+			var next_exclusion := toilet.get_floor_exclusion_normalized(
+				viewport_size,
+			)
+			if floor_zone.excluded_normalized_points != next_exclusion:
+				floor_zone.excluded_normalized_points = next_exclusion
+		shape_trace.target_center_position = toilet.get_bowl_anchor_global()
+	else:
+		target_points = PackedVector2Array()
 	_align_bowl_light()
-	shape_trace.target_center_position = Vector2(
-		viewport_size.x * 0.5,
-		viewport_size.y * 0.625,
-	)
