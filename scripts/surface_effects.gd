@@ -12,6 +12,7 @@ class_name SurfaceEffects
 
 signal surface_detected(surface: String, position: Vector2)
 
+const SPLAT_TEXTURE := preload("res://assets/art/pee_splat.png")
 const SURFACE_NONE := "none"
 const SURFACE_BOWL := "bowl"
 const SURFACE_SEAT := "seat"
@@ -26,7 +27,8 @@ const DEFAULT_PRIMARY_COLOR := DEFAULT_STAIN_COLOR
 const DEFAULT_STAIN_OPACITY := 0.62
 const DEFAULT_STAIN_MAP_SIZE := 256
 const DEFAULT_STAIN_RADIUS := 0.085
-const DEFAULT_STAIN_STRENGTH := 0.34
+const DEFAULT_SPLAT_THRESHOLD := 0.5
+const DEFAULT_SPLAT_EDGE := 0.04
 const DEFAULT_ALPHA_THRESHOLD := 0.035
 const DEFAULT_WALL_FLOOR_BOUNDARY := 522.0 / 1920.0
 const DEFAULT_REHIT_DISTANCE := 18.0
@@ -38,7 +40,8 @@ const DEFAULT_CONTACT_SIGNAL_GAP := 0.1
 @export_range(0.01, 0.5, 0.01) var contact_signal_gap := DEFAULT_CONTACT_SIGNAL_GAP
 @export_range(32, 512, 16) var stain_map_size := DEFAULT_STAIN_MAP_SIZE
 @export_range(0.01, 0.3, 0.005) var stain_radius := DEFAULT_STAIN_RADIUS
-@export_range(0.01, 1.0, 0.01) var stain_stamp_strength := DEFAULT_STAIN_STRENGTH
+@export_range(0.0, 1.0, 0.01) var splat_threshold := DEFAULT_SPLAT_THRESHOLD
+@export_range(0.0, 0.25, 0.01) var splat_edge := DEFAULT_SPLAT_EDGE
 @export var stain_color := DEFAULT_STAIN_COLOR
 @export_range(0.0, 1.0, 0.01) var stain_opacity := DEFAULT_STAIN_OPACITY
 
@@ -53,6 +56,7 @@ var _last_endpoint_surface := SURFACE_NONE
 var _surface_nodes: Dictionary = { }
 var _surface_materials: Dictionary = { }
 var _surface_images: Dictionary = { }
+var _splat_image: Image
 var _stain_images: Dictionary = { }
 var _stain_textures: Dictionary = { }
 var _stain_map_sizes: Dictionary = { }
@@ -64,6 +68,9 @@ var _ripples: Array[Dictionary] = []
 
 
 func _ready() -> void:
+	_splat_image = SPLAT_TEXTURE.get_image()
+	if _splat_image != null and not _splat_image.is_empty():
+		_splat_image.convert(Image.FORMAT_RGBA8)
 	_init_surface_states()
 	_resolve_surface_nodes()
 	# Main normally binds explicitly after it assigns the stream. This fallback
@@ -393,6 +400,8 @@ func _set_common_material_parameters(surface: String, material: ShaderMaterial) 
 			"stain_map_texel_size",
 			Vector2(1.0 / maxf(map_size.x, 1), 1.0 / maxf(map_size.y, 1)),
 		)
+	material.set_shader_parameter("splat_threshold", splat_threshold)
+	material.set_shader_parameter("splat_edge", splat_edge)
 	material.set_shader_parameter("stain_color", stain_color)
 	material.set_shader_parameter("stain_opacity", stain_opacity)
 	# Keep a stable material-level label available for deterministic inspection.
@@ -453,31 +462,45 @@ func _stamp_surface(surface: String, node: Sprite2D, position: Vector2) -> void:
 	_prepare_stain_map(surface, node)
 	var stain_image: Image = _stain_images.get(surface) as Image
 	var stain_texture: ImageTexture = _stain_textures.get(surface) as ImageTexture
-	if stain_image == null or stain_texture == null or stain_image.is_empty():
+	if (
+			stain_image == null
+			or stain_texture == null
+			or stain_image.is_empty()
+			or _splat_image == null
+			or _splat_image.is_empty()
+	):
 		return
 	var uv := _world_to_uv(node, position)
 	var radius := clampf(stain_radius, 0.005, 0.5)
-	var pixel_radius_x := ceili(radius * stain_image.get_width())
-	var pixel_radius_y := ceili(radius * stain_image.get_height())
+	var stamp_width := maxi(1, ceili(radius * 2.0 * stain_image.get_width()))
+	var stamp_height := maxi(1, ceili(radius * 2.0 * stain_image.get_height()))
 	var center := Vector2(
 		uv.x * stain_image.get_width() - 0.5,
 		uv.y * stain_image.get_height() - 0.5,
 	)
-	var min_x := maxi(0, floori(center.x - pixel_radius_x))
-	var max_x := mini(stain_image.get_width() - 1, ceili(center.x + pixel_radius_x))
-	var min_y := maxi(0, floori(center.y - pixel_radius_y))
-	var max_y := mini(stain_image.get_height() - 1, ceili(center.y + pixel_radius_y))
+	var half_width := stamp_width * 0.5
+	var half_height := stamp_height * 0.5
+	var min_x := maxi(0, floori(center.x - half_width))
+	var max_x := mini(stain_image.get_width() - 1, ceili(center.x + half_width))
+	var min_y := maxi(0, floori(center.y - half_height))
+	var max_y := mini(stain_image.get_height() - 1, ceili(center.y + half_height))
 	for y in range(min_y, max_y + 1):
 		for x in range(min_x, max_x + 1):
-			var distance := Vector2(
-				((x + 0.5) / stain_image.get_width() - uv.x) / radius,
-				((y + 0.5) / stain_image.get_height() - uv.y) / radius,
-			).length()
-			if distance > 1.0:
+			var splat_uv := Vector2(
+				((x + 0.5) - (center.x - half_width)) / stamp_width,
+				((y + 0.5) - (center.y - half_height)) / stamp_height,
+			)
+			if splat_uv.x < 0.0 or splat_uv.x >= 1.0 or splat_uv.y < 0.0 or splat_uv.y >= 1.0:
 				continue
-			var falloff := 1.0 - smoothstep(0.42, 1.0, distance)
+			var splat_pixel := Vector2i(
+				clampi(floori(splat_uv.x * _splat_image.get_width()), 0, _splat_image.get_width() - 1),
+				clampi(floori(splat_uv.y * _splat_image.get_height()), 0, _splat_image.get_height() - 1),
+			)
+			var splat_alpha := _splat_image.get_pixelv(splat_pixel).a
+			if splat_alpha <= 0.01:
+				continue
 			var current := stain_image.get_pixel(x, y).r
-			var updated := clampf(current + falloff * stain_stamp_strength, 0.0, 1.0)
+			var updated := maxf(current, splat_alpha)
 			if updated > current:
 				stain_image.set_pixel(x, y, Color(updated, 0.0, 0.0, 1.0))
 	stain_texture.update(stain_image)
