@@ -21,10 +21,13 @@ const POUND_TIMINGS := [0.04, 0.235, 0.45]
 signal pound_triggered(strike: int, pound_index: int)
 
 @export_range(0.0, 10.0, 0.01) var warning_duration := 4.0
-@export_range(0.0, 0.2, 0.005) var right_margin_ratio := 0.035
-@export_range(0.2, 0.6, 0.01) var bubble_width_ratio := 0.44
-@export_range(180.0, 480.0, 1.0) var max_bubble_width := 360.0
-@export_range(0.1, 1.0, 0.01) var min_bubble_width := 220.0
+## These ratios are taken from the 1080x1920 authored gameplay composition:
+## the reference orange bubble starts at x=298/y=173 and is 768px wide.
+@export_range(0.0, 0.2, 0.005) var top_margin_ratio := 0.09
+@export_range(0.0, 0.2, 0.005) var right_margin_ratio := 0.013
+@export_range(0.2, 1.0, 0.01) var bubble_width_ratio := 0.711
+@export_range(180.0, 960.0, 1.0) var max_bubble_width := 768.0
+@export_range(0.1, 1.0, 0.01) var min_bubble_width := 320.0
 @export_range(0.05, 1.0, 0.01) var entrance_shake_duration := 0.28
 @export_range(0.0, 80.0, 1.0) var entrance_shake_amplitude := 26.0
 @export_range(0.0, 0.2, 0.005) var entrance_shake_rotation := 0.035
@@ -43,12 +46,18 @@ var _shake_offset := Vector2.ZERO
 var _shake_rotation := 0.0
 var _pound_elapsed := 0.0
 var _next_pound_index := 0
+var _resting_rotations: Dictionary = {}
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_process(true)
 	hide_warning()
+	_resting_rotations = {
+		yellow_warning: yellow_warning.rotation,
+		orange_warning: orange_warning.rotation,
+		red_warning: red_warning.rotation,
+	}
 	_layout_warnings()
 
 
@@ -118,11 +127,19 @@ func get_warning_assets(strike: int) -> Dictionary:
 			return {
 				"bubble": $YellowWarning/Bubble.texture,
 				"text": $YellowWarning/Text.texture,
+				"fx": [
+					$YellowWarning/TextFX1.texture,
+					$YellowWarning/TextFX2.texture,
+				],
 			}
 		ORANGE_WARNING:
 			return {
 				"bubble": $OrangeWarning/Bubble.texture,
 				"text": $OrangeWarning/Text.texture,
+				"fx": [
+					$OrangeWarning/TextFX1.texture,
+					$OrangeWarning/TextFX2.texture,
+				],
 			}
 		RED_WARNING:
 			return {
@@ -133,6 +150,10 @@ func get_warning_assets(strike: int) -> Dictionary:
 					$RedWarning/RedTextRow/RedText3.texture,
 				],
 				"emergency": $RedWarning/RedText4.texture,
+				"fx": [
+					$RedWarning/TextFX1.texture,
+					$RedWarning/TextFX2.texture,
+				],
 			}
 	return { }
 
@@ -141,7 +162,16 @@ func get_warning_rect(strike: int) -> Rect2:
 	var warning := _warning_for(strike)
 	if not is_instance_valid(warning):
 		return Rect2()
-	return Rect2(warning.position, warning.size * warning.scale)
+	var corners := [
+		warning.to_global(Vector2.ZERO),
+		warning.to_global(Vector2(warning.size.x, 0.0)),
+		warning.to_global(warning.size),
+		warning.to_global(Vector2(0.0, warning.size.y)),
+	]
+	var bounds := Rect2(corners[0], Vector2.ZERO)
+	for corner in corners.slice(1):
+		bounds = bounds.expand(corner)
+	return bounds
 
 
 func _warning_for(strike: int) -> Control:
@@ -201,24 +231,31 @@ func _layout_warnings() -> void:
 		min_bubble_width,
 		max_bubble_width,
 	)
-	var right_margin := maxf(viewport_size.x * right_margin_ratio, 16.0)
+	var right_margin := maxf(viewport_size.x * right_margin_ratio, 8.0)
+	var top_margin := maxf(viewport_size.y * top_margin_ratio, 8.0)
 	var right_position := viewport_size.x - right_margin - bubble_width
 
-	_layout_warning(yellow_warning, right_position, bubble_width, viewport_size.y)
-	_layout_warning(orange_warning, right_position, bubble_width, viewport_size.y)
-	_layout_warning(red_warning, right_position, bubble_width, viewport_size.y)
+	_layout_warning(yellow_warning, right_position, top_margin, bubble_width)
+	_layout_warning(orange_warning, right_position, top_margin, bubble_width)
+	_layout_warning(red_warning, right_position, top_margin, bubble_width)
 
 
-func _layout_warning(warning: Control, right_position: float, width: float, viewport_height: float) -> void:
+func _layout_warning(
+		warning: Control,
+		right_position: float,
+		top_position: float,
+		width: float,
+) -> void:
 	if not is_instance_valid(warning) or warning.size.x <= 1.0:
 		return
 	var is_active := warning == _warning_for(_active_warning)
 	var scale_factor := width / warning.size.x
-	var centered_y := (viewport_height - warning.size.y * scale_factor) * 0.5
-	warning.position = Vector2(right_position, centered_y) + (_shake_offset if is_active else Vector2.ZERO)
+	warning.position = Vector2(right_position, top_position) + (_shake_offset if is_active else Vector2.ZERO)
 	warning.scale = Vector2.ONE * scale_factor
 	warning.pivot_offset = warning.size * 0.5
-	warning.rotation = _shake_rotation if is_active else 0.0
+	warning.rotation = float(_resting_rotations.get(warning, 0.0)) + (
+		_shake_rotation if is_active else 0.0
+	)
 
 
 func _start_entrance_shake() -> void:

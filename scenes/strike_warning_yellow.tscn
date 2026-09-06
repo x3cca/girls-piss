@@ -2,7 +2,9 @@
 
 [ext_resource type="Texture2D" uid="uid://caj13qfkmluvp" path="res://assets/art/drive/YellowTextBubble.png" id="1_bubble"]
 [ext_resource type="Texture2D" uid="uid://5h1xn7ok4usw" path="res://assets/art/drive/YellowText.png" id="2_text"]
-[ext_resource type="Material" uid="uid://cm0278crn0uyq" path="res://resources/materials/boil_effect.tres" id="3_boil"]
+[ext_resource type="Texture2D" uid="uid://0lnvpm8hams3" path="res://assets/art/drive/YellowTextFX1.png" id="3_fx_1"]
+[ext_resource type="Texture2D" uid="uid://b7wj45ss1ukhn" path="res://assets/art/drive/YellowTextFX2.png" id="4_fx_2"]
+[ext_resource type="Material" uid="uid://cm0278crn0uyq" path="res://resources/materials/boil_effect.tres" id="5_boil"]
 
 [node name="YellowWarning" type="Control" unique_id=2004993717]
 layout_mode = 3
@@ -13,7 +15,7 @@ mouse_filter = 2
 
 [node name="Bubble" type="TextureRect" parent="." unique_id=436957270]
 texture_filter = 1
-material = ExtResource("3_boil")
+material = ExtResource("5_boil")
 layout_mode = 0
 offset_right = 320.0
 offset_bottom = 292.493
@@ -22,8 +24,37 @@ texture = ExtResource("1_bubble")
 expand_mode = 1
 stretch_mode = 5
 
+[node name="TextFX2" type="TextureRect" parent="." unique_id=1914579281]
+texture_filter = 1
+z_index = 1
+layout_mode = 0
+offset_left = 17.0
+offset_top = -19.0
+offset_right = 84.0
+offset_bottom = 50.2
+mouse_filter = 2
+texture = ExtResource("4_fx_2")
+material = ExtResource("5_boil")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TextFX1" type="TextureRect" parent="." unique_id=1914579282]
+texture_filter = 1
+z_index = 1
+layout_mode = 0
+offset_left = 29.6
+offset_top = 219.4
+offset_right = 114.4
+offset_bottom = 280.3
+mouse_filter = 2
+texture = ExtResource("3_fx_1")
+material = ExtResource("5_boil")
+expand_mode = 1
+stretch_mode = 5
+
 [node name="Text" type="TextureRect" parent="." unique_id=1818424434]
 texture_filter = 1
+z_index = 2
 layout_mode = 0
 offset_left = 40.0
 offset_top = 66.0

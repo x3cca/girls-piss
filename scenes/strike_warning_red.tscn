@@ -5,7 +5,9 @@
 [ext_resource type="Texture2D" uid="uid://drhltk8gkqh3p" path="res://assets/art/drive/RedText2.png" id="3_text_2"]
 [ext_resource type="Texture2D" uid="uid://b3vqunww4mdbp" path="res://assets/art/drive/RedText3.png" id="4_text_3"]
 [ext_resource type="Texture2D" uid="uid://catrgovrhx06t" path="res://assets/art/drive/RedText4.png" id="5_text_4"]
-[ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="6_boil"]
+[ext_resource type="Texture2D" uid="uid://cx1wwk22y1p8v" path="res://assets/art/drive/RedTextFX1.png" id="6_fx_1"]
+[ext_resource type="Texture2D" uid="uid://dqd0oddq36kw3" path="res://assets/art/drive/RedTextFX2.png" id="7_fx_2"]
+[ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="8_boil"]
 
 [node name="RedWarning" type="Control" unique_id=1811544833]
 layout_mode = 3
@@ -21,12 +23,41 @@ offset_right = 320.0
 offset_bottom = 211.159
 mouse_filter = 2
 texture = ExtResource("1_bubble")
-material = ExtResource("6_boil")
+material = ExtResource("8_boil")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TextFX2" type="TextureRect" parent="." unique_id=496996850]
+texture_filter = 1
+z_index = 1
+layout_mode = 0
+offset_left = 16.7
+offset_top = -63.1
+offset_right = 76.2
+offset_bottom = -1.5
+mouse_filter = 2
+texture = ExtResource("7_fx_2")
+material = ExtResource("8_boil")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TextFX1" type="TextureRect" parent="." unique_id=496996851]
+texture_filter = 1
+z_index = 1
+layout_mode = 0
+offset_left = 28.9
+offset_top = 212.5
+offset_right = 104.3
+offset_bottom = 266.7
+mouse_filter = 2
+texture = ExtResource("6_fx_1")
+material = ExtResource("8_boil")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="RedText1" type="TextureRect" parent="." unique_id=181651599]
 texture_filter = 1
+z_index = 2
 layout_mode = 0
 offset_left = 26.0
 offset_top = 52.0
@@ -39,6 +70,7 @@ stretch_mode = 5
 
 [node name="RedTextRow" type="Control" parent="." unique_id=293908429]
 anchors_preset = 0
+z_index = 2
 offset_left = 24.0
 offset_top = 88.687
 offset_right = 296.0
@@ -71,6 +103,7 @@ stretch_mode = 5
 
 [node name="RedText4" type="TextureRect" parent="." unique_id=496996854]
 texture_filter = 1
+z_index = 2
 layout_mode = 0
 offset_left = 15.0
 offset_top = 134.0

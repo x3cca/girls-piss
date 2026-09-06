@@ -4,13 +4,19 @@ const WARNING_SCENE := preload("res://scenes/strike_warning.tscn")
 const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
 const YELLOW_BUBBLE := preload("res://assets/art/drive/YellowTextBubble.png")
 const YELLOW_TEXT := preload("res://assets/art/drive/YellowText.png")
+const YELLOW_FX_1 := preload("res://assets/art/drive/YellowTextFX1.png")
+const YELLOW_FX_2 := preload("res://assets/art/drive/YellowTextFX2.png")
 const ORANGE_BUBBLE := preload("res://assets/art/drive/OrangeTextBubble.png")
 const ORANGE_TEXT := preload("res://assets/art/drive/OrangeText.png")
+const ORANGE_FX_1 := preload("res://assets/art/drive/OrangeTextFX1.png")
+const ORANGE_FX_2 := preload("res://assets/art/drive/OrangeTextFX2.png")
 const RED_BUBBLE := preload("res://assets/art/drive/RedWarningBubble.png")
 const RED_TEXT_1 := preload("res://assets/art/drive/RedText1.png")
 const RED_TEXT_2 := preload("res://assets/art/drive/RedText2.png")
 const RED_TEXT_3 := preload("res://assets/art/drive/RedText3.png")
 const RED_TEXT_4 := preload("res://assets/art/drive/RedText4.png")
+const RED_FX_1 := preload("res://assets/art/drive/RedTextFX1.png")
+const RED_FX_2 := preload("res://assets/art/drive/RedTextFX2.png")
 
 
 func _make_warning() -> StrikeWarning:
@@ -25,16 +31,19 @@ func test_warning_assets_are_selected_for_each_strike() -> void:
 	var yellow := warning.get_warning_assets(StrikeWarning.YELLOW_WARNING)
 	assert_eq(yellow["bubble"], YELLOW_BUBBLE)
 	assert_eq(yellow["text"], YELLOW_TEXT)
+	assert_eq(yellow["fx"], [YELLOW_FX_1, YELLOW_FX_2])
 
 	var orange := warning.get_warning_assets(StrikeWarning.ORANGE_WARNING)
 	assert_eq(orange["bubble"], ORANGE_BUBBLE)
 	assert_eq(orange["text"], ORANGE_TEXT)
+	assert_eq(orange["fx"], [ORANGE_FX_1, ORANGE_FX_2])
 
 	var red := warning.get_warning_assets(StrikeWarning.RED_WARNING)
 	assert_eq(red["bubble"], RED_BUBBLE)
 	assert_eq(red["text"], RED_TEXT_1)
 	assert_eq(red["row"], [RED_TEXT_2, RED_TEXT_3])
 	assert_eq(red["emergency"], RED_TEXT_4)
+	assert_eq(red["fx"], [RED_FX_1, RED_FX_2])
 
 
 func test_strike_bubbles_use_the_shared_boil_material() -> void:
@@ -87,6 +96,17 @@ func test_red_first_line_is_shifted_up_above_emergency() -> void:
 	assert_gt(emergency.position.y, row.position.y)
 
 
+func test_red_text_fx_sit_above_and_below_the_bubble() -> void:
+	var warning := _make_warning()
+	var red := warning.get_node("RedWarning") as Control
+	var bubble := red.get_node("Bubble") as TextureRect
+	var fx_above := red.get_node("TextFX2") as TextureRect
+	var fx_below := red.get_node("TextFX1") as TextureRect
+
+	assert_lte(fx_above.position.y + fx_above.size.y, bubble.position.y)
+	assert_gte(fx_below.position.y, bubble.position.y + bubble.size.y)
+
+
 func test_orange_text_is_shifted_up_in_its_bubble() -> void:
 	var warning := _make_warning()
 	var yellow_text := warning.get_node("YellowWarning/Text") as TextureRect
@@ -126,16 +146,27 @@ func test_warning_entrance_shake_decays_to_a_resting_position() -> void:
 	assert_eq(warning.yellow_warning.rotation, 0.0)
 
 
-func test_warning_panels_are_centered_vertically() -> void:
+func test_warning_panels_match_the_authored_top_right_composition() -> void:
 	var warning := _make_warning()
-	var viewport_height := warning.get_viewport_rect().size.y
+	var viewport_size := warning.get_viewport_rect().size
+	var bubble_width := clampf(
+		viewport_size.x * warning.bubble_width_ratio,
+		warning.min_bubble_width,
+		warning.max_bubble_width,
+	)
+	var expected_position := Vector2(
+		viewport_size.x - maxf(viewport_size.x * warning.right_margin_ratio, 8.0) - bubble_width,
+		maxf(viewport_size.y * warning.top_margin_ratio, 8.0),
+	)
 
 	for strike in [StrikeWarning.YELLOW_WARNING, StrikeWarning.ORANGE_WARNING, StrikeWarning.RED_WARNING]:
 		warning.show_warning(strike, 1.0)
 		warning.process_frame(warning.entrance_shake_duration)
 		var panel := warning._warning_for(strike)
-		var panel_center := panel.position.y + panel.size.y * panel.scale.y * 0.5
-		assert_almost_eq(panel_center, viewport_height * 0.5, 0.5)
+		assert_almost_eq(panel.position.x, expected_position.x, 0.5)
+		assert_almost_eq(panel.position.y, expected_position.y, 0.5)
+		assert_almost_eq(panel.scale.x, bubble_width / panel.size.x, 0.001)
+		assert_almost_eq(panel.scale.y, panel.scale.x, 0.001)
 
 
 func test_first_three_warnings_use_their_own_panel() -> void:
