@@ -4,7 +4,7 @@ class_name ShapeTrace
 
 const TRACE_TARGET_SCENE := preload("res://scenes/trace_target.tscn")
 
-## An authored, ordered trace made from forgiving circular checkpoints.
+## An authored, ordered trace made from ordered sprite checkpoints.
 ## Points are stored in viewport-normalized coordinates so the same level content
 ## remains useful when the portrait viewport is resized.
 
@@ -30,6 +30,8 @@ signal checkpoint_completed(index: int)
 ## additional visible checkpoint halves that opacity again.
 @export_range(0.0, 1.0, 0.05) var look_ahead_opacity := 0.25
 @export_range(0.1, 1.0, 0.05) var look_ahead_opacity_falloff := 0.5
+## Legacy size helper retained for authoring tools. Hit detection uses the
+## configured target sprite's polygon mask and never falls back to this radius.
 @export_range(0.01, 0.25, 0.005) var checkpoint_radius_fraction := 0.06
 @export_range(0.01, 2.0, 0.01) var checkpoint_contact_duration := 0.35
 @export var outline_color := Color(0.83, 0.78, 0.38, 0.24)
@@ -128,17 +130,12 @@ func observe_drawing_point(
 		queue_redraw()
 		return
 
-	# Legacy immediate mode also keeps segment crossing useful for editor tools.
-	var checkpoint_position := get_checkpoint_position(completed_steps)
-	var radius := get_checkpoint_radius()
-	var reached := position.distance_to(checkpoint_position) <= radius
+	# Legacy immediate mode also keeps exact sprite segment crossing useful for
+	# editor tools.
+	var target := _current_target()
+	var reached := _target_contains_point(target, position)
 	if not reached and _has_previous_endpoint:
-		reached = _segment_intersects_circle(
-			_previous_endpoint,
-			position,
-			checkpoint_position,
-			radius,
-		)
+		reached = _target_intersects_segment(target, _previous_endpoint, position)
 	if reached:
 		complete_current_checkpoint()
 
@@ -150,7 +147,7 @@ func observe_drawing_point(
 func is_point_in_current_checkpoint(position: Vector2) -> bool:
 	if normalized_points.is_empty() or completed_steps >= total_steps:
 		return false
-	return position.distance_to(get_checkpoint_position(completed_steps)) <= get_checkpoint_radius()
+	return _target_contains_point(_current_target(), position)
 
 
 func get_checkpoint_contact_elapsed() -> float:
@@ -185,11 +182,16 @@ func _observe_sustained_contact(position: Vector2, delta: float) -> void:
 	if not is_point_in_current_checkpoint(position):
 		_reset_checkpoint_contact()
 		return
+	var target := _current_target()
+	if not is_instance_valid(target):
+		_reset_checkpoint_contact()
+		return
 	if _contact_checkpoint != completed_steps:
 		_contact_checkpoint = completed_steps
 		_checkpoint_contact_elapsed = 0.0
-	_checkpoint_contact_elapsed += maxf(delta, 0.0)
-	if _checkpoint_contact_elapsed >= maxf(checkpoint_contact_duration, 0.0):
+	var safe_delta := maxf(delta, 0.0)
+	_checkpoint_contact_elapsed += safe_delta
+	if target.apply_contact(safe_delta):
 		complete_current_checkpoint()
 
 
@@ -235,6 +237,30 @@ func _segment_intersects_circle(
 	)
 	var closest := segment_start + segment * fraction
 	return closest.distance_to(circle_center) <= radius
+
+
+func _current_target() -> TraceTarget:
+	if completed_steps < 0 or completed_steps >= _targets.size():
+		return null
+	return _targets[completed_steps]
+
+
+func _target_contains_point(
+		target: TraceTarget,
+		position: Vector2,
+) -> bool:
+	return is_instance_valid(target) and target.contains_point(position)
+
+
+func _target_intersects_segment(
+		target: TraceTarget,
+		segment_start: Vector2,
+		segment_end: Vector2,
+) -> bool:
+	return (
+		is_instance_valid(target)
+		and target.intersects_segment(segment_start, segment_end)
+	)
 
 
 func _draw() -> void:
@@ -283,6 +309,11 @@ func _sync_target_sprites() -> void:
 		var texture := target_texture
 		if index < target_textures.size() and target_textures[index] != null:
 			texture = target_textures[index]
+		if texture == null:
+			# Keep direct/tool-created ShapeTrace nodes on the same exact sprite
+			# polygon-mask path as scene-authored targets.
+			var default_sprite := target.get_node_or_null("Sprite") as Sprite2D
+			texture = default_sprite.texture if default_sprite else null
 		add_child(target)
 		target.configure(
 			normalized_to_viewport(normalized_points[index]),
@@ -291,6 +322,7 @@ func _sync_target_sprites() -> void:
 			_get_target_size(texture),
 			float(index) * 0.91,
 		)
+		target.configure_contact_duration(checkpoint_contact_duration, true)
 		_targets.append(target)
 
 

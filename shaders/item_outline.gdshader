@@ -4,7 +4,7 @@ shader_type canvas_item;
 render_mode world_vertex_coords;
 
 uniform vec4 outline_color : source_color = vec4(0.0, 0.0, 0.0, 1.0);
-uniform float outline_width = 4.0;
+uniform float outline_width = 6.0;
 uniform sampler2D noise : filter_linear, repeat_enable;
 uniform vec2 noise_scale = vec2(0.01, 0.01);
 uniform float boil_strength = 0.1;

@@ -7,10 +7,13 @@ const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
 func test_title_uses_the_authored_transparent_layer_composition() -> void:
 	var title := TITLE_SCENE.instantiate() as TitleScreen
 	add_child_autofree(title)
+	var backdrop := title.get_node("Backdrop") as ColorRect
 	var composition := title.get_node("Overlay/TitleComposition") as TitleComposition
 
 	assert_true(title.is_active())
 	assert_eq(Input.get_mouse_mode(), Input.MOUSE_MODE_VISIBLE)
+	assert_eq(backdrop.color, Color(0.06, 0.045, 0.075, 0.68))
+	assert_eq(backdrop.mouse_filter, Control.MOUSE_FILTER_IGNORE)
 	assert_true(composition.visible)
 	assert_true(composition.is_title_active())
 	assert_eq(composition.get_frame(), 0)

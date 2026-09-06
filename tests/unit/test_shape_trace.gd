@@ -13,6 +13,8 @@ func test_ordered_progress_does_not_reset_or_skip_a_checkpoint() -> void:
 			Vector2(0.75, 0.25),
 		],
 	)
+	trace.target_texture = _solid_texture()
+	trace.rebuild_targets()
 	var first := trace.get_checkpoint_position(0)
 	var second := trace.get_checkpoint_position(1)
 	var third := trace.get_checkpoint_position(2)
@@ -39,6 +41,8 @@ func test_segment_crossing_detects_a_checkpoint_between_endpoint_samples() -> vo
 			Vector2(0.80, 0.80),
 		],
 	)
+	trace.target_texture = _solid_texture()
+	trace.rebuild_targets()
 	var checkpoint := trace.get_checkpoint_position(0)
 	var radius := trace.get_checkpoint_radius()
 
@@ -52,6 +56,8 @@ func test_completion_emits_once_until_trace_is_reset() -> void:
 	var trace := ShapeTrace.new()
 	add_child_autofree(trace)
 	trace.normalized_points = PackedVector2Array([Vector2(0.5, 0.5)])
+	trace.target_texture = _solid_texture()
+	trace.rebuild_targets()
 	_completion_count = 0
 	trace.trace_completed.connect(_on_trace_completed)
 	var checkpoint := trace.get_checkpoint_position(0)
@@ -111,3 +117,9 @@ func test_checkpoint_look_ahead_fades_visible_future_targets() -> void:
 
 func _on_trace_completed() -> void:
 	_completion_count += 1
+
+
+func _solid_texture() -> Texture2D:
+	var image := Image.create(8, 8, false, Image.FORMAT_RGBA8)
+	image.fill(Color.WHITE)
+	return ImageTexture.create_from_image(image)

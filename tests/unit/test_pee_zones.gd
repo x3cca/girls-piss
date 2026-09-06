@@ -20,6 +20,7 @@ func test_negative_zone_uses_normalized_polygon_geometry() -> void:
 func test_checkpoint_requires_sustained_contact() -> void:
 	var trace := ShapeTrace.new()
 	trace.normalized_points = PackedVector2Array([Vector2(0.5, 0.5)])
+	trace.target_texture = _solid_texture()
 	add_child_autofree(trace)
 	trace.process_frame(0.0)
 	var checkpoint := trace.get_checkpoint_position(0)
@@ -107,7 +108,7 @@ func test_force_pissing_does_not_merge_separate_holds_for_contact_rules() -> voi
 	assert_eq(level.get_strikes(), 2)
 
 
-func test_four_strikes_stop_gameplay_and_show_retry_state() -> void:
+func test_third_strike_waits_for_red_warning_then_stops_gameplay() -> void:
 	var level := LEVEL_SCENE.instantiate() as Main
 	level.skip_title_screen = true
 	add_child_autofree(level)
@@ -115,13 +116,32 @@ func test_four_strikes_stop_gameplay_and_show_retry_state() -> void:
 	level.get_node("LiquidStream").set_process(false)
 	var bad_position := Vector2(120.0, 220.0)
 
-	for strike_index in 4:
+	for strike_index in 3:
 		if strike_index > 0:
 			level.evaluate_stream_endpoint(Vector2.ZERO, false, 0.0)
 			level._process(level.safety_cooldown)
 		level.evaluate_stream_endpoint(bad_position, true, 0.35)
 
-	assert_eq(level.get_strikes(), 4)
+	assert_eq(level.max_strikes, 3)
+	assert_eq(level.get_strikes(), 3)
+	assert_eq(level.state, Main.FAILED)
+	assert_true(
+		level.hud.strike_warning.is_warning_visible(StrikeWarning.RED_WARNING)
+	)
+	assert_eq(
+		level.hud.strike_warning.get_remaining_duration(),
+		Main.FINAL_STRIKE_WARNING_DURATION,
+	)
+	assert_false(level.input_controller.is_gameplay_input_enabled())
+	assert_false(level.hud.game_over.visible)
+
+	level.hud.strike_warning.process_frame(Main.FINAL_STRIKE_WARNING_DURATION - 0.01)
+	assert_eq(level.state, Main.FAILED)
+	assert_true(
+		level.hud.strike_warning.is_warning_visible(StrikeWarning.RED_WARNING)
+	)
+	level.hud.strike_warning.process_frame(0.01)
+
 	assert_eq(level.state, Main.FAILED)
 	assert_false(level.input_controller.is_gameplay_input_enabled())
 	assert_true(level.hud.game_over.visible)
@@ -262,8 +282,8 @@ func test_live_stream_signal_reaches_a_positive_checkpoint() -> void:
 	level.set_process(false)
 	level.get_node("LiquidStream").set_process(false)
 	var controller := level.input_controller
-	var checkpoint := level.shape_trace.get_checkpoint_position(0)
-	controller.set_target_position(checkpoint)
+	var target_position := _find_target_pixel(level.shape_trace)
+	controller.set_target_position(target_position)
 	var space_down := InputEventKey.new()
 	space_down.physical_keycode = KEY_SPACE
 	space_down.pressed = true
@@ -335,7 +355,7 @@ func test_live_stream_can_switch_from_negative_hold_to_positive_hold() -> void:
 	controller.handle_input_event(space_up)
 	level._process(level.safety_cooldown)
 
-	controller.set_target_position(level.shape_trace.get_checkpoint_position(0))
+	controller.set_target_position(_find_target_pixel(level.shape_trace))
 	controller.handle_input_event(space_down)
 	for _frame in 120:
 		level.stream.process_frame(1.0 / 60.0)
@@ -367,3 +387,40 @@ func test_live_stream_stops_after_a_negative_strike_until_repressed() -> void:
 	for _frame in 120:
 		level.stream.process_frame(1.0 / 60.0)
 	assert_eq(level.get_strikes(), 2)
+
+
+func _find_target_pixel(trace: ShapeTrace) -> Vector2:
+	# The smoke-test aimer is a hollow ring, so its checkpoint center is
+	# intentionally transparent. Choose a stable point from the rendered alpha
+	# mask instead of teaching the test to use a center estimate.
+	trace.set_process(false)
+	for target in trace._targets:
+		target.set_process(false)
+	var target := trace._targets[trace.completed_steps]
+	var center := target.global_position
+	var best_position := center
+	var best_score := -1
+	for y in range(-128, 129):
+		for x in range(-128, 129):
+			var candidate := center + Vector2(x, y)
+			if not target.contains_point(candidate):
+				continue
+			var score := 0
+			for neighbor in [
+				Vector2(-1.0, 0.0),
+				Vector2(1.0, 0.0),
+				Vector2(0.0, -1.0),
+				Vector2(0.0, 1.0),
+			]:
+				if target.contains_point(candidate + neighbor):
+					score += 1
+			if score > best_score:
+				best_score = score
+				best_position = candidate
+	return best_position
+
+
+func _solid_texture() -> Texture2D:
+	var image := Image.create(8, 8, false, Image.FORMAT_RGBA8)
+	image.fill(Color.WHITE)
+	return ImageTexture.create_from_image(image)

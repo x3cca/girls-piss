@@ -63,8 +63,7 @@ func test_all_bathroom_surfaces_have_independent_reusable_shaders() -> void:
 	)
 	assert_eq(bowl.get_shader_parameter("stain_color"), SurfaceEffects.DEFAULT_STAIN_COLOR)
 	assert_eq(bowl.get_shader_parameter("stain_opacity"), SurfaceEffects.DEFAULT_STAIN_OPACITY)
-	assert_eq(water.get_shader_parameter("ripple_strength"), 0.0)
-	assert_eq(water.get_shader_parameter("ripple_center"), Vector2(0.5, 0.5))
+	assert_eq(water.get_shader_parameter("ripple_age"), 0.0)
 	assert_eq(seat.get_shader_parameter("stain_color"), SurfaceEffects.DEFAULT_STAIN_COLOR)
 	assert_eq(seat.get_shader_parameter("stain_opacity"), SurfaceEffects.DEFAULT_STAIN_OPACITY)
 

@@ -15,19 +15,24 @@ const TARGET_TEXTURES: Array[Texture2D] = [
 	preload("res://assets/art/drive/Tampon.png"),
 ]
 const TOILET_COMPOSITION_SCALE := 1.25
+const TARGET_SPAWN_MIN_DISTANCE := 70.0
+const TARGET_SPAWN_EDGE_RADIUS := 110.0
 
 var target_offsets := PackedVector2Array(
 	[
-		Vector2(-157.68, -132.045), # RedTicket
-		Vector2(-110.16, -291.405), # Floss
-		Vector2(-47.52, -279.885), # Gum
-		Vector2(138.24, -145.485), # Cigarette
-		Vector2(-27.0, 198.195), # Lollipop
-		Vector2(76.68, -254.925), # Condom
-		Vector2(96.12, 123.315), # Bandaid
-		Vector2(131.76, -34.125), # Fly
-		Vector2(14.04, -59.085), # Straw
-		Vector2(-151.2, 13.875), # Tampon
+		# Nine slots sit around the water perimeter. The center slot is the rare
+		# exception, and all slots are separated so consecutive targets do not
+		# bunch together when the pool is shuffled.
+		Vector2(-125.0, -35.0),
+		Vector2(-84.0, -95.0),
+		Vector2(-18.0, -128.0),
+		Vector2(62.0, -105.0),
+		Vector2(125.0, -50.0),
+		Vector2(135.0, 35.0),
+		Vector2(55.0, 100.0),
+		Vector2(-10.0, 130.0),
+		Vector2(-75.0, 92.0),
+		Vector2(0.0, 0.0),
 	],
 )
 

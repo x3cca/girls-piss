@@ -40,7 +40,10 @@ const DEBUG_INSTANT_WIN_ACTION := &"debug_instant_win"
 
 const CONTACT_DURATION := 0.0
 const SAFETY_COOLDOWN := 4.0
-const MAX_STRIKES := 4
+const FINAL_STRIKE_WARNING_DURATION := 2.0
+## The third strike fails gameplay immediately, but its warning remains on
+## screen long enough to be read before the kick-out presentation starts.
+const MAX_STRIKES := 3
 const SPRAY_SILENT_VOLUME_DB := -80.0
 
 var state := PLAYING
@@ -103,6 +106,7 @@ var _failure_exit_tween: Tween
 var _failure_transition_active := false
 var _failure_exit_center := Vector2.ZERO
 var _failure_exit_offset := Vector2.ZERO
+var _final_strike_pending := false
 
 var strikes: int:
 	get:
@@ -163,6 +167,8 @@ func _ready() -> void:
 		hud.game_over.raid_knock.connect(_on_game_over_raid_knock)
 	if not hud.strike_warning.pound_triggered.is_connected(_on_strike_pound):
 		hud.strike_warning.pound_triggered.connect(_on_strike_pound)
+	if not hud.strike_warning.warning_finished.is_connected(_on_strike_warning_finished):
+		hud.strike_warning.warning_finished.connect(_on_strike_warning_finished)
 	line_recorder.start_recording()
 	_base_position = position
 	_base_rotation = rotation
@@ -521,6 +527,18 @@ func evaluate_stream_endpoint(
 	var contact_delta := _frame_delta if delta < 0.0 else maxf(delta, 0.0)
 	_last_stream_endpoint = position
 	_has_stream_endpoint = active
+	var hit_seat := (
+			active
+			and is_instance_valid(surface_effects)
+			and surface_effects.detect_surface(position) == SurfaceEffects.SURFACE_SEAT
+	)
+	if hit_seat:
+		# The seat is a bad surface even though it is not an authored NegativeZone.
+		# Check it before checkpoint handling so a visual seat hit can never count
+		# as a successful target contact.
+		_reset_negative_contact()
+		_take_strike()
+		return
 	var in_checkpoint := active and shape_trace.is_point_in_current_checkpoint(position)
 	shape_trace.observe_drawing_point(position, active, contact_delta)
 	if not active:
@@ -620,7 +638,11 @@ func _reset_negative_contact() -> void:
 
 
 func _take_strike() -> void:
-	if state != PLAYING or _strike_cooldown_remaining > 0.0:
+	if (
+			state != PLAYING
+			or _strike_cooldown_remaining > 0.0
+			or _final_strike_pending
+	):
 		return
 	strike_count = mini(strike_count + 1, max_strikes)
 	_strike_cooldown_remaining = maxf(safety_cooldown, 0.0)
@@ -630,18 +652,42 @@ func _take_strike() -> void:
 	input_controller.stop_pissing()
 	stream.cancel_stream()
 	hud.set_strikes(strike_count)
-	if strike_count < max_strikes:
-		hud.show_strike_warning(strike_count, safety_cooldown)
+	var is_final_strike := strike_count >= max_strikes
+	var has_warning := (
+			strike_count >= StrikeWarning.YELLOW_WARNING
+			and strike_count <= StrikeWarning.RED_WARNING
+	)
+	var warning_duration := (
+		FINAL_STRIKE_WARNING_DURATION if is_final_strike else safety_cooldown
+	)
+	if is_final_strike and has_warning:
+		_final_strike_pending = true
+		input_controller.set_gameplay_input_enabled(false)
+	if has_warning:
+		hud.show_strike_warning(strike_count, warning_duration)
 	if is_instance_valid(screen_overlay):
 		screen_overlay.play_strike_feedback()
 	stream.play_strike_flash()
-	if strike_count >= max_strikes:
+	if is_final_strike and has_warning:
+		# Enter FAILED immediately so no gameplay can continue while the final
+		# warning is readable. Only the game-over presentation waits for it.
+		_fail_attempt(false)
+	elif is_final_strike:
 		_fail_attempt()
 
 
-func _fail_attempt() -> void:
+func _on_strike_warning_finished(strike: int) -> void:
+	if not _final_strike_pending or strike != strike_count:
+		return
+	_final_strike_pending = false
+	_show_game_over()
+
+
+func _fail_attempt(show_game_over := true) -> void:
 	if state != PLAYING:
 		return
+	if show_game_over:
+		_final_strike_pending = false
 	_set_state(FAILED)
 	_stop_spray_sound()
 	_reset_pulse_feedback()
@@ -661,8 +707,15 @@ func _fail_attempt() -> void:
 		screen_overlay.stop_all_effects()
 	shape_trace.set_trace_visible(false)
 	hud.set_aim_zone_state(TouchReticle.ReticleState.NEUTRAL)
-	hud.show_game_over()
+	if show_game_over:
+		_show_game_over()
 	_set_effect_lights_enabled(false)
+
+
+func _show_game_over() -> void:
+	if state != FAILED:
+		return
+	hud.show_game_over()
 
 
 func _on_trace_completed() -> void:
@@ -696,7 +749,13 @@ func _on_play_again_pressed() -> void:
 
 
 func _on_piss_meter_depleted() -> void:
-	_fail_attempt()
+	if state != PLAYING:
+		return
+	# An empty meter is a temporary pause in the stream, not a failed attempt.
+	# Clear the raw hold too, so a still-held key/button cannot restart the stream
+	# until the player begins a fresh hold after the meter has recovered.
+	input_controller.stop_pissing()
+	stream.cancel_stream()
 
 
 func _sync_water_to_piss_meter() -> void:
@@ -762,6 +821,7 @@ func reset_level() -> void:
 		_failure_exit_tween = null
 	_failure_transition_active = false
 	_set_state(PLAYING)
+	_final_strike_pending = false
 	_stop_spray_sound()
 	_reset_pulse_feedback()
 	strike_count = 0

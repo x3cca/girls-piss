@@ -19,6 +19,7 @@ const RED_WARNING := 3
 const POUND_TIMINGS := [0.04, 0.235, 0.45]
 
 signal pound_triggered(strike: int, pound_index: int)
+signal warning_finished(strike: int)
 
 @export_range(0.0, 10.0, 0.01) var warning_duration := 4.0
 ## These ratios are taken from the 1080x1920 authored gameplay composition:
@@ -73,8 +74,10 @@ func process_frame(delta: float) -> void:
 		return
 	_remaining = maxf(_remaining - maxf(delta, 0.0), 0.0)
 	if is_zero_approx(_remaining):
+		var finished_strike := _active_warning
 		_remaining = 0.0
 		hide_warning()
+		warning_finished.emit(finished_strike)
 
 
 func show_warning(strike: int, duration := -1.0) -> void:

@@ -72,34 +72,43 @@ toward the current target. Completing the path stops live input, shows the
 completion card, and replays the recorded line as a time-lapse behind it.
 
 Level 1 uses the small bathroom-object sprites as its ordered checkpoint
-targets. The authored floor is a bad region, while the wall, tank, and seat
-remain neutral; the smoke-test scene retains its separate `NegativeZone`
+targets. The authored floor and toilet seat are bad surfaces, while the wall
+and tank remain neutral; the smoke-test scene retains its separate `NegativeZone`
 polygon/area nodes for validating bad-region behavior. The reticle uses
 `Crosshair2.png` for neutral space and `Crosshair1.png` over a bad region.
-Successful target contact flashes a white radial vignette around the screen
-edges while keeping the target area clear. Actual contact is evaluated from
-the stream endpoint rather than the requested reticle position.
+Successful target contact briefly shows the authored action-line overlay.
+Actual contact is evaluated from the stream endpoint against a polygon mask
+generated from the target sprite, rather than the requested reticle position or
+a center-based radius. The polygon has a generous `24px` edge buffer.
 
 Checkpoint contact requires `0.35` seconds of continuous endpoint contact. A
+target has three health points by default; contact drains that health over the
+same authored duration and accelerates the item's spin as its health falls.
 negative-zone overlap is fully sensitive: the first committed endpoint frame in
 the region immediately gives a strike, even if contact lasts only briefly. A
 bad hit starts a `4` second safety cooldown while stopping the stream. The first
 three strikes show a
 yellow, orange, or red warning bubble in the top-right corner, and each bubble
 is hidden when that cooldown ends. If the endpoint remains in the bad region,
-another strike is possible as soon as that safety cooldown ends. Four strikes
-stop the attempt and show the authored game-over treatment: the dread frame,
-layered GAME/OVER artwork, failure sound, and Piss Again arrow. Retry resets
-the trace, meter, strike count, stream, and all overlay effects.
+another strike is possible as soon as that safety cooldown ends. The third
+strike immediately enters the failed state and locks gameplay, while showing
+the red warning for two seconds so its message can be read. When it expires,
+the authored game-over treatment starts: the dread frame, layered GAME/OVER
+artwork, failure sound, and Piss Again arrow. Retry resets the trace, meter,
+strike count, stream, and all overlay effects.
 
 The Level 1 Piss-O-Meter begins with thirty seconds of stream time and drains
-only while the stream input is held. The ten bathroom-object targets are
-randomly assigned to the ten bowl positions on each attempt. The stream uses the baked
+only while the stream input is held. When it empties, the stream stops and the
+meter recharges while idle; running out of pee does not end the attempt. The ten
+bathroom-object targets are randomly assigned to the ten bowl positions on each
+attempt. The stream uses the baked
 `resources/depth_map_baked.png` through `DepthMap2D`.
 The environment is split into four depth bands so stream ribbons, particles,
 and the world can be ordered consistently in the portrait scene. The offline
 depth baker and normal-map baker live in `tools/`.
 
-Aim changes expand a bloom radius that decays over time. Parcel offsets trace a
-horizontal Gerono lemniscate (a figure eight), and an extreme bloom temporarily
-renders a second stream until the radius falls below the release threshold.
+The pee stream keeps a broad minimum bloom between beats, with music pulses
+brightening it further. Aim changes also expand a bloom radius that decays over
+time. Parcel offsets trace a horizontal Gerono lemniscate (a figure eight), and
+an extreme bloom temporarily renders a second stream until the radius falls
+below the release threshold.

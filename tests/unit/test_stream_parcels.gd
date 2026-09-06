@@ -371,6 +371,19 @@ func test_small_aim_delta_creates_less_bloom_than_a_large_delta() -> void:
 	assert_true(large_bloom > small_bloom)
 
 
+func test_bloom_width_grows_exponentially_with_bloom_amount() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+	var half_width := stream._bloom_width_for_radius(stream.max_bloom_radius * 0.5)
+	var full_width := stream._bloom_width_for_radius(stream.max_bloom_radius)
+
+	assert_almost_eq(half_width, full_width * 0.25, 0.001)
+	assert_true(
+		stream._bloom_width_for_radius(stream.max_bloom_radius * 0.75)
+		< full_width * 0.75,
+	)
+
+
 func test_extreme_bloom_starts_a_double_stream_until_it_settles() -> void:
 	var stream := STREAM_SCENE.instantiate() as LiquidStream
 	add_child_autofree(stream)
@@ -491,7 +504,7 @@ func test_beat_pulse_affects_all_live_ribbon_layers() -> void:
 		assert_true(widths[0] > widths[2], "%s should carry the pulse." % node_path)
 
 
-func test_beat_bloom_ribbon_only_lights_up_on_a_beat() -> void:
+func test_beat_bloom_ribbon_keeps_a_minimum_glow_between_beats() -> void:
 	var stream := STREAM_SCENE.instantiate() as LiquidStream
 	add_child_autofree(stream)
 	var points := PackedVector2Array(
@@ -502,13 +515,13 @@ func test_beat_bloom_ribbon_only_lights_up_on_a_beat() -> void:
 
 	stream.update_ribbon_meshes(points, 200.0, 1.0, false, ages)
 	var unlit_colors: PackedColorArray = bloom_mesh.surface_get_arrays(0)[Mesh.ARRAY_COLOR]
-	assert_almost_eq(unlit_colors[0].a, 0.0, 0.001)
+	assert_almost_eq(unlit_colors[0].a, stream.minimum_bloom_alpha, 0.005)
 
 	stream.trigger_pulse()
 	stream.update_ribbon_meshes(points, 200.0, 1.0, false, ages)
 	var beat_colors: PackedColorArray = bloom_mesh.surface_get_arrays(0)[Mesh.ARRAY_COLOR]
 	assert_gt(beat_colors[0].a, beat_colors[2].a)
-	assert_gt(beat_colors[0].a, 0.0)
+	assert_gt(beat_colors[0].a, stream.minimum_bloom_alpha)
 	assert_almost_eq(beat_colors[0].a, stream.beat_bloom_alpha, 0.005)
 
 

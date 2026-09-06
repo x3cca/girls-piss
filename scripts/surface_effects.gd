@@ -534,9 +534,7 @@ func _apply_water_state(state: Dictionary) -> void:
 	if water_texture != null:
 		material.set_shader_parameter("water_noise_map", water_texture)
 	material.set_shader_parameter("water_yellowness", _water_yellowness)
-	material.set_shader_parameter("ripple_center", state.get("ripple_uv", Vector2(0.5, 0.5)))
 	material.set_shader_parameter("ripple_age", state.get("ripple_age", 0.0))
-	material.set_shader_parameter("ripple_strength", state.get("ripple_strength", 0.0))
 
 
 func _add_ripple(position: Vector2, node: Sprite2D) -> void:

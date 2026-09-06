@@ -5,7 +5,6 @@ const METER_SCENE := preload("res://scenes/piss_meter.tscn")
 const STRIKE_EFFECT := preload("res://scenes/strike_vignette.tscn")
 const SUCCESS_EFFECT := preload("res://scenes/success_vignette.tscn")
 const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
-const RADIAL_SHADER := preload("res://shaders/radial_vignette.gdshader")
 const BOWL_SHADER := preload("res://shaders/surface_paint.gdshader")
 const WATER_SHADER := preload("res://shaders/surface_ripple.gdshader")
 
@@ -100,6 +99,25 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 		)
 
 
+func test_level_1_target_slots_are_spaced_and_edge_weighted() -> void:
+	var level := LEVEL_SCENE.instantiate() as Level1
+	level.skip_title_screen = true
+	add_child_autofree(level)
+
+	var edge_slot_count := 0
+	for index in level.target_offsets.size():
+		var offset: Vector2 = level.target_offsets[index]
+		if offset.length() >= Level1.TARGET_SPAWN_EDGE_RADIUS:
+			edge_slot_count += 1
+		for previous_index in index:
+			assert_gte(
+				offset.distance_to(level.target_offsets[previous_index]),
+				Level1.TARGET_SPAWN_MIN_DISTANCE,
+			)
+
+	assert_eq(edge_slot_count, level.target_offsets.size() - 1)
+
+
 func test_web_export_uses_level_1_as_the_main_scene() -> void:
 	var export_presets := FileAccess.get_file_as_string("res://export_presets.cfg")
 	assert_true(
@@ -111,7 +129,7 @@ func test_web_export_uses_level_1_as_the_main_scene() -> void:
 	assert_true(export_presets.contains("shaders/item_outline.gdshader"))
 
 
-func test_level_1_floor_is_bad_but_toilet_and_wall_are_neutral() -> void:
+func test_level_1_floor_and_seat_are_bad_but_wall_and_tank_are_neutral() -> void:
 	var level := LEVEL_SCENE.instantiate() as Level1
 	level.skip_title_screen = true
 	add_child_autofree(level)
@@ -126,10 +144,12 @@ func test_level_1_floor_is_bad_but_toilet_and_wall_are_neutral() -> void:
 	level.evaluate_stream_endpoint(wall_position, true, 0.35)
 	level.evaluate_stream_endpoint(tank_position, true, 0.35)
 	level.evaluate_stream_endpoint(seat_position, true, 0.35)
-	assert_eq(level.get_strikes(), 0)
-
-	level.evaluate_stream_endpoint(floor_position, true, 0.35)
 	assert_eq(level.get_strikes(), 1)
+
+	level.evaluate_stream_endpoint(Vector2.ZERO, false, 0.0)
+	level._process(level.safety_cooldown)
+	level.evaluate_stream_endpoint(floor_position, true, 0.35)
+	assert_eq(level.get_strikes(), 2)
 
 
 func test_title_composition_keeps_level_1_visible_underneath() -> void:
@@ -183,7 +203,7 @@ func test_piss_meter_has_a_thirty_second_continuous_stream_budget() -> void:
 	space_up.pressed = false
 	controller.handle_input_event(space_up)
 	meter._process(10.0)
-	assert_almost_eq(meter.get_time_remaining(), 20.0, 0.001)
+	assert_almost_eq(meter.get_time_remaining(), 30.0, 0.001)
 
 
 func test_piss_meter_art_uses_the_shared_boil_material() -> void:
@@ -257,12 +277,13 @@ func test_piss_meter_reveals_with_a_left_slide_when_pissing_starts() -> void:
 	assert_almost_eq(meter.position.x, rest_x, 0.01)
 
 
-func test_empty_piss_meter_fails_the_level() -> void:
+func test_empty_piss_meter_stops_stream_and_recharges_without_failing_level() -> void:
 	var level := LEVEL_SCENE.instantiate() as Level1
 	level.skip_title_screen = true
 	add_child_autofree(level)
 	var meter := level.hud.piss_meter
 	meter.duration_seconds = 1.0
+	meter.recharge_rate = 1.0
 	meter.reset_meter()
 
 	var space_down := InputEventKey.new()
@@ -272,43 +293,32 @@ func test_empty_piss_meter_fails_the_level() -> void:
 	meter._process(1.0)
 
 	assert_true(meter.is_depleted())
-	assert_eq(level.state, Main.FAILED)
-	assert_false(level.input_controller.is_gameplay_input_enabled())
-	assert_true(level.hud.game_over.is_showing())
+	assert_eq(level.state, Main.PLAYING)
+	assert_false(level.input_controller.is_stream_input_held())
+	assert_true(level.input_controller.is_gameplay_input_enabled())
+	assert_false(level.hud.game_over.is_showing())
+
+	meter._process(0.5)
+	assert_almost_eq(meter.get_time_remaining(), 0.5, 0.001)
 
 
-func test_feedback_scenes_use_the_downloaded_strike_art_and_radial_success_flash() -> void:
+func test_feedback_scenes_use_the_downloaded_strike_and_action_line_art() -> void:
 	var strike := STRIKE_EFFECT.instantiate() as ScreenOverlayEffect
-	var success := SUCCESS_EFFECT.instantiate() as RadialVignetteEffect
+	var success := SUCCESS_EFFECT.instantiate() as ScreenOverlayEffect
 	add_child_autofree(strike)
 	add_child_autofree(success)
 
 	var strike_frames: SpriteFrames = strike.get_node("AnimatedSprite2D").sprite_frames
+	var success_frames: SpriteFrames = success.get_node("AnimatedSprite2D").sprite_frames
 	assert_eq(strike_frames.get_frame_count(&"default"), 2)
+	assert_eq(success_frames.get_frame_count(&"default"), 2)
 	assert_eq(
 		strike_frames.get_frame_texture(&"default", 0).resource_path,
 		"res://assets/art/drive/Dread vignette.png",
 	)
 	assert_eq(
-		(success.get_node("Vignette").material as ShaderMaterial).shader,
-		RADIAL_SHADER,
-	)
-	success.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	success.size = Vector2(720.0, 1280.0)
-	success._update_vignette_aspect()
-	assert_almost_eq(
-		(success.get_node("Vignette").material as ShaderMaterial).get_shader_parameter(
-			"aspect_ratio",
-		),
-		0.5625,
-		0.001,
-	)
-	assert_eq(
-		(success.get_node("Vignette").material as ShaderMaterial).get_shader_parameter(
-			"vignette_color",
-		),
-		Color(1, 1, 1, 0.72),
+		success_frames.get_frame_texture(&"default", 1).resource_path,
+		"res://assets/art/drive/actionWiggleFlipForAffect.png",
 	)
 	assert_true(strike.get_node("AnimatedSprite2D").material == BOIL_MATERIAL)
-	assert_almost_eq(success.duration, 0.34, 0.001)
-	assert_almost_eq(success.peak_opacity, 0.86, 0.001)
+	assert_true(success.get_node("AnimatedSprite2D").material == BOIL_MATERIAL)

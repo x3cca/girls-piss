@@ -38,5 +38,4 @@ Effects can also be started immediately with
 
 The gameplay layer also exposes `play_strike_feedback()` and
 `play_success_feedback()`. Bad-zone strikes use the authored dread overlay;
-checkpoint completions use a procedural white radial vignette with a clear
-center and a short edge flash.
+checkpoint completions use the authored two-frame action-line overlay.

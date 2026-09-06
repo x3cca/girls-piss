@@ -19,18 +19,20 @@ const OUT_OF_BOUNDS_MISS := COLLISION_OUT_OF_BOUNDS_MISS
 @export var target_follow_stiffness := 135.0
 @export var target_follow_damping := 17.0
 @export var target_follow_max_speed := 2500.0
-@export var bloom_radius_per_pixel := 0.54
+@export var bloom_radius_per_pixel := 1.2
 @export var bloom_decay_rate := 130.0
-@export var max_bloom_radius := 224.0
+@export var max_bloom_radius := 300.0
 @export var bloom_width_scale := 0.16
+@export_range(1.0, 4.0, 0.1) var bloom_width_exponent := 2.0
 @export var bloom_swirl_speed := 7.0
 @export var bloom_swirl_acceleration := 28.0
-@export var double_stream_start_radius := 180.0
+@export var double_stream_start_radius := 300.0
 @export var double_stream_release_radius := 72.0
 @export var double_bloom_radius_multiplier := 3.0
 @export_group("Beat bloom")
 @export_range(32.0, 240.0, 1.0) var beat_bloom_width := 128.0
 @export_range(0.0, 1.0, 0.01) var beat_bloom_alpha := 0.46
+@export_range(0.0, 1.0, 0.01) var minimum_bloom_alpha := 0.18
 @export_range(24, 32, 1) var ribbon_points := 28
 @export var gravity := Vector2(0.0, 360.0)
 @export var parcel_lifetime := 2.25
@@ -1604,7 +1606,7 @@ func _set_ribbon_mesh(
 		# bloom outward, keeping the source readable while showing lost control
 		# where accuracy matters.
 		var distal_bloom := smoothstep(0.25, 1.0, depth_fraction)
-		width += _aim_bloom_radius * bloom_width_scale * distal_bloom
+		width += _bloom_width_for_radius(_aim_bloom_radius) * distal_bloom
 		var pulse_strength := 0.0
 		if i < point_ages.size():
 			pulse_strength = _beat_bloom_strength_for_age(point_ages[i])
@@ -1615,7 +1617,9 @@ func _set_ribbon_mesh(
 			fade = lerpf(1.0, distal_end_alpha, distal_fade)
 		var alpha := clampf(fade * ribbon_alpha, 0.0, 1.0)
 		if is_bloom:
-			alpha *= pulse_strength * beat_bloom_alpha
+			# Keep a broad halo around the stream between beats. Pulses still lift
+			# it to the configured peak, but the bloom no longer disappears.
+			alpha *= maxf(minimum_bloom_alpha, pulse_strength * beat_bloom_alpha)
 		var center := points[i] + normal * center_offset
 		var left := center - normal * width * 0.5
 		var right := center + normal * width * 0.5
@@ -1642,6 +1646,15 @@ func _set_ribbon_mesh(
 	arrays[Mesh.ARRAY_COLOR] = colors
 	arrays[Mesh.ARRAY_INDEX] = indices
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+
+
+func _bloom_width_for_radius(radius: float) -> float:
+	var normalized_radius := clampf(
+		radius / maxf(max_bloom_radius, 1.0),
+		0.0,
+		1.0,
+	)
+	return pow(normalized_radius, bloom_width_exponent) * max_bloom_radius * bloom_width_scale
 
 
 func _hide_depth_band_group(prefix: String) -> void:

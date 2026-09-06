@@ -10,6 +10,8 @@ const METER_SLIDE_MARGIN := 24.0
 const METER_SHOW_DURATION := 0.65
 
 @export_range(1.0, 1800.0, 1.0) var duration_seconds := 30.0
+## Stream-seconds recovered per real second while the stream is stopped.
+@export_range(0.0, 10.0, 0.05) var recharge_rate := 1.0
 @export var meter_position := Vector2(38.0, 1460.0)
 @export_range(0.0, 1.0, 0.01) var starting_value := 1.0
 
@@ -17,6 +19,7 @@ var input_controller: InputController
 var stream: LiquidStream
 var gameplay_active := false
 var time_remaining := 0.0
+var _depletion_announced := false
 
 @onready var _fill: TextureProgressBar = $Fill
 @onready var _liquid: TextureRect = $Liquid
@@ -51,16 +54,26 @@ func _process(delta: float) -> void:
 		_reveal_meter()
 	if not gameplay_active or input_controller == null:
 		return
-	if not input_controller.is_stream_input_held():
-		return
-	if stream != null and not stream.is_live_enabled():
-		return
-	if time_remaining <= 0.0:
-		return
-	time_remaining = maxf(time_remaining - maxf(delta, 0.0), 0.0)
+	var safe_delta := maxf(delta, 0.0)
+	var stream_input_held := input_controller.is_stream_input_held()
+	var stream_enabled := stream == null or stream.is_live_enabled()
+	if stream_input_held and stream_enabled:
+		if time_remaining <= 0.0:
+			_announce_depletion()
+			return
+		time_remaining = maxf(time_remaining - safe_delta, 0.0)
+	else:
+		# Releasing the stream, including the forced release after depletion, lets
+		# the player build the meter back up for the next hold.
+		time_remaining = minf(
+			duration_seconds,
+			time_remaining + safe_delta * maxf(recharge_rate, 0.0),
+		)
+		if time_remaining > 0.0:
+			_depletion_announced = false
 	_update_fill()
 	if time_remaining <= 0.0:
-		depleted.emit()
+		_announce_depletion()
 
 
 func set_gameplay_active(active: bool) -> void:
@@ -72,6 +85,7 @@ func set_gameplay_active(active: bool) -> void:
 
 func reset_meter() -> void:
 	time_remaining = duration_seconds * clampf(starting_value, 0.0, 1.0)
+	_depletion_announced = false
 	_update_fill()
 	_hide_meter()
 
@@ -86,6 +100,14 @@ func get_progress() -> float:
 
 func is_depleted() -> bool:
 	return time_remaining <= 0.0
+
+
+func _announce_depletion() -> void:
+	if _depletion_announced:
+		return
+	_depletion_announced = true
+	_update_fill()
+	depleted.emit()
 
 
 func _update_fill() -> void:

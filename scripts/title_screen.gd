@@ -21,8 +21,10 @@ const CURSOR_TEXTURE: Texture2D = preload(
 @export_range(0.0, 2.0, 0.05) var title_entry_delay := 0.35
 @export_range(0.0, 1.0, 0.05) var start_delay := 0.5
 @export_range(0.1, 1.5, 0.05) var exit_duration := 0.25
+@export_range(0.0, 1.0, 0.05) var backdrop_opacity := 0.68
 
 @onready var _overlay: Control = $Overlay
+@onready var _backdrop: ColorRect = $Backdrop
 @onready var _composition: TitleComposition = $Overlay/TitleComposition
 @onready var _start_sound: AudioStreamPlayer = $StartSound
 
@@ -40,6 +42,7 @@ func _ready() -> void:
 	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if autoplay:
 		show_title()
+	_backdrop.color.a = backdrop_opacity
 	if not _composition.start_flash_completed.is_connected(_on_start_flash_completed):
 		_composition.start_flash_completed.connect(_on_start_flash_completed)
 
@@ -63,6 +66,7 @@ func show_title() -> void:
 	start_locked = false
 	_start_flash_pending = false
 	visible = true
+	_backdrop.color.a = backdrop_opacity
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	_composition.modulate.a = 1.0
