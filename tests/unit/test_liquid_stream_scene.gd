@@ -52,6 +52,32 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 	assert_null(instance.get_node_or_null("WettablePlot03"))
 	assert_not_null(instance.get_node_or_null("BroadMoonLight"))
 	assert_not_null(instance.get_node_or_null("StreamImpactLight"))
+	var music_controller := instance.get_node_or_null("MusicController") as MusicController
+	assert_not_null(music_controller)
+	if music_controller:
+		var room_music := music_controller.get_node("Room") as AudioStreamPlayer
+		var gameplay_music := music_controller.get_node("Gameplay") as AudioStreamPlayer
+		assert_not_null(room_music.stream)
+		assert_not_null(gameplay_music.stream)
+		if room_music.stream and gameplay_music.stream:
+			assert_eq(
+				room_music.stream.resource_path,
+				"res://assets/audio/zombie_disko_room.ogg",
+			)
+			assert_eq(
+				gameplay_music.stream.resource_path,
+				"res://assets/audio/zombie_disko_bass_boosted.ogg",
+			)
+			assert_lt(room_music.stream.get_length(), gameplay_music.stream.get_length())
+			assert_almost_eq(room_music.stream.get_length(), 16.0, 0.01)
+			assert_almost_eq(gameplay_music.stream.get_length(), 56.0, 0.01)
+			assert_true(room_music.stream is AudioStreamOggVorbis)
+			assert_true(gameplay_music.stream is AudioStreamOggVorbis)
+			if room_music.stream is AudioStreamOggVorbis and gameplay_music.stream is AudioStreamOggVorbis:
+				assert_true((room_music.stream as AudioStreamOggVorbis).loop)
+				assert_true((gameplay_music.stream as AudioStreamOggVorbis).loop)
+			music_controller.begin_gameplay_crossfade()
+			assert_true(gameplay_music.playing)
 	var impact := instance.get_node_or_null("LiquidStream/ImpactBurst") as CPUParticles2D
 	assert_not_null(impact)
 	if impact:
@@ -108,6 +134,32 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 		assert_almost_eq(impact.tangential_accel_max, 240.0, 0.001)
 		assert_almost_eq(impact.scale_amount_min, 0.2, 0.001)
 		assert_almost_eq(impact.scale_amount_max, 0.55, 0.001)
+
+
+func test_music_controller_crossfades_preloaded_looping_tracks() -> void:
+	var instance := SMOKE_TEST_SCENE.instantiate()
+	add_child_autofree(instance)
+	var music_controller := instance.get_node("MusicController") as MusicController
+	var room_music := music_controller.get_node("Room") as AudioStreamPlayer
+	var gameplay_music := music_controller.get_node("Gameplay") as AudioStreamPlayer
+
+	assert_true(room_music.is_inside_tree())
+	assert_true(gameplay_music.is_inside_tree())
+	assert_true(room_music.playing)
+	assert_false(gameplay_music.playing)
+	music_controller.gameplay_crossfade_duration = 0.25
+	music_controller.begin_gameplay_crossfade()
+	assert_true(room_music.playing)
+	assert_true(gameplay_music.playing)
+	music_controller._apply_crossfade(0.5)
+	assert_gt(room_music.volume_db, -6.0)
+	assert_gt(gameplay_music.volume_db, -6.0)
+	await get_tree().create_timer(0.1).timeout
+	assert_true(room_music.playing)
+	assert_true(gameplay_music.playing)
+	await get_tree().create_timer(0.2).timeout
+	assert_false(room_music.playing)
+	assert_almost_eq(gameplay_music.volume_db, music_controller.gameplay_volume_db, 0.01)
 
 
 func test_stream_pulse_drives_shake_without_pulsing_lights() -> void:

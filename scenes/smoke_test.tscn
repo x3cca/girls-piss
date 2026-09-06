@@ -7,7 +7,6 @@
 [ext_resource type="PackedScene" path="res://scenes/screen_overlay.tscn" id="7_overlay"]
 [ext_resource type="PackedScene" path="res://scenes/shape_trace.tscn" id="8_trace"]
 [ext_resource type="PackedScene" path="res://scenes/piss_line_recorder.tscn" id="9_recorder"]
-[ext_resource type="AudioStream" uid="uid://r3a1f5062i1i" path="res://assets/audio/Bloopin.mp3" id="10_h3nus"]
 [ext_resource type="PackedScene" path="res://scenes/piss_line_replay.tscn" id="10_replay"]
 [ext_resource type="PackedScene" path="res://scenes/title_screen.tscn" id="11_title"]
 [ext_resource type="Script" uid="uid://7hyf0kirxip1" path="res://scripts/depth_map.gd" id="12_depth_map"]
@@ -16,6 +15,7 @@
 [ext_resource type="PackedScene" path="res://scenes/negative_zone.tscn" id="15_negative_zone"]
 [ext_resource type="PackedScene" path="res://scenes/piss_toilet.tscn" id="16_piss_toilet"]
 [ext_resource type="Script" path="res://scripts/surface_effects.gd" id="17_surface_effects"]
+[ext_resource type="PackedScene" path="res://scenes/music_controller.tscn" id="18_music"]
 
 [sub_resource type="Gradient" id="Gradient_light"]
 colors = PackedColorArray(1, 1, 1, 0.95, 1, 1, 1, 0)
@@ -96,6 +96,4 @@ enabled = false
 
 [node name="TitleScreen" parent="TitleLayer" unique_id=2068530869 instance=ExtResource("11_title")]
 
-[node name="BackgroundMusic" type="AudioStreamPlayer" parent="." unique_id=1311718434]
-stream = ExtResource("10_h3nus")
-autoplay = true
+[node name="MusicController" parent="." instance=ExtResource("18_music")]

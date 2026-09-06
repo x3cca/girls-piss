@@ -17,6 +17,7 @@ class_name Main
 @onready var hud: StreamHUD = $HUDLayer/HUD
 @onready var _hud_layer: CanvasLayer = $HUDLayer
 @onready var title_screen: TitleScreen = $TitleLayer/TitleScreen
+@onready var music_controller: MusicController = $MusicController
 @onready var screen_overlay: ScreenOverlay = $ScreenOverlay
 @onready var _ambient: CanvasModulate = $Ambient
 @onready var surface_effects: SurfaceEffects = get_node_or_null("SurfaceEffects") as SurfaceEffects
@@ -136,6 +137,8 @@ func _ready() -> void:
 		level_1_chrome.volume_pointer_changed.connect(_on_volume_pointer_changed)
 	if not title_screen.transition_completed.is_connected(_on_title_transition_completed):
 		title_screen.transition_completed.connect(_on_title_transition_completed)
+	if not title_screen.start_requested.is_connected(_on_title_start_requested):
+		title_screen.start_requested.connect(_on_title_start_requested)
 	line_recorder.start_recording()
 	_base_position = position
 	_base_hud_offset = _hud_layer.offset
@@ -256,6 +259,10 @@ func _on_input_detected(source: int) -> void:
 		_start_prompt_shown = true
 
 
+func _on_title_start_requested(_source: int) -> void:
+	music_controller.begin_gameplay_crossfade()
+
+
 func _on_volume_pointer_changed(active: bool) -> void:
 	input_controller.set_pointer_input_blocked(active)
 	if is_instance_valid(hud):
@@ -269,6 +276,7 @@ func _on_title_transition_completed(source: int) -> void:
 
 func start_gameplay_immediately() -> void:
 	## Programmatic bypass used by direct-level startup and scene tests.
+	music_controller.start_gameplay_immediately()
 	if title_screen.is_active():
 		title_screen.skip_to_gameplay(InputController.AimSource.KEYBOARD)
 	else:
