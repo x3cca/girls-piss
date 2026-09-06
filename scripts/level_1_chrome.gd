@@ -172,9 +172,18 @@ func _wobble_volume() -> void:
 
 func _on_volume_hitbox_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		# A touchscreen press is also delivered as an emulated mouse event by
+		# Godot. The native screen-touch event below is the one that should cycle
+		# the control, so ignore only the synthetic mouse copy.
+		if event.device == InputEvent.DEVICE_ID_EMULATION:
+			_volume_hitbox.accept_event()
+			return
 		cycle_volume()
 		_volume_hitbox.accept_event()
 	elif event is InputEventScreenTouch and event.pressed:
+		if event.device == InputEvent.DEVICE_ID_EMULATION:
+			_volume_hitbox.accept_event()
+			return
 		cycle_volume()
 		_volume_hitbox.accept_event()
 

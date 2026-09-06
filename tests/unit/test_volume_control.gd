@@ -1,6 +1,26 @@
 extends GutTest
 
 const LEVEL_SCENE := preload("res://scenes/level_1.tscn")
+const CHROME_SCENE := preload("res://scenes/level_1_chrome.tscn")
+
+
+func test_touch_input_ignores_the_emulated_mouse_copy() -> void:
+	var chrome := CHROME_SCENE.instantiate() as Level1Chrome
+	add_child_autofree(chrome)
+	chrome.set_volume_level(3)
+
+	# Godot dispatches this synthetic mouse press alongside the native touch.
+	var emulated_mouse_down := InputEventMouseButton.new()
+	emulated_mouse_down.button_index = MOUSE_BUTTON_LEFT
+	emulated_mouse_down.device = InputEvent.DEVICE_ID_EMULATION
+	emulated_mouse_down.pressed = true
+	chrome._on_volume_hitbox_gui_input(emulated_mouse_down)
+
+	var touch_down := InputEventScreenTouch.new()
+	touch_down.pressed = true
+	chrome._on_volume_hitbox_gui_input(touch_down)
+
+	assert_eq(chrome.get_volume_level(), 0)
 
 
 func test_volume_control_cycles_three_even_levels_and_mute() -> void:
