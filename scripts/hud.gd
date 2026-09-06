@@ -65,8 +65,8 @@ func set_gameplay_controls_visible(enabled: bool) -> void:
 	if is_instance_valid(strike_warning) and not enabled:
 		strike_warning.hide_warning()
 	if is_instance_valid(piss_meter):
-		# The meter stays on screen during the title transition, but only drains
-		# after gameplay has been released by the title gate.
+		# Show the meter when gameplay starts, but only drain it after the title
+		# gate has released gameplay.
 		piss_meter.set_gameplay_active(enabled)
 	queue_redraw()
 

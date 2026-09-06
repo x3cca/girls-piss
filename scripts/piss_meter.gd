@@ -32,7 +32,6 @@ var _rest_position := Vector2.ZERO
 var _hidden_position := Vector2.ZERO
 var _meter_revealed := false
 var _show_tween: Tween
-var _wired_input_controller: InputController
 
 
 func _ready() -> void:
@@ -45,13 +44,6 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_layout()
-	_wire_input_controller()
-	if (
-			gameplay_active
-			and is_instance_valid(input_controller)
-			and input_controller.is_stream_input_held()
-	):
-		_reveal_meter()
 	if not gameplay_active or input_controller == null:
 		return
 	var safe_delta := maxf(delta, 0.0)
@@ -78,8 +70,9 @@ func _process(delta: float) -> void:
 
 func set_gameplay_active(active: bool) -> void:
 	gameplay_active = active
-	_wire_input_controller()
-	if not active:
+	if active:
+		_reveal_meter()
+	else:
 		_hide_meter()
 
 
@@ -138,25 +131,6 @@ func _layout() -> void:
 	)
 	position = _rest_position if _meter_revealed else _hidden_position
 	scale = composition_scale
-
-
-func _wire_input_controller() -> void:
-	if input_controller == _wired_input_controller:
-		return
-	if is_instance_valid(_wired_input_controller) and _wired_input_controller.stream_hold_changed.is_connected(
-		_on_stream_hold_changed,
-	):
-		_wired_input_controller.stream_hold_changed.disconnect(_on_stream_hold_changed)
-	_wired_input_controller = input_controller
-	if is_instance_valid(_wired_input_controller) and not _wired_input_controller.stream_hold_changed.is_connected(
-		_on_stream_hold_changed,
-	):
-		_wired_input_controller.stream_hold_changed.connect(_on_stream_hold_changed)
-
-
-func _on_stream_hold_changed(active: bool) -> void:
-	if active and gameplay_active:
-		_reveal_meter()
 
 
 func _reveal_meter() -> void:

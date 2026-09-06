@@ -251,15 +251,17 @@ func test_completion_card_bowl_uses_splat_shader_and_water_uses_ripple_shader() 
 	assert_eq((win_water.material as ShaderMaterial).shader, WATER_SHADER)
 
 
-func test_piss_meter_reveals_with_a_left_slide_when_pissing_starts() -> void:
+func test_piss_meter_reveals_with_a_left_slide_when_gameplay_starts() -> void:
 	var meter := METER_SCENE.instantiate() as PissMeter
 	var controller := InputController.new()
 	add_child_autofree(controller)
 	add_child_autofree(meter)
 	meter.input_controller = controller
-	meter.set_gameplay_active(true)
 
 	assert_false(meter.visible)
+	meter.set_gameplay_active(true)
+
+	assert_true(meter.visible)
 	var hidden_x := meter.position.x
 	var rest_x := meter._rest_position.x
 	assert_lt(hidden_x, 0.0)
