@@ -28,6 +28,17 @@ Download new or changed files:
 python3 tools/sync_drive_assets.py --sync
 ```
 
+When an artist adds or replaces Drive artwork, start from the repository root
+and run `--check` first. Review the reported names and counts, then run
+`--sync`; this is the canonical way for a new agent to pull the latest assets.
+The command writes only processed files to `assets/art/drive/`: transparent
+outer borders are trimmed, the original crop is preserved, and files without a
+Drive extension are saved as `.png`. Review the resulting dimensions and the
+scene references before committing. Do not copy files from the ignored cache or
+commit the raw downloads. If a source file disappears, the tool reports it but
+keeps the existing local output so a remote cleanup cannot silently break a
+scene.
+
 The default source is
 `REDACTED`.
 Use `--source URL` or set `DRIVE_ASSETS_URL` when the folder changes.
@@ -69,7 +80,9 @@ build-and-deploy.yml follows the current Date-or-Mate-2 workflow:
 5. Push the build to itch.io with Butler.
 
 The workflow targets the html-staging channel. The html prefix makes the
-channel browser-playable on itch.io.
+channel browser-playable on itch.io. The Web PCK is checked against a 6 MB cap;
+the limit leaves room for the authored Level 1 artwork while still catching an
+accidental export of the full development asset tree.
 
 ## GitHub Actions secrets
 
@@ -94,5 +107,5 @@ project resource. The nine prompt icons used by `InputPrompt` are explicitly
 included and preloaded so they remain available at runtime while the rest of
 the Kenney pack stays out of the PCK. The MCP and GUT addons, tests, and
 development scripts are also excluded in export_presets.cfg. CI checks the
-resulting PCK stays below 3 MB so an accidental return to an all-resources
+resulting PCK stays below 6 MB so an accidental return to an all-resources
 export is visible.

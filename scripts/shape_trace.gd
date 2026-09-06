@@ -39,7 +39,12 @@ signal checkpoint_completed(index: int)
 @export var outline_width := 3.0
 @export var completed_width := 6.0
 @export var target_texture: Texture2D
+@export var target_textures: Array[Texture2D] = []
 @export var target_size := 48.0
+## Level artwork can keep each target's authored proportions while scaling the
+## 1080px reference layout down to the live viewport.
+@export var use_native_target_sizes := false
+@export_range(0.05, 2.0, 0.01) var native_target_scale := 1.0
 @export var target_center_position := Vector2(-1.0, -1.0)
 
 var completed_steps := 0
@@ -74,6 +79,18 @@ func _process(_delta: float) -> void:
 
 func process_frame(delta: float) -> void:
 	_process(delta)
+
+
+func rebuild_targets() -> void:
+	## Recreate the generated target nodes after a level assigns its art set.
+	## This is also useful to tools that author a trace after the scene is ready.
+	for target in _targets:
+		if is_instance_valid(target):
+			target.free()
+	_targets.clear()
+	_sync_target_sprites()
+	_update_target_visibility()
+	queue_redraw()
 
 
 func reset_trace() -> void:
@@ -252,6 +269,7 @@ func _draw() -> void:
 					true,
 				)
 
+
 func _sync_target_sprites() -> void:
 	if _targets.size() == normalized_points.size():
 		return
@@ -262,15 +280,26 @@ func _sync_target_sprites() -> void:
 	for index in normalized_points.size():
 		var target := TRACE_TARGET_SCENE.instantiate() as TraceTarget
 		target.name = "TraceTarget%02d" % (index + 1)
+		var texture := target_texture
+		if index < target_textures.size() and target_textures[index] != null:
+			texture = target_textures[index]
 		add_child(target)
 		target.configure(
 			normalized_to_viewport(normalized_points[index]),
 			_get_target_center(),
-			target_texture,
-			target_size,
+			texture,
+			_get_target_size(texture),
 			float(index) * 0.91,
 		)
 		_targets.append(target)
+
+
+func _get_target_size(texture: Texture2D) -> float:
+	if not use_native_target_sizes or texture == null:
+		return target_size
+	var viewport_width := get_viewport().get_visible_rect().size.x
+	var reference_scale := viewport_width / 1080.0
+	return float(texture.get_width()) * native_target_scale * reference_scale
 
 
 func _update_target_visibility() -> void:

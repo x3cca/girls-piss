@@ -4,7 +4,7 @@ class_name PissLineReplay
 
 signal replay_finished
 
-@export_range(1.0, 30.0, 0.5) var replay_duration := 10.0
+@export_range(1.0, 30.0, 0.5) var replay_duration := 5.0
 @export_range(1.0, 10.0, 0.1) var max_speed_multiplier := 3.0
 @export var line_color := Color(1.0, 0.88, 0.34, 0.95)
 @export var line_width := 7.0
