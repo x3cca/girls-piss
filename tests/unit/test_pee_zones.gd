@@ -1,6 +1,7 @@
 extends GutTest
 
 const LEVEL_SCENE := preload("res://scenes/smoke_test.tscn")
+const LEVEL_1_SCENE := preload("res://scenes/level_1.tscn")
 const ZONE_SCENE := preload("res://scenes/negative_zone.tscn")
 const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
 
@@ -208,6 +209,27 @@ func test_live_stream_signal_reaches_a_positive_checkpoint() -> void:
 	for _frame in 120:
 		level.stream.process_frame(1.0 / 60.0)
 	assert_eq(level.shape_trace.completed_steps, 1)
+
+
+func test_initial_stream_to_toilet_does_not_cross_the_floor_first() -> void:
+	var level := LEVEL_1_SCENE.instantiate() as Main
+	level.skip_title_screen = true
+	add_child_autofree(level)
+	level.set_process(false)
+	level.stream.set_process(false)
+	level.input_controller.set_process(false)
+
+	var checkpoint := level.shape_trace.get_checkpoint_position(0)
+	level.input_controller.set_target_position(checkpoint)
+	var space_down := InputEventKey.new()
+	space_down.physical_keycode = KEY_SPACE
+	space_down.pressed = true
+	level.input_controller.handle_input_event(space_down)
+	for _frame in 30:
+		level.stream.process_frame(1.0 / 60.0)
+
+	assert_eq(level.get_strikes(), 0)
+	assert_eq(level.get_last_stream_endpoint(), checkpoint)
 
 
 func test_live_mouse_stream_signal_reaches_a_negative_zone() -> void:
