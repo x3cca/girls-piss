@@ -1,0 +1,133 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/game_over.gd" id="1_game_over"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/Dread vignette.png" id="2_dread"]
+[ext_resource type="PackedScene" path="res://scenes/strike_warning_red.tscn" id="3_message"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/RedTextFX1.png" id="4_fx_one"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/RedTextFX2.png" id="5_fx_two"]
+[ext_resource type="AudioStream" path="res://assets/audio/cute_cozy_ui/Sounds/Failure.wav" id="6_failure"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_retry"]
+bg_color = Color(0.945, 0.827, 0.329, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.972, 0.674, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_retry_hover"]
+bg_color = Color(1, 0.914, 0.486, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.972, 0.674, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_retry_pressed"]
+bg_color = Color(0.82, 0.68, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.972, 0.674, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[node name="GameOver" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+script = ExtResource("1_game_over")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.035, 0.012, 0.035, 0.82)
+
+[node name="DreadFrame" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture_filter = 1
+texture = ExtResource("2_dread")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Presentation" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="GameOverTitle" type="Label" parent="Presentation"]
+layout_mode = 0
+offset_right = 540.0
+offset_bottom = 64.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.890, 0.780, 1)
+theme_override_colors/font_shadow_color = Color(0.2, 0.02, 0.04, 0.9)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 4
+theme_override_font_sizes/font_size = 42
+text = "GAME OVER"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="EmergencyMessage" parent="Presentation" instance=ExtResource("3_message")]
+
+[node name="FXOne" type="TextureRect" parent="Presentation"]
+layout_mode = 0
+mouse_filter = 2
+texture_filter = 1
+texture = ExtResource("4_fx_one")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="FXTwo" type="TextureRect" parent="Presentation"]
+layout_mode = 0
+mouse_filter = 2
+texture_filter = 1
+texture = ExtResource("5_fx_two")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RetryButton" type="Button" parent="Presentation"]
+layout_mode = 0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.12, 0.1, 0.04, 1)
+theme_override_colors/font_hover_color = Color(0.12, 0.1, 0.04, 1)
+theme_override_colors/font_pressed_color = Color(0.12, 0.1, 0.04, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBox_retry")
+theme_override_styles/hover = SubResource("StyleBox_retry_hover")
+theme_override_styles/pressed = SubResource("StyleBox_retry_pressed")
+text = "TRY AGAIN"
+
+[node name="FailureSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6_failure")
