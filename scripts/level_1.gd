@@ -114,6 +114,7 @@ func _layout_level1() -> void:
 		var tank := toilet.get_node_or_null("Tank") as Sprite2D
 		if tank:
 			tank.position = Vector2(0.0, -900.0)
+	_align_bowl_light()
 	shape_trace.target_center_position = Vector2(
 		viewport_size.x * 0.5,
 		viewport_size.y * 0.625,
