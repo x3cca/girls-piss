@@ -1,32 +1,57 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/level_1_chrome.gd" id="1_chrome"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/Volume1.png" id="2_volume"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/Back1Shadow.png" id="3_back_shadow"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/Back1.png" id="4_back"]
-[ext_resource type="AudioStream" path="res://assets/audio/orchestra_hit.ogg" id="5_volume_sound"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/Volume1.png" id="2_volume1"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/Volume2.png" id="3_volume2"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/Volume3.png" id="4_volume3"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/MuteVolumeX.svg" id="5_mute_volume"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/Back1Shadow.png" id="6_back_shadow"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/Back1.png" id="7_back"]
+[ext_resource type="AudioStream" path="res://assets/audio/orchestra_hit.ogg" id="8_volume_sound"]
 
 [node name="Level1Chrome" type="Node2D"]
 z_index = 6
 script = ExtResource("1_chrome")
 
-[node name="Volume" type="Sprite2D" parent="."]
+[node name="VolumeIcons" type="Node2D" parent="."]
+
+[node name="Volume1" type="Sprite2D" parent="VolumeIcons"]
 texture_filter = 1
-texture = ExtResource("2_volume")
+texture = ExtResource("2_volume1")
+position = Vector2(996, 106.5)
+visible = false
+
+[node name="Volume2" type="Sprite2D" parent="VolumeIcons"]
+texture_filter = 1
+texture = ExtResource("3_volume2")
+position = Vector2(996, 106.5)
+visible = false
+
+[node name="Volume3" type="Sprite2D" parent="VolumeIcons"]
+texture_filter = 1
+texture = ExtResource("4_volume3")
+position = Vector2(996, 106.5)
+
+[node name="MuteVolume" type="Sprite2D" parent="VolumeIcons"]
+texture_filter = 1
+texture = ExtResource("5_mute_volume")
+position = Vector2(996, 106.5)
+visible = false
 
 [node name="VolumeHitbox" type="Control" parent="."]
 mouse_filter = 0
 mouse_default_cursor_shape = 0
 
 [node name="VolumeSound" type="AudioStreamPlayer" parent="."]
-stream = ExtResource("5_volume_sound")
+stream = ExtResource("8_volume_sound")
+bus = &"Master"
 
 [node name="BackShadow" type="Sprite2D" parent="."]
 visible = false
 texture_filter = 1
-texture = ExtResource("3_back_shadow")
+texture = ExtResource("6_back_shadow")
 
 [node name="Back" type="Sprite2D" parent="."]
 visible = false
 texture_filter = 1
-texture = ExtResource("4_back")
+texture = ExtResource("7_back")
