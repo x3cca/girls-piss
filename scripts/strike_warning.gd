@@ -13,7 +13,7 @@ const YELLOW_WARNING := 1
 const ORANGE_WARNING := 2
 const RED_WARNING := 3
 
-@export_range(0.0, 3.0, 0.01) var warning_duration := 0.75
+@export_range(0.0, 10.0, 0.01) var warning_duration := 4.0
 @export_range(0.0, 0.2, 0.005) var top_margin_ratio := 0.025
 @export_range(0.0, 0.2, 0.005) var right_margin_ratio := 0.035
 @export_range(0.2, 0.6, 0.01) var bubble_width_ratio := 0.44
@@ -149,6 +149,7 @@ func _layout_warnings() -> void:
 		yellow_warning.get_node("Text") as TextureRect,
 		Vector2(right_position, top_margin),
 		bubble_width,
+		0.27,
 	)
 	_layout_simple_warning(
 		orange_warning,
@@ -156,6 +157,7 @@ func _layout_warnings() -> void:
 		orange_warning.get_node("Text") as TextureRect,
 		Vector2(right_position, top_margin),
 		bubble_width,
+		0.14,
 	)
 	_layout_red_warning(
 		red_warning,
@@ -173,6 +175,7 @@ func _layout_simple_warning(
 	text: TextureRect,
 	origin: Vector2,
 	bubble_width: float,
+	text_top_ratio: float,
 ) -> void:
 	var bubble_height := _texture_height(bubble.texture, bubble_width)
 	warning.position = origin
@@ -184,7 +187,7 @@ func _layout_simple_warning(
 	text.size = Vector2(text_width, text_height)
 	text.position = Vector2(
 		(bubble_width - text_width) * 0.5,
-		bubble_height * 0.27,
+		bubble_height * text_top_ratio,
 	)
 
 

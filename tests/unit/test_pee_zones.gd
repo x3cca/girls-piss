@@ -93,7 +93,7 @@ func test_force_pissing_does_not_merge_separate_holds_for_contact_rules() -> voi
 	space_up.physical_keycode = KEY_SPACE
 	space_up.pressed = false
 	controller.handle_input_event(space_up)
-	assert_true(controller.is_pissing())
+	assert_false(controller.is_pissing())
 	assert_false(controller.is_stream_input_held())
 	level._on_drawing_point_updated(bad_position, true)
 	assert_eq(level.get_strikes(), 1)
@@ -126,6 +126,25 @@ func test_four_strikes_stop_gameplay_and_show_retry_state() -> void:
 	assert_false(level.input_controller.is_gameplay_input_enabled())
 	assert_true(level.hud.completion_card.visible)
 	assert_true(level.hud.completion_card.is_failure_card())
+
+
+func test_strike_forces_the_stream_input_to_release() -> void:
+	var level := LEVEL_SCENE.instantiate() as Main
+	level.skip_title_screen = true
+	add_child_autofree(level)
+	level.set_process(false)
+	level.get_node("LiquidStream").set_process(false)
+	var space_down := InputEventKey.new()
+	space_down.physical_keycode = KEY_SPACE
+	space_down.pressed = true
+	level.input_controller.handle_input_event(space_down)
+	assert_true(level.input_controller.is_stream_input_held())
+
+	level._take_strike()
+
+	assert_false(level.input_controller.is_stream_input_held())
+	assert_false(level.input_controller.is_pissing())
+	assert_eq(level.get_safety_cooldown_remaining(), level.safety_cooldown)
 
 
 func test_reticle_uses_neutral_negative_and_success_textures() -> void:
@@ -239,7 +258,7 @@ func test_live_stream_can_switch_from_negative_hold_to_positive_hold() -> void:
 	assert_eq(level.shape_trace.completed_steps, 1)
 
 
-func test_live_stream_can_take_two_negative_strikes_without_releasing() -> void:
+func test_live_stream_stops_after_a_negative_strike_until_repressed() -> void:
 	var level := LEVEL_SCENE.instantiate() as Main
 	level.skip_title_screen = true
 	add_child_autofree(level)
@@ -258,4 +277,9 @@ func test_live_stream_can_take_two_negative_strikes_without_releasing() -> void:
 
 	level._process(level.safety_cooldown)
 	level.stream.process_frame(1.0 / 60.0)
+	assert_eq(level.get_strikes(), 1)
+
+	level.input_controller.handle_input_event(space_down)
+	for _frame in 120:
+		level.stream.process_frame(1.0 / 60.0)
 	assert_eq(level.get_strikes(), 2)
