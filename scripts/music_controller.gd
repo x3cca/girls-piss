@@ -5,21 +5,29 @@ class_name MusicController
 const SILENT_VOLUME_DB := -80.0
 
 @export_range(0.1, 8.0, 0.05) var gameplay_crossfade_duration := 5.0
+@export_range(0.1, 3.0, 0.05) var intensity_crossfade_duration := 0.45
 @export_range(-24.0, 0.0, 0.5) var room_volume_db := 0.0
-@export_range(-24.0, 0.0, 0.5) var gameplay_volume_db := -2.0
+@export_range(-24.0, 0.0, 0.5) var oomph_volume_db := 0.0
+@export_range(-24.0, 0.0, 0.5) var gameplay_volume_db := 0.0
 
 @onready var room_player: AudioStreamPlayer = $Room
 @onready var gameplay_player: AudioStreamPlayer = $Gameplay
+@onready var oomph_player: AudioStreamPlayer = $Oomph
 
 var _crossfade_tween: Tween
+var _intensity_tween: Tween
 var _gameplay_music_started := false
+var _title_progress := 0.0
+var _intensity_progress := 0.0
 
 
 func _ready() -> void:
 	_set_looping(room_player)
 	_set_looping(gameplay_player)
+	_set_looping(oomph_player)
 	room_player.volume_db = room_volume_db
 	gameplay_player.volume_db = SILENT_VOLUME_DB
+	oomph_player.volume_db = SILENT_VOLUME_DB
 	if not room_player.playing:
 		room_player.play()
 
@@ -33,14 +41,16 @@ func begin_gameplay_crossfade() -> void:
 
 	if not room_player.playing:
 		room_player.play()
-	gameplay_player.play(0.0)
-	_apply_crossfade(0.0)
+	_start_gameplay_layers()
+	_title_progress = 0.0
+	_intensity_progress = 0.0
+	_apply_title_crossfade(0.0)
 
 	# Tween a normalized mix value and convert to amplitude gains. Tweening dB
 	# values directly creates a large quiet dip in the middle of the overlap.
 	_crossfade_tween = create_tween()
 	_crossfade_tween.tween_method(
-		_apply_crossfade,
+		_apply_title_crossfade,
 		0.0,
 		1.0,
 		gameplay_crossfade_duration,
@@ -51,11 +61,34 @@ func begin_gameplay_crossfade() -> void:
 func start_gameplay_immediately() -> void:
 	if _crossfade_tween:
 		_crossfade_tween.kill()
+	if _intensity_tween:
+		_intensity_tween.kill()
 	_gameplay_music_started = true
-	gameplay_player.play(0.0)
+	_start_gameplay_layers()
 	room_player.stop()
-	room_player.volume_db = SILENT_VOLUME_DB
-	gameplay_player.volume_db = gameplay_volume_db
+	_title_progress = 1.0
+	_intensity_progress = 0.0
+	_apply_title_crossfade(1.0)
+
+
+func set_pissing(active: bool) -> void:
+	if not _gameplay_music_started:
+		return
+	if _intensity_tween:
+		_intensity_tween.kill()
+
+	var target_progress := 1.0 if active else 0.0
+	if is_equal_approx(_intensity_progress, target_progress):
+		_apply_intensity_crossfade(target_progress)
+		return
+
+	_intensity_tween = create_tween()
+	_intensity_tween.tween_method(
+		_apply_intensity_crossfade,
+		_intensity_progress,
+		target_progress,
+		intensity_crossfade_duration,
+	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 func _set_looping(player: AudioStreamPlayer) -> void:
@@ -67,11 +100,37 @@ func _set_looping(player: AudioStreamPlayer) -> void:
 
 
 func _apply_crossfade(progress: float) -> void:
-	var safe_progress := clampf(progress, 0.0, 1.0)
-	var room_gain := cos(safe_progress * PI * 0.5)
-	var gameplay_gain := sin(safe_progress * PI * 0.5)
+	# Keep the old helper name for callers that used the two-layer controller.
+	_apply_title_crossfade(progress)
+
+
+func _apply_title_crossfade(progress: float) -> void:
+	_title_progress = clampf(progress, 0.0, 1.0)
+	_apply_mix()
+
+
+func _apply_intensity_crossfade(progress: float) -> void:
+	_intensity_progress = clampf(progress, 0.0, 1.0)
+	_apply_mix()
+
+
+func _apply_mix() -> void:
+	var gameplay_base_gain := sin(_title_progress * PI * 0.5)
+	var room_gain := cos(_title_progress * PI * 0.5)
+	var oomph_gain := gameplay_base_gain * cos(_intensity_progress * PI * 0.5)
+	var gameplay_gain := gameplay_base_gain * sin(_intensity_progress * PI * 0.5)
 	room_player.volume_db = _gain_to_db(room_gain, room_volume_db)
+	oomph_player.volume_db = _gain_to_db(oomph_gain, oomph_volume_db)
 	gameplay_player.volume_db = _gain_to_db(gameplay_gain, gameplay_volume_db)
+
+func _start_gameplay_layers() -> void:
+	# Start both synchronized gameplay layers together. The full layer remains
+	# silent until a piss hold, so the intensity fade never seeks or lazy-loads.
+	oomph_player.play(0.0)
+	gameplay_player.play(0.0)
+
+
+
 
 
 func _gain_to_db(gain: float, target_db: float) -> float:

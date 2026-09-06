@@ -430,6 +430,7 @@ func _on_drawing_point_updated(position: Vector2, active: bool) -> void:
 
 
 func _on_stream_hold_changed(active: bool) -> void:
+	music_controller.set_pissing(active)
 	if active:
 		return
 	# A release can be followed by a re-press before LiquidStream gets another

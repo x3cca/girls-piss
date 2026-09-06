@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/music_controller.gd" id="1_music"]
 [ext_resource type="AudioStream" path="res://assets/audio/zombie_disko_room.ogg" id="2_room"]
 [ext_resource type="AudioStream" path="res://assets/audio/zombie_disko_bass_boosted.ogg" id="3_gameplay"]
+[ext_resource type="AudioStream" path="res://assets/audio/zombie_disko_oomph.ogg" id="4_oomph"]
 
 [node name="MusicController" type="Node"]
 script = ExtResource("1_music")
@@ -10,6 +11,9 @@ script = ExtResource("1_music")
 [node name="Room" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("2_room")
 autoplay = true
+
+[node name="Oomph" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("4_oomph")
 
 [node name="Gameplay" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("3_gameplay")
