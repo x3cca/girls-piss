@@ -8,6 +8,8 @@ const GAME_OVER_TWO := preload("res://assets/art/drive/GameOver2.png")
 const GAME_OVER_CHAULK := preload("res://assets/art/drive/GameOverChaulk.png")
 const PISS_AGAIN_ARROW_ONE := preload("res://assets/art/drive/PissAgainArrow1.png")
 const PISS_AGAIN_ARROW_TWO := preload("res://assets/art/drive/PissAgainArrow2.png")
+const PISS_AGAIN_TEXT_ONE := preload("res://assets/art/drive/PissAgainText1.png")
+const PISS_AGAIN_TEXT_TWO := preload("res://assets/art/drive/PissAgainText2.png")
 const FAILURE_SOUND := preload("res://assets/audio/cute_cozy_ui/Sounds/Failure.wav")
 const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
 
@@ -25,6 +27,8 @@ func test_game_over_starts_hidden_and_uses_authored_failure_assets() -> void:
 		"Presentation/GameOver2",
 		"Presentation/GameOverChaulk",
 		"Presentation/RetryButton",
+		"Presentation/PissAgainText1",
+		"Presentation/PissAgainText2",
 	]:
 		assert_eq(game_over.get_node(layer_path).material, BOIL_MATERIAL)
 	assert_eq(game_over.get_node("Presentation/GameOver1").texture, GAME_OVER_ONE)
@@ -50,6 +54,26 @@ func test_game_over_starts_hidden_and_uses_authored_failure_assets() -> void:
 	assert_eq(retry_button.texture_normal, PISS_AGAIN_ARROW_ONE)
 	assert_eq(retry_button.texture_hover, PISS_AGAIN_ARROW_TWO)
 	assert_eq(retry_button.mouse_default_cursor_shape, Control.CURSOR_ARROW)
+	assert_eq(game_over.get_node("Presentation/PissAgainText1").texture, PISS_AGAIN_TEXT_ONE)
+	assert_eq(game_over.get_node("Presentation/PissAgainText2").texture, PISS_AGAIN_TEXT_TWO)
+	assert_true(game_over.get_node("Presentation/PissAgainText1").visible)
+	assert_false(game_over.get_node("Presentation/PissAgainText2").visible)
+
+
+func test_retry_text_tracks_hover_state() -> void:
+	var game_over := GAME_OVER_SCENE.instantiate() as GameOver
+	add_child_autofree(game_over)
+	var retry_button := game_over.get_node("Presentation/RetryButton") as TextureButton
+	var text_one := game_over.get_node("Presentation/PissAgainText1") as TextureRect
+	var text_two := game_over.get_node("Presentation/PissAgainText2") as TextureRect
+
+	retry_button.mouse_entered.emit()
+	assert_false(text_one.visible)
+	assert_true(text_two.visible)
+
+	retry_button.mouse_exited.emit()
+	assert_true(text_one.visible)
+	assert_false(text_two.visible)
 
 
 func test_show_card_reveals_retry_state_and_emits_retry() -> void:

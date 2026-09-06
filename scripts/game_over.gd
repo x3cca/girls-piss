@@ -25,6 +25,8 @@ const CURSOR_TEXTURE: Texture2D = preload(
 @onready var _presentation: Control = $Presentation
 @onready var _game_over_piss: TextureRect = $Presentation/GameOverPiss
 @onready var _retry_button: TextureButton = $Presentation/RetryButton
+@onready var _piss_again_text_one: TextureRect = $Presentation/PissAgainText1
+@onready var _piss_again_text_two: TextureRect = $Presentation/PissAgainText2
 @onready var _failure_sound: AudioStreamPlayer = $FailureSound
 
 var _entry_tween: Tween
@@ -35,6 +37,11 @@ func _ready() -> void:
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_retry_button.pressed.connect(_on_retry_pressed)
+	_retry_button.mouse_entered.connect(_set_retry_text_hovered.bind(true))
+	_retry_button.mouse_exited.connect(_set_retry_text_hovered.bind(false))
+	_retry_button.focus_entered.connect(_set_retry_text_hovered.bind(true))
+	_retry_button.focus_exited.connect(_set_retry_text_hovered.bind(false))
+	_set_retry_text_hovered(false)
 	_backdrop.color.a = backdrop_opacity
 	_dread_frame.modulate.a = dread_opacity
 	_game_over_piss.modulate.a = game_over_piss_opacity
@@ -89,3 +96,8 @@ func get_failure_sound() -> AudioStream:
 
 func _on_retry_pressed() -> void:
 	retry_pressed.emit()
+
+
+func _set_retry_text_hovered(hovered: bool) -> void:
+	_piss_again_text_one.visible = not hovered
+	_piss_again_text_two.visible = hovered
