@@ -154,9 +154,9 @@ The launch crash uses `door_kick.ogg`, derived from [Kicking/Forcing/Breaking
 Wooden Door by qubodup](https://freesound.org/people/qubodup/sounds/160213/) and
 available under CC0. See `licenses/door_kick.md` for provenance.
 
-The failure transition uses the spoken line and three knock excerpts from
+The failure transition uses audio from
 [Gaming Sound FX's FBI Open Up - Sound Effect (HD)](https://www.youtube.com/watch?v=QQR7t712Mhg).
-These source-video excerpts are not marked with a permissive license; see
+The source video is not marked with a permissive license; see
 `licenses/fbi_open_up.md` before redistributing the project.
 
 The strike warning wall-pound variants are derived from [Heavy Wall Pounding by
