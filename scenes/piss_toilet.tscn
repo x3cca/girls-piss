@@ -5,30 +5,9 @@
 [ext_resource type="Texture2D" uid="uid://c88ibb2gxdka3" path="res://assets/art/drive/Pissbowl.png" id="2_bowl"]
 [ext_resource type="Texture2D" uid="uid://dslgsy34i5mfc" path="res://assets/art/drive/Pisstank.png" id="3_tank"]
 [ext_resource type="Texture2D" uid="uid://bmf80tn6gm11c" path="res://assets/art/drive/Pissseat.png" id="4_seat"]
-[ext_resource type="Shader" uid="uid://buq3olqwoygjw" path="res://shaders/surface_ripple.gdshader" id="5_ripple"]
+[ext_resource type="Material" path="res://resources/materials/bowl_surface.tres" id="5_bowl_material"]
 [ext_resource type="Shader" uid="uid://m2dyqpue21da" path="res://shaders/surface_drips.gdshader" id="6_drips"]
 [ext_resource type="Shader" uid="uid://k3mtqi6hw14s" path="res://shaders/surface_paint.gdshader" id="7_paint"]
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_bowl_surface"]
-shader = ExtResource("5_ripple")
-shader_parameter/water_noise_map_texel_size = Vector2(0.004, 0.004)
-shader_parameter/ripple_center = Vector2(0.5, 0.5)
-shader_parameter/ripple_age = 0.0
-shader_parameter/ripple_strength = 0.0
-shader_parameter/ripple_frequency = 30.0
-shader_parameter/ripple_speed = 5.0
-shader_parameter/ripple_amplitude = 0.012
-shader_parameter/ripple_decay = 0.7
-shader_parameter/pop_duration = 0.45
-shader_parameter/pop_radius = 0.14
-shader_parameter/pop_ring_width = 0.012
-shader_parameter/pop_distortion_strength = 0.05
-shader_parameter/wave_frequency = 18.0
-shader_parameter/wave_speed = 1.8
-shader_parameter/wave_amplitude = 0.008
-shader_parameter/noise_strength = 0.012
-shader_parameter/stain_color = Color(0.95, 0.83, 0.31, 1)
-shader_parameter/stain_opacity = 0.62
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_tank_surface"]
 shader = ExtResource("6_drips")

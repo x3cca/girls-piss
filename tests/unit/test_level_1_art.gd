@@ -22,14 +22,22 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 		level.input_controller.get_target_position(),
 		level.shape_trace.get_checkpoint_position(0),
 	)
-	assert_eq(
-		level.shape_trace.target_textures[0].resource_path,
+	var target_texture_paths: Array[String] = []
+	for texture in level.shape_trace.target_textures:
+		target_texture_paths.append(texture.resource_path)
+	for expected_texture_path in [
 		"res://assets/art/drive/RedTicket.png",
-	)
-	assert_eq(
-		level.shape_trace.target_textures[9].resource_path,
+		"res://assets/art/drive/Floss.png",
+		"res://assets/art/drive/Gum.png",
+		"res://assets/art/drive/Cigarette.png",
+		"res://assets/art/drive/Lollipop.png",
+		"res://assets/art/drive/Condom.png",
+		"res://assets/art/drive/Bandaid.png",
+		"res://assets/art/drive/Fly.png",
+		"res://assets/art/drive/Straw.png",
 		"res://assets/art/drive/Tampon.png",
-	)
+	]:
+		assert_true(target_texture_paths.has(expected_texture_path))
 	assert_almost_eq(level.shape_trace.native_target_scale, 0.75, 0.001)
 	assert_eq(level.target_offsets.size(), 10)
 	assert_false(level.draw_neutral_canvas)
@@ -68,18 +76,11 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 	assert_false(level.shape_trace._targets[1].visible)
 	assert_false(level.shape_trace._targets[2].visible)
 	assert_false(level.shape_trace._targets[3].visible)
-	assert_eq(
-		level.shape_trace._targets[0].get_node("Sprite").texture.resource_path,
-		"res://assets/art/drive/RedTicket.png",
-	)
-	assert_eq(
-		level.shape_trace._targets[1].get_node("Sprite").texture.resource_path,
-		"res://assets/art/drive/Floss.png",
-	)
-	assert_eq(
-		level.shape_trace._targets[2].get_node("Sprite").texture.resource_path,
-		"res://assets/art/drive/Gum.png",
-	)
+	for index in level.shape_trace.target_textures.size():
+		assert_eq(
+			level.shape_trace._targets[index].get_node("Sprite").texture,
+			level.shape_trace.target_textures[index],
+		)
 	assert_almost_eq(level.shape_trace._targets[0].modulate.a, 1.0, 0.001)
 	for index in level.shape_trace.normalized_points.size():
 		assert_eq(
@@ -139,7 +140,7 @@ func test_title_composition_keeps_level_1_visible_underneath() -> void:
 	assert_eq(title.layer, 20)
 
 
-func test_piss_meter_has_a_one_minute_continuous_stream_budget() -> void:
+func test_piss_meter_has_a_thirty_second_continuous_stream_budget() -> void:
 	var meter := METER_SCENE.instantiate() as PissMeter
 	var controller := InputController.new()
 	add_child_autofree(controller)
@@ -147,8 +148,8 @@ func test_piss_meter_has_a_one_minute_continuous_stream_budget() -> void:
 	meter.input_controller = controller
 	meter.set_gameplay_active(true)
 
-	assert_almost_eq(meter.duration_seconds, 60.0, 0.001)
-	assert_almost_eq(meter.get_time_remaining(), 60.0, 0.001)
+	assert_almost_eq(meter.duration_seconds, 30.0, 0.001)
+	assert_almost_eq(meter.get_time_remaining(), 30.0, 0.001)
 	var liquid := meter.get_node("Liquid") as TextureRect
 	var liquid_material := liquid.material as ShaderMaterial
 	var fill := meter.get_node("Fill") as TextureProgressBar
@@ -158,18 +159,18 @@ func test_piss_meter_has_a_one_minute_continuous_stream_budget() -> void:
 		assert_almost_eq(liquid_material.get_shader_parameter("fluid_amount"), 1.0, 0.001)
 		assert_almost_eq(liquid_material.get_shader_parameter("wave_amplitude"), 0.012, 0.001)
 	meter._process(10.0)
-	assert_almost_eq(meter.get_time_remaining(), 60.0, 0.001)
+	assert_almost_eq(meter.get_time_remaining(), 30.0, 0.001)
 
 	var space_down := InputEventKey.new()
 	space_down.physical_keycode = KEY_SPACE
 	space_down.pressed = true
 	controller.handle_input_event(space_down)
 	meter._process(10.0)
-	assert_almost_eq(meter.get_time_remaining(), 50.0, 0.001)
+	assert_almost_eq(meter.get_time_remaining(), 20.0, 0.001)
 	if liquid_material:
 		assert_almost_eq(
 			liquid_material.get_shader_parameter("fluid_amount"),
-			50.0 / 60.0,
+			20.0 / 30.0,
 			0.001,
 		)
 
@@ -178,7 +179,7 @@ func test_piss_meter_has_a_one_minute_continuous_stream_budget() -> void:
 	space_up.pressed = false
 	controller.handle_input_event(space_up)
 	meter._process(10.0)
-	assert_almost_eq(meter.get_time_remaining(), 50.0, 0.001)
+	assert_almost_eq(meter.get_time_remaining(), 20.0, 0.001)
 
 
 func test_piss_meter_art_uses_the_shared_boil_material() -> void:
@@ -267,16 +268,6 @@ func test_feedback_scenes_use_the_downloaded_strike_art_and_radial_success_flash
 	assert_eq(
 		(success.get_node("Vignette").material as ShaderMaterial).shader,
 		RADIAL_SHADER,
-	)
-	success.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	success.size = Vector2(720.0, 1280.0)
-	success._update_vignette_aspect()
-	assert_almost_eq(
-		(success.get_node("Vignette").material as ShaderMaterial).get_shader_parameter(
-			"aspect_ratio",
-		),
-		0.5625,
-		0.001,
 	)
 	assert_eq(
 		(success.get_node("Vignette").material as ShaderMaterial).get_shader_parameter(

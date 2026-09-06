@@ -31,6 +31,7 @@ var target_offsets := PackedVector2Array(
 	],
 )
 
+var randomized_target_textures: Array[Texture2D] = []
 var target_points := PackedVector2Array()
 
 
@@ -42,6 +43,7 @@ func _ready() -> void:
 	draw_neutral_canvas = false
 	enable_negative_zones = true
 	_clear_inherited_test_zones()
+	_randomize_targets()
 	_layout_level1()
 	shape_trace.normalized_points = target_points
 	shape_trace.closed_path = false
@@ -49,8 +51,8 @@ func _ready() -> void:
 	# Level 1 reveals only the current object. The player discovers the ordered
 	# pattern one target at a time instead of seeing the next objects in advance.
 	shape_trace.checkpoint_look_ahead = 1
-	shape_trace.target_texture = TARGET_TEXTURES[0]
-	shape_trace.target_textures = TARGET_TEXTURES
+	shape_trace.target_texture = randomized_target_textures[0]
+	shape_trace.target_textures = randomized_target_textures
 	shape_trace.use_native_target_sizes = true
 	# These crops are already authored at the size used by the play-screen
 	# reference. Scaling them only by the viewport keeps their visual weight.
@@ -86,6 +88,32 @@ func _process(delta: float) -> void:
 	super._process(delta)
 	if state == PLAYING:
 		_layout_level1()
+
+
+func reset_level() -> void:
+	_randomize_targets()
+	_layout_level1()
+	shape_trace.target_texture = randomized_target_textures[0]
+	shape_trace.target_textures = randomized_target_textures
+	shape_trace.rebuild_targets()
+	super.reset_level()
+
+
+func _randomize_targets() -> void:
+	## Shuffle the item and position pools independently so each retry presents
+	## the same number of targets with new item/position pairings.
+	randomized_target_textures.clear()
+	for texture in TARGET_TEXTURES:
+		randomized_target_textures.append(texture)
+	randomized_target_textures.shuffle()
+
+	var shuffled_offsets: Array[Vector2] = []
+	for offset in target_offsets:
+		shuffled_offsets.append(offset)
+	shuffled_offsets.shuffle()
+	target_offsets = PackedVector2Array()
+	for offset in shuffled_offsets:
+		target_offsets.append(offset)
 
 
 func _layout_level1() -> void:

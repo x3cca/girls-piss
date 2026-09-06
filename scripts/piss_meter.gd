@@ -9,7 +9,7 @@ const METER_BOUNDS_RIGHT := 245.0
 const METER_SLIDE_MARGIN := 24.0
 const METER_SHOW_DURATION := 0.65
 
-@export_range(1.0, 1800.0, 1.0) var duration_seconds := 60.0
+@export_range(1.0, 1800.0, 1.0) var duration_seconds := 30.0
 @export var meter_position := Vector2(38.0, 1460.0)
 @export_range(0.0, 1.0, 0.01) var starting_value := 1.0
 
