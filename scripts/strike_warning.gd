@@ -7,7 +7,8 @@ class_name StrikeWarning
 ## The warning art is intentionally kept as three independently visible panels:
 ## the red treatment has a different text layout from the yellow and orange
 ## treatments, and direct visibility changes make the feedback appear on the
-## same frame as the strike.
+## same frame as the strike. The artwork and child alignment live in the three
+## standalone warning scenes; this controller only places and scales each scene.
 
 const YELLOW_WARNING := 1
 const ORANGE_WARNING := 2
@@ -114,7 +115,7 @@ func get_warning_rect(strike: int) -> Rect2:
 	var warning := _warning_for(strike)
 	if not is_instance_valid(warning):
 		return Rect2()
-	return Rect2(warning.position, warning.size)
+	return Rect2(warning.position, warning.size * warning.scale)
 
 
 func _warning_for(strike: int) -> Control:
@@ -143,101 +144,14 @@ func _layout_warnings() -> void:
 	var top_margin := maxf(viewport_size.y * top_margin_ratio, 16.0)
 	var right_position := viewport_size.x - right_margin - bubble_width
 
-	_layout_simple_warning(
-		yellow_warning,
-		yellow_warning.get_node("Bubble") as TextureRect,
-		yellow_warning.get_node("Text") as TextureRect,
-		Vector2(right_position, top_margin),
-		bubble_width,
-		0.22,
-	)
-	_layout_simple_warning(
-		orange_warning,
-		orange_warning.get_node("Bubble") as TextureRect,
-		orange_warning.get_node("Text") as TextureRect,
-		Vector2(right_position, top_margin),
-		bubble_width,
-		0.14,
-	)
-	_layout_red_warning(
-		red_warning,
-		red_warning.get_node("Bubble") as TextureRect,
-		red_warning.get_node("RedText1") as TextureRect,
-		red_warning.get_node("RedTextRow") as Control,
-		red_warning.get_node("RedText4") as TextureRect,
-		Vector2(right_position, top_margin),
-		bubble_width,
-	)
+	_layout_warning(yellow_warning, Vector2(right_position, top_margin), bubble_width)
+	_layout_warning(orange_warning, Vector2(right_position, top_margin), bubble_width)
+	_layout_warning(red_warning, Vector2(right_position, top_margin), bubble_width)
 
 
-func _layout_simple_warning(
-	warning: Control,
-	bubble: TextureRect,
-	text: TextureRect,
-	origin: Vector2,
-	bubble_width: float,
-	text_top_ratio: float,
-) -> void:
-	var bubble_height := _texture_height(bubble.texture, bubble_width)
+func _layout_warning(warning: Control, origin: Vector2, width: float) -> void:
+	if not is_instance_valid(warning) or warning.size.x <= 1.0:
+		return
 	warning.position = origin
-	warning.size = Vector2(bubble_width, bubble_height)
-	bubble.position = Vector2.ZERO
-	bubble.size = warning.size
-	var text_width := bubble_width * 0.76
-	var text_height := _texture_height(text.texture, text_width)
-	text.size = Vector2(text_width, text_height)
-	text.position = Vector2(
-		(bubble_width - text_width) * 0.5,
-		bubble_height * text_top_ratio,
-	)
-
-
-func _layout_red_warning(
-	warning: Control,
-	bubble: TextureRect,
-	heading: TextureRect,
-	row: Control,
-	emergency: TextureRect,
-	origin: Vector2,
-	bubble_width: float,
-) -> void:
-	var bubble_height := _texture_height(bubble.texture, bubble_width)
-	warning.position = origin
-	warning.size = Vector2(bubble_width, bubble_height)
-	bubble.position = Vector2.ZERO
-	bubble.size = warning.size
-
-	var heading_width := bubble_width * 0.78
-	var heading_height := _texture_height(heading.texture, heading_width)
-	heading.size = Vector2(heading_width, heading_height)
-	heading.position = Vector2((bubble_width - heading_width) * 0.5, bubble_height * 0.16)
-
-	row.position = Vector2(bubble_width * 0.075, bubble_height * 0.42)
-	row.size = Vector2(bubble_width * 0.85, bubble_height * 0.20)
-	var row_nodes: Array[TextureRect] = [
-		row.get_node("RedText2") as TextureRect,
-		row.get_node("RedText3") as TextureRect,
-	]
-	var widths := [row.size.x * 0.18, row.size.x * 0.16]
-	var gap := row.size.x * 0.04
-	var cursor: float = (row.size.x - (widths[0] + widths[1] + gap)) * 0.5
-	for index in row_nodes.size():
-		var node := row_nodes[index]
-		var width: float = widths[index]
-		var height := _texture_height(node.texture, width)
-		node.position = Vector2(cursor, (row.size.y - height) * 0.5)
-		node.size = Vector2(width, height)
-		cursor += width + gap
-
-	var emergency_width := row.size.x
-	emergency.position = Vector2(row.position.x, bubble_height * 0.65)
-	emergency.size = Vector2(
-		emergency_width,
-		_texture_height(emergency.texture, emergency_width),
-	)
-
-
-func _texture_height(texture: Texture2D, width: float) -> float:
-	if not is_instance_valid(texture) or texture.get_width() <= 0:
-		return 0.0
-	return width * texture.get_height() / float(texture.get_width())
+	var scale_factor := width / warning.size.x
+	warning.scale = Vector2.ONE * scale_factor
