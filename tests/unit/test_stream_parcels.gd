@@ -173,6 +173,36 @@ func test_mouse_hold_keeps_its_start_position_through_input_processing() -> void
 	assert_eq(stream.parcel_at(0)["launch_target"], click_position)
 
 
+func test_first_shot_flies_from_source_before_endpoint_becomes_active() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+	var controller := InputController.new()
+	add_child_autofree(controller)
+	controller.set_process(false)
+	stream.set_process(false)
+	stream.input_controller = controller
+	stream.gravity = Vector2(0.0, 360.0)
+	stream.source_position = Vector2(360.0, 1328.0)
+	var target := Vector2(600.0, 260.0)
+	controller.set_target_position(target)
+
+	var space_down := InputEventKey.new()
+	space_down.physical_keycode = KEY_SPACE
+	space_down.pressed = true
+	controller.handle_input_event(space_down)
+	stream.process_frame(1.0 / 60.0)
+	stream.process_frame(1.0 / 60.0)
+
+	var early_endpoint := stream.get_current_stream_endpoint()
+	assert_eq(stream.parcel_at(0)["position"], stream.source_position)
+	assert_true(early_endpoint != target)
+	assert_false(stream.has_active_stream_endpoint())
+
+	for _frame in 120:
+		stream.process_frame(1.0 / 60.0)
+	assert_true(stream.has_active_stream_endpoint())
+
+
 func test_stream_follow_has_a_small_overshoot_and_settles() -> void:
 	var stream := STREAM_SCENE.instantiate() as LiquidStream
 	add_child_autofree(stream)
