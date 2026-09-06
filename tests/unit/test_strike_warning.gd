@@ -184,3 +184,21 @@ func test_each_warning_plays_its_three_pound_variant() -> void:
 		assert_true(player.playing)
 		warning.hide_warning()
 		assert_false(player.playing)
+
+
+func test_each_pound_emits_on_the_wall_pound_timeline() -> void:
+	var warning := _make_warning()
+	var pounds: Array[int] = []
+	warning.pound_triggered.connect(
+		func(_strike: int, pound_index: int): pounds.append(pound_index),
+	)
+	warning.show_warning(StrikeWarning.YELLOW_WARNING, 1.0)
+
+	warning.process_frame(StrikeWarning.POUND_TIMINGS[0] - 0.001)
+	assert_eq(pounds, [])
+	warning.process_frame(0.001)
+	assert_eq(pounds, [0])
+	warning.process_frame(StrikeWarning.POUND_TIMINGS[1] - StrikeWarning.POUND_TIMINGS[0])
+	assert_eq(pounds, [0, 1])
+	warning.process_frame(StrikeWarning.POUND_TIMINGS[2] - StrikeWarning.POUND_TIMINGS[1])
+	assert_eq(pounds, [0, 1, 2])

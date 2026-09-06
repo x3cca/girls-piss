@@ -13,6 +13,12 @@ class_name StrikeWarning
 const YELLOW_WARNING := 1
 const ORANGE_WARNING := 2
 const RED_WARNING := 3
+## The wall-pound clips contain three distinct impacts. Keep these offsets in
+## the warning controller so visual feedback follows the same timeline as the
+## sound instead of shaking only once when the warning appears.
+const POUND_TIMINGS := [0.04, 0.235, 0.45]
+
+signal pound_triggered(strike: int, pound_index: int)
 
 @export_range(0.0, 10.0, 0.01) var warning_duration := 4.0
 @export_range(0.0, 0.2, 0.005) var right_margin_ratio := 0.035
@@ -35,6 +41,8 @@ var _remaining := 0.0
 var _shake_elapsed := 0.0
 var _shake_offset := Vector2.ZERO
 var _shake_rotation := 0.0
+var _pound_elapsed := 0.0
+var _next_pound_index := 0
 
 
 func _ready() -> void:
@@ -50,6 +58,7 @@ func _process(delta: float) -> void:
 
 func process_frame(delta: float) -> void:
 	_advance_entrance_shake(maxf(delta, 0.0))
+	_advance_pound_timing(maxf(delta, 0.0))
 	_layout_warnings()
 	if _active_warning == 0:
 		return
@@ -65,6 +74,8 @@ func show_warning(strike: int, duration := -1.0) -> void:
 		return
 	_active_warning = strike
 	_remaining = warning_duration if duration < 0.0 else maxf(duration, 0.0)
+	_pound_elapsed = 0.0
+	_next_pound_index = 0
 	_warning_for(strike).visible = true
 	_play_pounding_warning(strike)
 	_start_entrance_shake()
@@ -77,6 +88,8 @@ func hide_warning() -> void:
 	_active_warning = 0
 	_remaining = 0.0
 	_stop_pounding_warnings()
+	_pound_elapsed = 0.0
+	_next_pound_index = 0
 	_reset_entrance_shake()
 	if is_instance_valid(yellow_warning):
 		yellow_warning.visible = false
@@ -152,6 +165,18 @@ func _stop_pounding_warnings() -> void:
 	for player in [_light_pounds, _medium_pounds, _heavy_pounds]:
 		if is_instance_valid(player):
 			player.stop()
+
+
+func _advance_pound_timing(delta: float) -> void:
+	if _active_warning == 0 or _next_pound_index >= POUND_TIMINGS.size():
+		return
+	_pound_elapsed += delta
+	while (
+		_next_pound_index < POUND_TIMINGS.size()
+		and _pound_elapsed >= POUND_TIMINGS[_next_pound_index]
+	):
+		pound_triggered.emit(_active_warning, _next_pound_index)
+		_next_pound_index += 1
 
 
 func _pounding_player_for(strike: int) -> AudioStreamPlayer:

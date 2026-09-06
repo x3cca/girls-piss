@@ -61,13 +61,22 @@ var targets: Array[WettableTarget] = []
 @export var target_hit_light_color := Color.WHITE
 @export_range(0.0, 80.0, 0.5) var pulse_shake_strength := 19.0
 @export_range(0.05, 0.5, 0.01) var pulse_shake_duration := 0.14
+@export_range(0.0, 80.0, 0.5) var strike_shake_strength := 18.0
+@export_range(0.05, 0.5, 0.01) var strike_shake_duration := 0.12
+@export_range(0.0, 1.0, 0.05) var strike_shake_level_scale := 0.25
 @export_range(-40.0, 0.0, 0.5) var spray_volume_db := -12.0
 @export_range(0.01, 2.0, 0.01) var spray_fade_duration := 0.2
+@export_range(0.1, 1.0, 0.01) var failure_exit_duration := 0.38
+@export_range(0.0, 20.0, 0.1) var failure_exit_rotation := TAU * 3.0
+@export_range(0.0, 120.0, 0.5) var failure_knock_shake_strength := 52.0
+@export_range(0.05, 0.5, 0.01) var failure_knock_shake_duration := 0.16
 var _world_size := Vector2(720.0, 1280.0)
 var _layout_signature := Vector2.ZERO
 var _elapsed := 0.0
 var _base_position := Vector2.ZERO
+var _base_rotation := 0.0
 var _base_hud_offset := Vector2.ZERO
+var _base_hud_rotation := 0.0
 var _base_ambient_color := Color.WHITE
 var _base_broad_light_energy := 0.0
 var _base_broad_light_scale := 1.0
@@ -79,6 +88,8 @@ var _pulse_shake_remaining := 0.0
 var _pulse_shake_elapsed := 0.0
 var _pulse_shake_amplitude := 0.0
 var _pulse_shake_phase := 0.0
+var _active_shake_strength := 0.0
+var _active_shake_duration := 0.0
 var _strike_light_remaining := 0.0
 var _target_hit_light_remaining := 0.0
 var gameplay_started := false
@@ -99,6 +110,10 @@ var _frame_delta := 1.0 / 60.0
 var _last_stream_endpoint := Vector2.ZERO
 var _has_stream_endpoint := false
 var _spray_fade_tween: Tween
+var _failure_exit_tween: Tween
+var _failure_transition_active := false
+var _failure_exit_center := Vector2.ZERO
+var _failure_exit_offset := Vector2.ZERO
 
 var strikes: int:
 	get:
@@ -150,9 +165,19 @@ func _ready() -> void:
 		title_screen.transition_completed.connect(_on_title_transition_completed)
 	if not title_screen.start_requested.is_connected(_on_title_start_requested):
 		title_screen.start_requested.connect(_on_title_start_requested)
+	if not hud.game_over.raid_sequence_finished.is_connected(
+		_on_game_over_raid_sequence_finished,
+	):
+		hud.game_over.raid_sequence_finished.connect(_on_game_over_raid_sequence_finished)
+	if not hud.game_over.raid_knock.is_connected(_on_game_over_raid_knock):
+		hud.game_over.raid_knock.connect(_on_game_over_raid_knock)
+	if not hud.strike_warning.pound_triggered.is_connected(_on_strike_pound):
+		hud.strike_warning.pound_triggered.connect(_on_strike_pound)
 	line_recorder.start_recording()
 	_base_position = position
+	_base_rotation = rotation
 	_base_hud_offset = _hud_layer.offset
+	_base_hud_rotation = _hud_layer.rotation
 	_base_ambient_color = _ambient.color
 	_base_broad_light_energy = _broad_light.energy
 	_base_broad_light_scale = _broad_light.texture_scale
@@ -347,9 +372,26 @@ func _start_gameplay(source: int) -> void:
 
 func _on_stream_pulse(amplitude: float) -> void:
 	var safe_amplitude := clampf(amplitude, 0.0, 1.0)
-	_pulse_shake_remaining = maxf(_pulse_shake_remaining, pulse_shake_duration)
+	_begin_screen_shake(pulse_shake_strength, pulse_shake_duration, safe_amplitude)
+
+
+func _on_strike_pound(strike: int, _pound_index: int) -> void:
+	var level := clampf(float(strike - 1), 0.0, 2.0)
+	var level_multiplier := 1.0 + level * strike_shake_level_scale
+	_begin_screen_shake(strike_shake_strength * level_multiplier, strike_shake_duration)
+
+
+func _on_game_over_raid_knock() -> void:
+	_begin_screen_shake(failure_knock_shake_strength, failure_knock_shake_duration)
+
+
+func _begin_screen_shake(strength: float, duration: float, amplitude := 1.0) -> void:
+	var safe_duration := maxf(duration, 0.0)
+	_pulse_shake_remaining = maxf(_pulse_shake_remaining, safe_duration)
 	_pulse_shake_elapsed = 0.0
-	_pulse_shake_amplitude = maxf(_pulse_shake_amplitude, safe_amplitude)
+	_pulse_shake_amplitude = maxf(_pulse_shake_amplitude, clampf(amplitude, 0.0, 1.0))
+	_active_shake_strength = maxf(_active_shake_strength, maxf(strength, 0.0))
+	_active_shake_duration = maxf(_active_shake_duration, safe_duration)
 	_pulse_shake_phase += 1.618
 
 
@@ -427,7 +469,7 @@ func _advance_pulse_feedback(delta: float) -> void:
 	var shake_offset := Vector2.ZERO
 	if _pulse_shake_remaining > 0.0:
 		var shake_progress := clampf(
-			_pulse_shake_remaining / maxf(pulse_shake_duration, 0.001),
+			_pulse_shake_remaining / maxf(_active_shake_duration, 0.001),
 			0.0,
 			1.0,
 		)
@@ -439,26 +481,32 @@ func _advance_pulse_feedback(delta: float) -> void:
 			cos(shake_time * 91.0 + _pulse_shake_phase * 0.7) * 0.75
 			+ cos(shake_time * 147.0 + _pulse_shake_phase * 1.3) * 0.25,
 		)
-		shake_offset = (
-				jitter * pulse_shake_strength * _pulse_shake_amplitude * shake_envelope
-		)
-	position = _base_position + shake_offset
-	# HUDLayer is a screen-space CanvasLayer. Keep it out of the world shake so
-	# the crosshair stays put while the stream and negative zones can drift under
-	# it, making a beat-timed miss possible.
-	_hud_layer.offset = _base_hud_offset
+		shake_offset = jitter * _active_shake_strength * _pulse_shake_amplitude * shake_envelope
+	if not _failure_transition_active:
+		position = _base_position + shake_offset
+		# HUDLayer is a screen-space CanvasLayer. Keep it out of the world shake so
+		# the crosshair stays put while the stream and negative zones can drift under
+		# it, making a beat-timed miss possible.
+		_hud_layer.offset = _base_hud_offset
+		_hud_layer.rotation = _base_hud_rotation
 
 	if _pulse_shake_remaining <= 0.0:
 		_pulse_shake_amplitude = 0.0
+		_active_shake_strength = 0.0
+		_active_shake_duration = 0.0
 
 
 func _reset_pulse_feedback() -> void:
 	_pulse_shake_remaining = 0.0
 	_pulse_shake_elapsed = 0.0
 	_pulse_shake_amplitude = 0.0
+	_active_shake_duration = 0.0
+	_active_shake_strength = 0.0
 	_strike_light_remaining = 0.0
 	position = _base_position
+	rotation = _base_rotation
 	_hud_layer.offset = _base_hud_offset
+	_hud_layer.rotation = _base_hud_rotation
 	if is_instance_valid(_ambient):
 		_ambient.color = _base_ambient_color
 	_broad_light.energy = _base_broad_light_energy
@@ -685,7 +733,59 @@ func _on_piss_meter_depleted() -> void:
 	_fail_attempt()
 
 
+func _on_game_over_raid_sequence_finished() -> void:
+	if state != FAILED:
+		return
+	_launch_failed_level()
+
+
+func _launch_failed_level() -> void:
+	if _failure_transition_active:
+		return
+	var viewport_size := get_viewport().get_visible_rect().size
+	if viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
+		return
+	_failure_transition_active = true
+	if is_instance_valid(screen_overlay):
+		screen_overlay.stop_all_effects()
+	_failure_exit_center = viewport_size * 0.5
+	_failure_exit_offset = Vector2(0.0, -viewport_size.y * 1.35)
+	# Make the launch origin explicit so a leftover shake can never turn this
+	# into a teleport. The first frame is zero movement and zero spin. Applying
+	# the transform around the viewport center keeps the whole composition
+	# together while it accelerates upward through several full rotations.
+	_apply_failure_launch(0.0)
+	_failure_exit_tween = create_tween()
+	_failure_exit_tween.tween_method(
+		_apply_failure_launch,
+		0.0,
+		1.0,
+		failure_exit_duration,
+	).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
+
+
+func _apply_failure_launch(progress: float) -> void:
+	var launch_progress := clampf(progress, 0.0, 1.0)
+	var launch_angle := failure_exit_rotation * launch_progress
+	var launch_offset := _failure_exit_offset * launch_progress
+	# Node2D and CanvasLayer rotate around their local origins. Offset the
+	# origins around the viewport center so the visible game, including its HUD,
+	# performs the spin around screen center rather than the top-left corner.
+	position = _failure_exit_center + launch_offset + (
+		_base_position - _failure_exit_center
+	).rotated(launch_angle)
+	rotation = _base_rotation + launch_angle
+	_hud_layer.offset = _failure_exit_center + launch_offset + (
+		_base_hud_offset - _failure_exit_center
+	).rotated(launch_angle)
+	_hud_layer.rotation = _base_hud_rotation + launch_angle
+
+
 func reset_level() -> void:
+	if _failure_exit_tween:
+		_failure_exit_tween.kill()
+		_failure_exit_tween = null
+	_failure_transition_active = false
 	_set_state(PLAYING)
 	_stop_spray_sound()
 	_reset_pulse_feedback()

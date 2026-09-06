@@ -292,6 +292,25 @@ func test_stream_pulse_shakes_world_without_moving_crosshair() -> void:
 	assert_eq(instance._hud_layer.offset, hud_offset)
 
 
+func test_strike_pound_shake_scales_with_warning_level() -> void:
+	var instance := SMOKE_TEST_SCENE.instantiate() as Main
+	instance.skip_title_screen = true
+	add_child_autofree(instance)
+
+	instance._on_strike_pound(1, 0)
+	var light_strength := instance._active_shake_strength
+	instance._reset_pulse_feedback()
+	instance._on_strike_pound(2, 0)
+	var medium_strength := instance._active_shake_strength
+	instance._reset_pulse_feedback()
+	instance._on_strike_pound(3, 0)
+	var heavy_strength := instance._active_shake_strength
+
+	assert_almost_eq(light_strength, instance.strike_shake_strength, 0.001)
+	assert_gt(medium_strength, light_strength)
+	assert_gt(heavy_strength, medium_strength)
+
+
 func test_title_is_active_and_gameplay_is_gated_by_default() -> void:
 	var instance := SMOKE_TEST_SCENE.instantiate()
 	add_child_autofree(instance)
