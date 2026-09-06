@@ -72,7 +72,7 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 	)
 	assert_eq(
 		level.get_node("Level1Chrome/Volume").texture.resource_path,
-		"res://assets/art/drive/Volume1.png",
+		"res://assets/art/drive/Volume3.png",
 	)
 	assert_eq(
 		level.get_node("Level1Chrome/Back").texture.resource_path,
