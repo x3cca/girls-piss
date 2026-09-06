@@ -79,10 +79,11 @@ the stream endpoint rather than the requested reticle position.
 
 Checkpoint and bad-zone contact each require `0.35` seconds of continuous
 endpoint contact. Leaving a region resets its timer. A bad hit gives a strike
-and starts a `0.75` second safety cooldown. If the endpoint remains in the bad
-region, another strike is possible as soon as that grace period ends. Three
-strikes stop the attempt and show the retry card; the three small HUD markers
-show the remaining attempts.
+and starts a `0.75` second safety cooldown. The first three strikes show a
+yellow, orange, or red warning bubble in the top-right corner, and each bubble
+is hidden when that cooldown ends. If the endpoint remains in the bad region,
+another strike is possible as soon as that grace period ends. Four strikes stop
+the attempt and show the retry card.
 
 The Level 1 Piss-O-Meter begins with one minute of stream time and drains only
 while the stream input is held. The stream uses the baked

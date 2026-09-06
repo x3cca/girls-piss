@@ -34,7 +34,7 @@ const GAME_OVER := State.FAILED
 
 const CONTACT_DURATION := 0.35
 const SAFETY_COOLDOWN := 0.75
-const MAX_STRIKES := 3
+const MAX_STRIKES := 4
 
 var state := PLAYING
 var game_state := PLAYING
@@ -523,6 +523,8 @@ func _take_strike() -> void:
 	_strike_light_remaining = strike_light_duration
 	_set_effect_lights_enabled(false)
 	hud.set_strikes(strike_count)
+	if strike_count < max_strikes:
+		hud.show_strike_warning(strike_count, safety_cooldown)
 	if is_instance_valid(screen_overlay):
 		screen_overlay.play_strike_feedback()
 	stream.play_strike_flash()

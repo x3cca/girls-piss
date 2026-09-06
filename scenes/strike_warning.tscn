@@ -1,0 +1,110 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scripts/strike_warning.gd" id="1_warning"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/YellowTextBubble.png" id="2_yellow_bubble"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/YellowText.png" id="3_yellow_text"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/OrangeTextBubble.png" id="4_orange_bubble"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/OrangeText.png" id="5_orange_text"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/RedWarningBubble.png" id="6_red_bubble"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/RedText1.png" id="7_red_text_1"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/RedText2.png" id="8_red_text_2"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/RedText3.png" id="9_red_text_3"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/RedText4.png" id="10_red_text_4"]
+
+[node name="StrikeWarning" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_warning")
+
+[node name="YellowWarning" type="Control" parent="."]
+layout_mode = 0
+mouse_filter = 2
+
+[node name="Bubble" type="TextureRect" parent="YellowWarning"]
+layout_mode = 0
+mouse_filter = 2
+texture_filter = 1
+texture = ExtResource("2_yellow_bubble")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="TextureRect" parent="YellowWarning"]
+layout_mode = 0
+mouse_filter = 2
+texture_filter = 1
+texture = ExtResource("3_yellow_text")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="OrangeWarning" type="Control" parent="."]
+layout_mode = 0
+mouse_filter = 2
+
+[node name="Bubble" type="TextureRect" parent="OrangeWarning"]
+layout_mode = 0
+mouse_filter = 2
+texture_filter = 1
+texture = ExtResource("4_orange_bubble")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="TextureRect" parent="OrangeWarning"]
+layout_mode = 0
+mouse_filter = 2
+texture_filter = 1
+texture = ExtResource("5_orange_text")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RedWarning" type="Control" parent="."]
+layout_mode = 0
+mouse_filter = 2
+
+[node name="Bubble" type="TextureRect" parent="RedWarning"]
+layout_mode = 0
+mouse_filter = 2
+texture_filter = 1
+texture = ExtResource("6_red_bubble")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RedText1" type="TextureRect" parent="RedWarning"]
+layout_mode = 0
+mouse_filter = 2
+texture_filter = 1
+texture = ExtResource("7_red_text_1")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RedTextRow" type="Control" parent="RedWarning"]
+layout_mode = 0
+mouse_filter = 2
+
+[node name="RedText2" type="TextureRect" parent="RedWarning/RedTextRow"]
+layout_mode = 0
+mouse_filter = 2
+texture_filter = 1
+texture = ExtResource("8_red_text_2")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RedText3" type="TextureRect" parent="RedWarning/RedTextRow"]
+layout_mode = 0
+mouse_filter = 2
+texture_filter = 1
+texture = ExtResource("9_red_text_3")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RedText4" type="TextureRect" parent="RedWarning/RedTextRow"]
+layout_mode = 0
+mouse_filter = 2
+texture_filter = 1
+texture = ExtResource("10_red_text_4")
+expand_mode = 1
+stretch_mode = 5
