@@ -51,7 +51,6 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 	assert_null(instance.get_node_or_null("WettablePlot02"))
 	assert_null(instance.get_node_or_null("WettablePlot03"))
 	assert_not_null(instance.get_node_or_null("BroadMoonLight"))
-	assert_not_null(instance.get_node_or_null("StreamImpactLight"))
 	var music_controller := instance.get_node_or_null("MusicController") as MusicController
 	assert_not_null(music_controller)
 	if music_controller:
@@ -164,32 +163,35 @@ func test_music_controller_uses_one_track_for_each_music_state() -> void:
 	assert_true(room_music.playing)
 	assert_false(oomph_music.playing)
 	assert_false(gameplay_music.playing)
-	music_controller.gameplay_crossfade_duration = 0.25
-	music_controller.begin_gameplay_crossfade()
-	assert_true(room_music.playing)
-	assert_true(oomph_music.playing)
-	assert_true(gameplay_music.playing)
-	music_controller._apply_title_crossfade(0.5)
-	assert_gt(room_music.volume_db, -6.0)
-	assert_gt(oomph_music.volume_db, -6.0)
-	assert_lt(gameplay_music.volume_db, -70.0)
-	await get_tree().create_timer(0.1).timeout
-	assert_true(room_music.playing)
-	assert_true(oomph_music.playing)
-	assert_true(gameplay_music.playing)
-	await get_tree().create_timer(0.2).timeout
+	assert_almost_eq(music_controller.get_shake_scale(), 0.0, 0.001)
+
+	music_controller.begin_gameplay()
 	assert_false(room_music.playing)
-	assert_almost_eq(oomph_music.volume_db, music_controller.oomph_volume_db, 0.01)
+	assert_true(oomph_music.playing)
+	assert_false(gameplay_music.playing)
 	assert_lt(gameplay_music.volume_db, -70.0)
+	assert_almost_eq(oomph_music.volume_db, music_controller.oomph_volume_db, 0.01)
+	assert_almost_eq(music_controller.get_shake_scale(), music_controller.oomph_shake_scale, 0.001)
 
 	music_controller.set_pissing(true)
-	music_controller._apply_intensity_crossfade(0.5)
-	assert_gt(oomph_music.volume_db, -6.0)
-	assert_gt(gameplay_music.volume_db, -6.0)
+	assert_false(room_music.playing)
+	assert_false(oomph_music.playing)
+	assert_true(gameplay_music.playing)
+	assert_lt(oomph_music.volume_db, -70.0)
+	assert_almost_eq(gameplay_music.volume_db, music_controller.gameplay_volume_db, 0.01)
+	assert_almost_eq(
+		music_controller.get_shake_scale(),
+		music_controller.gameplay_shake_scale,
+		0.001,
+	)
+
 	music_controller.set_pissing(false)
-	music_controller._apply_intensity_crossfade(0.0)
+	assert_false(room_music.playing)
+	assert_true(oomph_music.playing)
+	assert_false(gameplay_music.playing)
 	assert_almost_eq(oomph_music.volume_db, music_controller.oomph_volume_db, 0.01)
 	assert_lt(gameplay_music.volume_db, -70.0)
+	assert_almost_eq(music_controller.get_shake_scale(), music_controller.oomph_shake_scale, 0.001)
 
 
 func test_music_controller_emits_beats_from_audio_position() -> void:
@@ -251,7 +253,6 @@ func test_stream_pulse_drives_shake_without_pulsing_lights() -> void:
 	add_child_autofree(instance)
 	var stream := instance.get_node("LiquidStream") as LiquidStream
 	var broad_light := instance.get_node("BroadMoonLight") as PointLight2D
-	var impact_light := instance.get_node("StreamImpactLight") as PointLight2D
 	var base_energy := broad_light.energy
 	var base_scale := broad_light.texture_scale
 	var base_position: Vector2 = instance.position
@@ -263,7 +264,6 @@ func test_stream_pulse_drives_shake_without_pulsing_lights() -> void:
 	assert_almost_eq(broad_light.energy, base_energy, 0.001)
 	assert_almost_eq(broad_light.texture_scale, base_scale, 0.001)
 	assert_false(broad_light.enabled)
-	assert_false(impact_light.enabled)
 	assert_true(instance.position != base_position)
 
 	for frame in 30:

@@ -5,6 +5,7 @@ const METER_SCENE := preload("res://scenes/piss_meter.tscn")
 const STRIKE_EFFECT := preload("res://scenes/strike_vignette.tscn")
 const SUCCESS_EFFECT := preload("res://scenes/success_vignette.tscn")
 const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
+const RADIAL_SHADER := preload("res://shaders/radial_vignette.gdshader")
 
 
 func test_level_1_uses_the_authored_target_set_and_background() -> void:
@@ -152,7 +153,7 @@ func test_piss_meter_has_a_one_minute_continuous_stream_budget() -> void:
 	var liquid_material := liquid.material as ShaderMaterial
 	var fill := meter.get_node("Fill") as TextureProgressBar
 	assert_not_null(liquid_material)
-	assert_almost_eq(fill.modulate.a, 0.1, 0.001)
+	assert_almost_eq(fill.modulate.a, 50.0 / 255.0, 0.001)
 	if liquid_material:
 		assert_almost_eq(liquid_material.get_shader_parameter("fluid_amount"), 1.0, 0.001)
 		assert_almost_eq(liquid_material.get_shader_parameter("wave_amplitude"), 0.012, 0.001)
@@ -251,23 +252,28 @@ func test_empty_piss_meter_fails_the_level() -> void:
 	assert_true(level.hud.game_over.is_showing())
 
 
-func test_feedback_scenes_use_the_downloaded_overlay_art() -> void:
+func test_feedback_scenes_use_the_downloaded_strike_art_and_radial_success_flash() -> void:
 	var strike := STRIKE_EFFECT.instantiate() as ScreenOverlayEffect
-	var success := SUCCESS_EFFECT.instantiate() as ScreenOverlayEffect
+	var success := SUCCESS_EFFECT.instantiate() as RadialVignetteEffect
 	add_child_autofree(strike)
 	add_child_autofree(success)
 
 	var strike_frames: SpriteFrames = strike.get_node("AnimatedSprite2D").sprite_frames
-	var success_frames: SpriteFrames = success.get_node("AnimatedSprite2D").sprite_frames
 	assert_eq(strike_frames.get_frame_count(&"default"), 2)
-	assert_eq(success_frames.get_frame_count(&"default"), 2)
 	assert_eq(
 		strike_frames.get_frame_texture(&"default", 0).resource_path,
 		"res://assets/art/drive/Dread vignette.png",
 	)
 	assert_eq(
-		success_frames.get_frame_texture(&"default", 1).resource_path,
-		"res://assets/art/drive/actionWiggleFlipForAffect.png",
+		(success.get_node("Vignette").material as ShaderMaterial).shader,
+		RADIAL_SHADER,
+	)
+	assert_eq(
+		(success.get_node("Vignette").material as ShaderMaterial).get_shader_parameter(
+			"vignette_color",
+		),
+		Color(1, 1, 1, 0.72),
 	)
 	assert_true(strike.get_node("AnimatedSprite2D").material == BOIL_MATERIAL)
-	assert_true(success.get_node("AnimatedSprite2D").material == BOIL_MATERIAL)
+	assert_almost_eq(success.duration, 0.34, 0.001)
+	assert_almost_eq(success.peak_opacity, 0.86, 0.001)

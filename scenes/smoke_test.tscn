@@ -79,14 +79,6 @@ color = Color(1, 0.95, 0.9, 1)
 texture = SubResource("GradientTexture_light")
 texture_scale = 2.85
 
-[node name="StreamImpactLight" type="PointLight2D" parent="." unique_id=172867828]
-position = Vector2(360, 1328)
-enabled = false
-color = Color(1, 0.95, 0.9, 1)
-energy = 1.15
-texture = SubResource("GradientTexture_light")
-texture_scale = 0.9
-
 [node name="ScreenOverlay" parent="." unique_id=125728605 instance=ExtResource("7_overlay")]
 
 [node name="HUDLayer" type="CanvasLayer" parent="." unique_id=341283502]

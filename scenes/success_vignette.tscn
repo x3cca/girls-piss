@@ -1,17 +1,13 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=4 format=3]
 
-[ext_resource type="Script" path="res://scripts/screen_overlay_effect.gd" id="1_effect"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/ActionLines.png" id="2_action"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/actionWiggleFlipForAffect.png" id="3_action_two"]
-[ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="4_boil"]
+[ext_resource type="Script" path="res://scripts/radial_vignette_effect.gd" id="1_effect"]
+[ext_resource type="Shader" path="res://shaders/radial_vignette.gdshader" id="2_shader"]
 
-[sub_resource type="SpriteFrames" id="SpriteFrames_action"]
-animations = [{
-"frames": [{"duration": 1.0, "texture": ExtResource("2_action")}, {"duration": 1.0, "texture": ExtResource("3_action_two")}],
-"loop": false,
-"name": &"default",
-"speed": 9.0
-}]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_success_vignette"]
+shader = ExtResource("2_shader")
+shader_parameter/vignette_color = Color(1, 1, 1, 0.72)
+shader_parameter/inner_radius = 0.24
+shader_parameter/outer_radius = 0.58
 
 [node name="SuccessVignette" type="Control"]
 layout_mode = 3
@@ -22,10 +18,17 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_effect")
-sprite_frames = SubResource("SpriteFrames_action")
-opacity = 0.9
+vignette_color = Color(1, 1, 1, 0.72)
+duration = 0.34
+peak_opacity = 0.86
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-sprite_frames = SubResource("SpriteFrames_action")
-material = ExtResource("4_boil")
-animation = &"default"
+[node name="Vignette" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+material = SubResource("ShaderMaterial_success_vignette")

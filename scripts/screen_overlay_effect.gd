@@ -39,7 +39,13 @@ var _opacity_time := 0.0
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_sprite = $AnimatedSprite2D
+	_sprite = get_node_or_null("AnimatedSprite2D") as AnimatedSprite2D
+	if not is_instance_valid(_sprite):
+		set_process(opacity_sine_enabled)
+		_update_opacity()
+		if autoplay:
+			play()
+		return
 	if sprite_frames:
 		_sprite.sprite_frames = sprite_frames
 	_sprite.animation = animation_name

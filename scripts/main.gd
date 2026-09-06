@@ -47,18 +47,11 @@ var state := PLAYING
 var game_state := PLAYING
 var targets: Array[WettableTarget] = []
 @onready var _broad_light: PointLight2D = $BroadMoonLight
-@onready var _impact_light: PointLight2D = $StreamImpactLight
 ## The bowl light dims with the strike art so a mistake briefly collapses the
 ## room around the player before the normal light returns.
 @export_range(0.05, 1.0, 0.01) var strike_light_energy_scale := 0.12
 @export_range(0.05, 1.0, 0.01) var strike_ambient_scale := 0.42
 @export_range(0.05, 1.0, 0.01) var strike_light_duration := 0.34
-## A successful checkpoint moves the impact light onto the object and gives it
-## a short warm burst, making the hit readable against the brighter room.
-@export_range(0.0, 3.0, 0.05) var target_hit_energy_punch := 1.15
-@export_range(0.0, 2.0, 0.05) var target_hit_scale_punch := 0.55
-@export_range(0.05, 1.0, 0.01) var target_hit_light_duration := 0.28
-@export var target_hit_light_color := Color.WHITE
 @export_range(0.0, 80.0, 0.5) var pulse_shake_strength := 19.0
 @export_range(0.05, 0.5, 0.01) var pulse_shake_duration := 0.14
 @export_range(0.0, 80.0, 0.5) var strike_shake_strength := 18.0
@@ -81,9 +74,6 @@ var _base_ambient_color := Color.WHITE
 var _base_broad_light_energy := 0.0
 var _base_broad_light_scale := 1.0
 var _base_broad_light_color := Color.WHITE
-var _base_impact_light_energy := 0.0
-var _base_impact_light_scale := 1.0
-var _base_impact_light_color := Color.WHITE
 var _pulse_shake_remaining := 0.0
 var _pulse_shake_elapsed := 0.0
 var _pulse_shake_amplitude := 0.0
@@ -91,7 +81,6 @@ var _pulse_shake_phase := 0.0
 var _active_shake_strength := 0.0
 var _active_shake_duration := 0.0
 var _strike_light_remaining := 0.0
-var _target_hit_light_remaining := 0.0
 var gameplay_started := false
 var initial_input_source := InputController.AimSource.KEYBOARD
 var _start_prompt_shown := false
@@ -182,9 +171,6 @@ func _ready() -> void:
 	_base_broad_light_energy = _broad_light.energy
 	_base_broad_light_scale = _broad_light.texture_scale
 	_base_broad_light_color = _broad_light.color
-	_base_impact_light_energy = _impact_light.energy
-	_base_impact_light_scale = _impact_light.texture_scale
-	_base_impact_light_color = _impact_light.color
 	_layout_world()
 	hud.set_strikes(strike_count)
 	_refresh_reticle_preview()
@@ -287,8 +273,6 @@ func _layout_world() -> void:
 	_align_bowl_light()
 	if _layout_signature != _world_size:
 		_layout_signature = _world_size
-		if _impact_light:
-			_impact_light.position = stream.source_position
 
 
 func _align_bowl_light() -> void:
@@ -423,44 +407,18 @@ func _advance_pulse_feedback(delta: float) -> void:
 		0.0,
 		safe_delta,
 	)
-	_target_hit_light_remaining = move_toward(
-		_target_hit_light_remaining,
-		0.0,
-		safe_delta,
-	)
 	var strike_amount := smoothstep(
 		0.0,
 		1.0,
 		_strike_light_remaining / maxf(strike_light_duration, 0.001),
 	)
-	var target_hit_amount := smoothstep(
-		0.0,
+	_broad_light.energy = _base_broad_light_energy * lerpf(
 		1.0,
-		_target_hit_light_remaining / maxf(target_hit_light_duration, 0.001),
+		strike_light_energy_scale,
+		strike_amount,
 	)
-	_set_effect_lights_enabled(
-		strike_amount <= 0.0
-		and target_hit_amount > 0.0,
-	)
-	var light_energy_multiplier := (
-			lerpf(1.0, strike_light_energy_scale, strike_amount)
-			* (1.0 + target_hit_energy_punch * target_hit_amount)
-	)
-	var light_scale_multiplier := (
-			1.0 + target_hit_scale_punch * target_hit_amount
-	)
-	_broad_light.energy = _base_broad_light_energy * light_energy_multiplier
-	_broad_light.texture_scale = _base_broad_light_scale * light_scale_multiplier
-	_broad_light.color = _base_broad_light_color.lerp(
-		target_hit_light_color,
-		target_hit_amount,
-	)
-	_impact_light.energy = _base_impact_light_energy * light_energy_multiplier
-	_impact_light.texture_scale = _base_impact_light_scale * light_scale_multiplier
-	_impact_light.color = _base_impact_light_color.lerp(
-		target_hit_light_color,
-		target_hit_amount,
-	)
+	_broad_light.texture_scale = _base_broad_light_scale
+	_broad_light.color = _base_broad_light_color
 	if is_instance_valid(_ambient):
 		_ambient.color = _base_ambient_color * lerpf(
 			1.0,
@@ -513,16 +471,11 @@ func _reset_pulse_feedback() -> void:
 	_broad_light.energy = _base_broad_light_energy
 	_broad_light.texture_scale = _base_broad_light_scale
 	_broad_light.color = _base_broad_light_color
-	_impact_light.energy = _base_impact_light_energy
-	_impact_light.texture_scale = _base_impact_light_scale
-	_impact_light.color = _base_impact_light_color
 
 
 func _set_effect_lights_enabled(enabled: bool) -> void:
 	if is_instance_valid(_broad_light):
 		_broad_light.enabled = enabled
-	if is_instance_valid(_impact_light):
-		_impact_light.enabled = enabled
 
 
 func _on_drawing_point_updated(position: Vector2, active: bool) -> void:
@@ -721,8 +674,7 @@ func _on_trace_completed() -> void:
 	stream.set_live_enabled(false)
 	shape_trace.set_trace_visible(false)
 	hud.set_gameplay_controls_visible(false)
-	if _target_hit_light_remaining <= 0.0:
-		_set_effect_lights_enabled(false)
+	_set_effect_lights_enabled(false)
 	line_replay.play(line_recorder.get_strokes())
 
 
@@ -798,7 +750,6 @@ func reset_level() -> void:
 	_set_state(PLAYING)
 	_stop_spray_sound()
 	_reset_pulse_feedback()
-	_target_hit_light_remaining = 0.0
 	strike_count = 0
 	_strike_cooldown_remaining = 0.0
 	_reset_negative_contact()
@@ -893,25 +844,15 @@ func _on_wet_target_hit(
 		target: WettableTarget,
 		amount: float,
 		position: Vector2,
-		normal: Vector2,
+		_normal: Vector2,
 ) -> void:
 	if is_instance_valid(target):
 		target.apply_liquid(amount, position)
-		_impact_light.position = position + normal * 12.0
-		_target_hit_light_remaining = target_hit_light_duration
-		_set_effect_lights_enabled(true)
 
 
 func _on_checkpoint_completed(_index: int) -> void:
 	if state != PLAYING:
 		return
-	hud.play_success_burst()
-	_target_hit_light_remaining = target_hit_light_duration
-	var hit_light_position := shape_trace.get_checkpoint_position(_index)
-	if is_instance_valid(piss_toilet):
-		hit_light_position = piss_toilet.get_bowl_anchor_global()
-	_impact_light.position = to_local(hit_light_position)
-	_set_effect_lights_enabled(true)
 	if is_instance_valid(screen_overlay):
 		screen_overlay.play_success_feedback()
 

@@ -1,65 +1,64 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene format=3 uid="uid://ct7ofshstssg2"]
 
-[ext_resource type="Script" path="res://scripts/piss_meter.gd" id="1_meter"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/PissOMeterInner.png" id="2_inner"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/PissOMeterColor.png" id="3_color"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/PissOMeter.png" id="4_frame"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/PissOMeterLemon.png" id="5_lemon"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/PissOMeterLemonDrip1.png" id="6_drip_one"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/PissOMeterLemonDrop2.png" id="7_drip_two"]
+[ext_resource type="Script" uid="uid://dqbjt18ltfgif" path="res://scripts/piss_meter.gd" id="1_meter"]
+[ext_resource type="Texture2D" uid="uid://brm3jybu40uvv" path="res://assets/art/drive/PissOMeterInner.png" id="2_inner"]
+[ext_resource type="Texture2D" uid="uid://b3fmvuhskj3hp" path="res://assets/art/drive/PissOMeterColor.png" id="3_color"]
+[ext_resource type="Texture2D" uid="uid://da0kk68ypr3ik" path="res://assets/art/drive/PissOMeter.png" id="4_frame"]
+[ext_resource type="Texture2D" uid="uid://fwbrreevhivx" path="res://assets/art/drive/PissOMeterLemon.png" id="5_lemon"]
+[ext_resource type="Texture2D" uid="uid://b27gyol2i7ys" path="res://assets/art/drive/PissOMeterLemonDrip1.png" id="6_drip_one"]
+[ext_resource type="Texture2D" uid="uid://hrg6sgxfsjy2" path="res://assets/art/drive/PissOMeterLemonDrop2.png" id="7_drip_two"]
 [ext_resource type="Material" path="res://resources/materials/piss_meter_liquid.tres" id="8_liquid"]
-[ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="9_boil"]
+[ext_resource type="Material" uid="uid://cm0278crn0uyq" path="res://resources/materials/boil_effect.tres" id="9_boil"]
 
-[node name="PissMeter" type="Node2D"]
-visible = false
+[node name="PissMeter" type="Node2D" unique_id=1511478466]
 script = ExtResource("1_meter")
 
-[node name="Fill" type="TextureProgressBar" parent="."]
-modulate = Color(1, 1, 1, 0.1)
+[node name="Fill" type="TextureProgressBar" parent="." unique_id=1758027752]
+modulate = Color(1, 1, 1, 0.19607843)
+material = ExtResource("9_boil")
 offset_left = 26.0
 offset_top = 26.0
 offset_right = 137.0
 offset_bottom = 385.0
 max_value = 1.0
-texture_under = ExtResource("2_inner")
-material = ExtResource("9_boil")
-fill_mode = 3
 value = 1.0
+fill_mode = 3
+texture_under = ExtResource("2_inner")
 
-[node name="Liquid" type="TextureRect" parent="."]
+[node name="Liquid" type="TextureRect" parent="." unique_id=1683272097]
 texture_filter = 1
+material = ExtResource("8_liquid")
 offset_left = 26.0
 offset_top = 26.0
 offset_right = 137.0
 offset_bottom = 385.0
 mouse_filter = 2
 texture = ExtResource("3_color")
-material = ExtResource("8_liquid")
 expand_mode = 1
 
-[node name="Frame" type="Sprite2D" parent="."]
+[node name="Frame" type="Sprite2D" parent="." unique_id=655660715]
 texture_filter = 1
-centered = false
+material = ExtResource("9_boil")
 texture = ExtResource("4_frame")
-material = ExtResource("9_boil")
-
-[node name="Lemon" type="Sprite2D" parent="."]
-texture_filter = 1
 centered = false
-position = Vector2(-8, 255)
+
+[node name="Lemon" type="Sprite2D" parent="." unique_id=355477020]
+texture_filter = 1
+material = ExtResource("9_boil")
+position = Vector2(82, 142)
 texture = ExtResource("5_lemon")
-material = ExtResource("9_boil")
-
-[node name="DripOne" type="Sprite2D" parent="."]
-texture_filter = 1
 centered = false
-position = Vector2(155, 326)
+
+[node name="DripOne" type="Sprite2D" parent="." unique_id=507712631]
+texture_filter = 1
+material = ExtResource("9_boil")
+position = Vector2(232, 156)
 texture = ExtResource("6_drip_one")
-material = ExtResource("9_boil")
-
-[node name="DripTwo" type="Sprite2D" parent="."]
-texture_filter = 1
 centered = false
-position = Vector2(176, 377)
-texture = ExtResource("7_drip_two")
+
+[node name="DripTwo" type="Sprite2D" parent="." unique_id=599068757]
+texture_filter = 1
 material = ExtResource("9_boil")
+position = Vector2(266, 224)
+texture = ExtResource("7_drip_two")
+centered = false

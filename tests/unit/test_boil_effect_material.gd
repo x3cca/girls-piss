@@ -32,5 +32,5 @@ func test_boil_material_exposes_the_source_noise_and_motion_parameters() -> void
 		return
 	assert_not_null(material.shader)
 	assert_eq(material.get_shader_parameter("fps"), 6.0)
-	assert_eq(material.get_shader_parameter("strength"), 0.5)
+	assert_eq(material.get_shader_parameter("strength"), 0.1)
 	assert_not_null(material.get_shader_parameter("noise"))

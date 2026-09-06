@@ -272,14 +272,14 @@ func _layout_card_art() -> void:
 		viewport_size.y / REFERENCE_VIEWPORT_SIZE.y,
 	)
 	var reference_origin := (
-		viewport_size - REFERENCE_VIEWPORT_SIZE * reference_scale
+			viewport_size - REFERENCE_VIEWPORT_SIZE * reference_scale
 	) * 0.5
 	var retry_arrow_position := reference_origin + RETRY_ARROW_DESIGN_POSITION * reference_scale
 	var retry_text_one_position := (
-		reference_origin + RETRY_TEXT_ONE_DESIGN_POSITION * reference_scale
+			reference_origin + RETRY_TEXT_ONE_DESIGN_POSITION * reference_scale
 	)
 	var retry_text_two_position := (
-		reference_origin + RETRY_TEXT_TWO_DESIGN_POSITION * reference_scale
+			reference_origin + RETRY_TEXT_TWO_DESIGN_POSITION * reference_scale
 	)
 	_layout_control(
 		_retry_button,

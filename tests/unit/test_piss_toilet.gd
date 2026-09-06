@@ -113,7 +113,7 @@ func test_level_1_targets_and_floor_zone_follow_the_bowl_anchor() -> void:
 	var target := level.shape_trace._targets[0]
 	level.shape_trace.complete_current_checkpoint()
 	assert_eq(target._center_position, bowl_anchor)
-	assert_eq(level.get_node("StreamImpactLight").global_position, bowl_anchor)
+	assert_null(level.get_node_or_null("StreamImpactLight"))
 
 	# This sample is just beyond the right side of the generated opening while
 	# still inside the authored floor polygon.

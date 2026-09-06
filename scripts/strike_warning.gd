@@ -46,7 +46,7 @@ var _shake_offset := Vector2.ZERO
 var _shake_rotation := 0.0
 var _pound_elapsed := 0.0
 var _next_pound_index := 0
-var _resting_rotations: Dictionary = {}
+var _resting_rotations: Dictionary = { }
 
 
 func _ready() -> void:
@@ -254,7 +254,7 @@ func _layout_warning(
 	warning.scale = Vector2.ONE * scale_factor
 	warning.pivot_offset = warning.size * 0.5
 	warning.rotation = float(_resting_rotations.get(warning, 0.0)) + (
-		_shake_rotation if is_active else 0.0
+			_shake_rotation if is_active else 0.0
 	)
 
 

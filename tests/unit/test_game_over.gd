@@ -40,10 +40,17 @@ func test_game_over_starts_hidden_and_uses_authored_failure_assets() -> void:
 		"Presentation/GameOverChaulk",
 		"Presentation/YouGotKickedOutText",
 		"Presentation/RetryButton",
+	]:
+		assert_eq(game_over.get_node(layer_path).material, BOIL_MATERIAL)
+	for retry_text_path in [
 		"Presentation/PissAgainText1",
 		"Presentation/PissAgainText2",
 	]:
-		assert_eq(game_over.get_node(layer_path).material, BOIL_MATERIAL)
+		var retry_material := game_over.get_node(retry_text_path).material as ShaderMaterial
+		assert_not_null(retry_material)
+		if retry_material:
+			assert_eq(retry_material.shader, BOIL_MATERIAL.shader)
+			assert_eq(retry_material.get_shader_parameter("strength"), 0.0)
 	assert_eq(game_over.get_node("Presentation/GameOver1").texture, GAME_OVER_ONE)
 	assert_eq(game_over.get_node("Presentation/GameOverPiss").texture, GAME_OVER_PISS)
 	assert_eq(game_over.get_node("Presentation/GameOver2").texture, GAME_OVER_TWO)

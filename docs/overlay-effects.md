@@ -37,5 +37,6 @@ Effects can also be started immediately with
 `$ScreenOverlay.play_effect(effect_scene)`.
 
 The gameplay layer also exposes `play_strike_feedback()` and
-`play_success_feedback()`. These use the reusable procedural red and green
-radial vignette scenes for bad-zone strikes and checkpoint completions.
+`play_success_feedback()`. Bad-zone strikes use the authored dread overlay;
+checkpoint completions use a procedural white radial vignette with a clear
+center and a short edge flash.

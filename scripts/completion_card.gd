@@ -34,16 +34,16 @@ const RETRY_FINAL_POSITION := Vector2(167.0, 1494.0)
 @onready var _retry_group: Control = $Presentation/Art/PissAgainGroup
 @onready var _retry_button: Button = $PlayAgainButton
 @onready var _piss_again_arrow_one: TextureRect = (
-	$Presentation/Art/PissAgainGroup/PissAgainArrow1
+		$Presentation/Art/PissAgainGroup/PissAgainArrow1
 )
 @onready var _piss_again_arrow_two: TextureRect = (
-	$Presentation/Art/PissAgainGroup/PissAgainArrow2
+		$Presentation/Art/PissAgainGroup/PissAgainArrow2
 )
 @onready var _piss_again_text_one: TextureRect = (
-	$Presentation/Art/PissAgainGroup/PissAgainText1
+		$Presentation/Art/PissAgainGroup/PissAgainText1
 )
 @onready var _piss_again_text_two: TextureRect = (
-	$Presentation/Art/PissAgainGroup/PissAgainText2
+		$Presentation/Art/PissAgainGroup/PissAgainText2
 )
 @onready var _credit_chunks: Array[CanvasItem] = [
 	$Presentation/Art/Credits/PissListQuote,

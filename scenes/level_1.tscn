@@ -3,30 +3,22 @@
 [ext_resource type="PackedScene" uid="uid://kjxwgld7c0f2" path="res://scenes/smoke_test.tscn" id="1_smoke_test"]
 [ext_resource type="Script" uid="uid://fgyvif5s28u4" path="res://scripts/level_1.gd" id="2_level_1"]
 [ext_resource type="PackedScene" uid="uid://di3b8einh7qnp" path="res://scenes/level_1_background.tscn" id="3_background"]
-[ext_resource type="PackedScene" path="res://scenes/level_1_chrome.tscn" id="4_chrome"]
+[ext_resource type="PackedScene" uid="uid://rlq84p4mfx38" path="res://scenes/level_1_chrome.tscn" id="4_chrome"]
 [ext_resource type="PackedScene" path="res://scenes/negative_zone.tscn" id="5_floor_zone"]
 
 [node name="Level1" unique_id=166442537 instance=ExtResource("1_smoke_test")]
 script = ExtResource("2_level_1")
 draw_neutral_canvas = false
 
-[node name="PissToilet" parent="." index="3" unique_id=1742420003]
-scale = Vector2(0.5625, 0.5625)
-
 [node name="NegativeZone01" parent="." index="7" unique_id=2103637511]
 visible = false
 normalized_points = PackedVector2Array()
-excluded_normalized_points = PackedVector2Array()
 show_zone = false
 
 [node name="NegativeZone02" parent="." index="8" unique_id=776967907]
 visible = false
 normalized_points = PackedVector2Array()
-excluded_normalized_points = PackedVector2Array()
 show_zone = false
-
-[node name="BroadMoonLight" parent="." index="12" unique_id=687514520]
-energy = 1.0
 
 [node name="Level1Background" parent="." index="16" unique_id=980382921 instance=ExtResource("3_background")]
 
@@ -36,3 +28,6 @@ energy = 1.0
 normalized_points = PackedVector2Array(0, 0.33, 1, 0.33, 1, 1, 0, 1)
 excluded_normalized_points = PackedVector2Array()
 show_zone = false
+
+[node name="SpraySound" parent="." index="20" unique_id=265636619]
+bus = &"Master"
