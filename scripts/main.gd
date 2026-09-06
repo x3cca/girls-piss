@@ -52,7 +52,7 @@ var targets: Array[WettableTarget] = []
 @export_range(0.05, 1.0, 0.01) var strike_light_energy_scale := 0.12
 @export_range(0.05, 1.0, 0.01) var strike_ambient_scale := 0.42
 @export_range(0.05, 1.0, 0.01) var strike_light_duration := 0.34
-@export_range(0.0, 80.0, 0.5) var pulse_shake_strength := 19.0
+@export_range(0.0, 80.0, 0.5) var pulse_shake_strength := 9.5
 @export_range(0.05, 0.5, 0.01) var pulse_shake_duration := 0.14
 @export_range(0.0, 80.0, 0.5) var strike_shake_strength := 18.0
 @export_range(0.05, 0.5, 0.01) var strike_shake_duration := 0.12
@@ -230,8 +230,9 @@ func _debug_instant_win() -> void:
 	input_controller.stop_pissing()
 	while state == PLAYING and shape_trace.completed_steps < shape_trace.total_steps:
 		shape_trace.complete_current_checkpoint()
-	# Completing a trace normally replays the recorded line before showing the
-	# card. Debug win should be immediate even if the player had already drawn.
+	# Completing a trace normally shows the card while the recorded line replays
+	# behind it. Debug win should be immediate even if the player had already
+	# drawn.
 	if state == REPLAYING:
 		line_replay.stop()
 		_on_replay_finished()
@@ -674,6 +675,10 @@ func _on_trace_completed() -> void:
 	stream.set_live_enabled(false)
 	shape_trace.set_trace_visible(false)
 	hud.set_gameplay_controls_visible(false)
+	# The completion card is a screen-space layer, so it renders over the
+	# world-space replay. Start it first so the win state is visible immediately
+	# while the recorded tracing line continues underneath.
+	hud.show_completion_card()
 	_set_effect_lights_enabled(false)
 	line_replay.play(line_recorder.get_strokes())
 
@@ -682,7 +687,6 @@ func _on_replay_finished() -> void:
 	if state != REPLAYING:
 		return
 	_set_state(COMPLETE)
-	hud.show_completion_card()
 
 
 func _on_play_again_pressed() -> void:

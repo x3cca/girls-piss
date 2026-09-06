@@ -68,8 +68,8 @@ them when final UI assets are available.
 
 The player follows the authored `ShapeTrace` path with an inertial stream whose
 emitted parcels preserve their launch velocity while the visible ribbon eases
-toward the current target. Completing the path stops live input, replays the
-recorded line as a time-lapse, and then shows the completion card.
+toward the current target. Completing the path stops live input, shows the
+completion card, and replays the recorded line as a time-lapse behind it.
 
 Level 1 uses the small bathroom-object sprites as its ordered checkpoint
 targets. The authored floor is a bad region, while the wall, tank, and seat

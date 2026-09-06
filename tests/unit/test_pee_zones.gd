@@ -185,6 +185,31 @@ func test_right_bracket_debug_shortcut_completes_immediately() -> void:
 	assert_true(level.hud.completion_card.visible)
 
 
+func test_completion_card_shows_while_tracking_replay_runs_behind_it() -> void:
+	var level := LEVEL_SCENE.instantiate() as Main
+	level.skip_title_screen = true
+	add_child_autofree(level)
+	level.set_process(false)
+	level.get_node("LiquidStream").set_process(false)
+	level.line_recorder._strokes = [
+		[
+			{"position": Vector2(0.1, 0.2), "timestamp": 0.0},
+			{"position": Vector2(0.4, 0.2), "timestamp": 5.0},
+		],
+	]
+
+	level._on_trace_completed()
+
+	assert_eq(level.state, Main.REPLAYING)
+	assert_true(level.hud.completion_card.visible)
+	assert_true(level.line_replay.is_replaying())
+
+	level.line_replay.process_frame(level.line_replay.get_duration())
+
+	assert_eq(level.state, Main.COMPLETE)
+	assert_true(level.hud.completion_card.visible)
+
+
 func test_reticle_uses_neutral_negative_and_success_textures() -> void:
 	var reticle := TouchReticle.new()
 	add_child_autofree(reticle)
