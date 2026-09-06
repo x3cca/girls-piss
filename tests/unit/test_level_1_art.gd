@@ -268,6 +268,16 @@ func test_feedback_scenes_use_the_downloaded_strike_art_and_radial_success_flash
 		(success.get_node("Vignette").material as ShaderMaterial).shader,
 		RADIAL_SHADER,
 	)
+	success.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	success.size = Vector2(720.0, 1280.0)
+	success._update_vignette_aspect()
+	assert_almost_eq(
+		(success.get_node("Vignette").material as ShaderMaterial).get_shader_parameter(
+			"aspect_ratio",
+		),
+		0.5625,
+		0.001,
+	)
 	assert_eq(
 		(success.get_node("Vignette").material as ShaderMaterial).get_shader_parameter(
 			"vignette_color",
