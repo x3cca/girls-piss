@@ -6,8 +6,8 @@ signal depleted
 
 const REFERENCE_SIZE := Vector2(1080.0, 1920.0)
 
-@export_range(1.0, 1800.0, 1.0) var duration_seconds := 300.0
-@export var meter_position := Vector2(38.0, 1515.0)
+@export_range(1.0, 1800.0, 1.0) var duration_seconds := 60.0
+@export var meter_position := Vector2(38.0, 1400.0)
 @export_range(0.0, 1.0, 0.01) var starting_value := 1.0
 
 var input_controller: InputController
@@ -16,6 +16,7 @@ var gameplay_active := false
 var time_remaining := 0.0
 
 @onready var _fill: TextureProgressBar = $Fill
+@onready var _liquid: TextureRect = $Liquid
 @onready var _frame: Sprite2D = $Frame
 @onready var _lemon: Sprite2D = $Lemon
 @onready var _drip_one: Sprite2D = $DripOne
@@ -68,8 +69,13 @@ func is_depleted() -> bool:
 
 
 func _update_fill() -> void:
+	var progress := get_progress()
 	if is_instance_valid(_fill):
-		_fill.value = get_progress()
+		_fill.value = progress
+	if is_instance_valid(_liquid):
+		var liquid_material := _liquid.material as ShaderMaterial
+		if liquid_material:
+			liquid_material.set_shader_parameter("fluid_amount", progress)
 
 
 func _layout() -> void:

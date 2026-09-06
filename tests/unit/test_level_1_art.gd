@@ -144,7 +144,7 @@ func test_title_composition_keeps_level_1_visible_underneath() -> void:
 	assert_eq(title.layer, 20)
 
 
-func test_piss_meter_has_a_five_minute_continuous_stream_budget() -> void:
+func test_piss_meter_has_a_one_minute_continuous_stream_budget() -> void:
 	var meter := METER_SCENE.instantiate() as PissMeter
 	var controller := InputController.new()
 	add_child_autofree(controller)
@@ -152,24 +152,38 @@ func test_piss_meter_has_a_five_minute_continuous_stream_budget() -> void:
 	meter.input_controller = controller
 	meter.set_gameplay_active(true)
 
-	assert_almost_eq(meter.duration_seconds, 300.0, 0.001)
-	assert_almost_eq(meter.get_time_remaining(), 300.0, 0.001)
+	assert_almost_eq(meter.duration_seconds, 60.0, 0.001)
+	assert_almost_eq(meter.get_time_remaining(), 60.0, 0.001)
+	var liquid := meter.get_node("Liquid") as TextureRect
+	var liquid_material := liquid.material as ShaderMaterial
+	var fill := meter.get_node("Fill") as TextureProgressBar
+	assert_not_null(liquid_material)
+	assert_almost_eq(fill.modulate.a, 0.1, 0.001)
+	if liquid_material:
+		assert_almost_eq(liquid_material.get_shader_parameter("fluid_amount"), 1.0, 0.001)
+		assert_almost_eq(liquid_material.get_shader_parameter("wave_amplitude"), 0.012, 0.001)
 	meter._process(10.0)
-	assert_almost_eq(meter.get_time_remaining(), 300.0, 0.001)
+	assert_almost_eq(meter.get_time_remaining(), 60.0, 0.001)
 
 	var space_down := InputEventKey.new()
 	space_down.physical_keycode = KEY_SPACE
 	space_down.pressed = true
 	controller.handle_input_event(space_down)
 	meter._process(10.0)
-	assert_almost_eq(meter.get_time_remaining(), 290.0, 0.001)
+	assert_almost_eq(meter.get_time_remaining(), 50.0, 0.001)
+	if liquid_material:
+		assert_almost_eq(
+			liquid_material.get_shader_parameter("fluid_amount"),
+			50.0 / 60.0,
+			0.001,
+		)
 
 	var space_up := InputEventKey.new()
 	space_up.physical_keycode = KEY_SPACE
 	space_up.pressed = false
 	controller.handle_input_event(space_up)
 	meter._process(10.0)
-	assert_almost_eq(meter.get_time_remaining(), 290.0, 0.001)
+	assert_almost_eq(meter.get_time_remaining(), 50.0, 0.001)
 
 
 func test_empty_piss_meter_fails_the_level_like_three_strikes() -> void:

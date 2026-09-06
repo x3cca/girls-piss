@@ -1,0 +1,11 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://shaders/piss_meter_liquid.gdshader" id="1_meter_shader"]
+
+[resource]
+shader = ExtResource("1_meter_shader")
+shader_parameter/fluid_amount = 1.0
+shader_parameter/wave_amplitude = 0.012
+shader_parameter/wave_frequency = 9.0
+shader_parameter/wave_speed = 0.8
+shader_parameter/wave_softness = 0.008

@@ -84,7 +84,7 @@ region, another strike is possible as soon as that grace period ends. Three
 strikes stop the attempt and show the retry card; the three small HUD markers
 show the remaining attempts.
 
-The Level 1 Piss-O-Meter begins with five minutes of stream time and drains only
+The Level 1 Piss-O-Meter begins with one minute of stream time and drains only
 while the stream input is held. The stream uses the baked
 `resources/depth_map_baked.png` through `DepthMap2D`.
 The environment is split into four depth bands so stream ribbons, particles,
