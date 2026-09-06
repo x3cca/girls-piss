@@ -491,6 +491,27 @@ func test_beat_pulse_affects_all_live_ribbon_layers() -> void:
 		assert_true(widths[0] > widths[2], "%s should carry the pulse." % node_path)
 
 
+func test_beat_bloom_ribbon_only_lights_up_on_a_beat() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+	var points := PackedVector2Array(
+		[Vector2(0.0, 0.0), Vector2(0.0, -100.0), Vector2(0.0, -200.0)],
+	)
+	var ages := PackedFloat32Array([0.0, 0.1, 0.2])
+	var bloom_mesh := stream.get_node("BeatBloomRibbon").mesh as ArrayMesh
+
+	stream.update_ribbon_meshes(points, 200.0, 1.0, false, ages)
+	var unlit_colors: PackedColorArray = bloom_mesh.surface_get_arrays(0)[Mesh.ARRAY_COLOR]
+	assert_almost_eq(unlit_colors[0].a, 0.0, 0.001)
+
+	stream.trigger_pulse()
+	stream.update_ribbon_meshes(points, 200.0, 1.0, false, ages)
+	var beat_colors: PackedColorArray = bloom_mesh.surface_get_arrays(0)[Mesh.ARRAY_COLOR]
+	assert_gt(beat_colors[0].a, beat_colors[2].a)
+	assert_gt(beat_colors[0].a, 0.0)
+	assert_almost_eq(beat_colors[0].a, stream.beat_bloom_alpha, 0.005)
+
+
 func test_reset_stream_clears_beat_pulses() -> void:
 	var stream := STREAM_SCENE.instantiate() as LiquidStream
 	add_child_autofree(stream)

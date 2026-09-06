@@ -28,6 +28,9 @@ const OUT_OF_BOUNDS_MISS := COLLISION_OUT_OF_BOUNDS_MISS
 @export var double_stream_start_radius := 180.0
 @export var double_stream_release_radius := 72.0
 @export var double_bloom_radius_multiplier := 3.0
+@export_group("Beat bloom")
+@export_range(32.0, 240.0, 1.0) var beat_bloom_width := 128.0
+@export_range(0.0, 1.0, 0.01) var beat_bloom_alpha := 0.46
 @export_range(24, 32, 1) var ribbon_points := 28
 @export var gravity := Vector2(0.0, 360.0)
 @export var parcel_lifetime := 2.25
@@ -60,18 +63,22 @@ var input_controller: InputController
 @onready var _edge_mesh: MeshInstance2D = $EdgeRibbon
 @onready var _body_mesh: MeshInstance2D = $BodyRibbon
 @onready var _highlight_mesh: MeshInstance2D = $HighlightRibbon
+@onready var _beat_bloom_mesh: MeshInstance2D = $BeatBloomRibbon
 @onready var _double_edge_mesh: MeshInstance2D = $DoubleEdgeRibbon
 @onready var _double_body_mesh: MeshInstance2D = $DoubleBodyRibbon
 @onready var _double_highlight_mesh: MeshInstance2D = $DoubleHighlightRibbon
+@onready var _double_beat_bloom_mesh: MeshInstance2D = $DoubleBeatBloomRibbon
 @onready var _droplets: DepthParticleEmitter = $Droplets
 @onready var _impact: DepthParticleEmitter = $ImpactBurst
 @onready var _impact_secondary: DepthParticleEmitter = $ImpactBurstSecondary
 var _edge_mesh_resource := ArrayMesh.new()
 var _body_mesh_resource := ArrayMesh.new()
 var _highlight_mesh_resource := ArrayMesh.new()
+var _beat_bloom_mesh_resource := ArrayMesh.new()
 var _double_edge_mesh_resource := ArrayMesh.new()
 var _double_body_mesh_resource := ArrayMesh.new()
 var _double_highlight_mesh_resource := ArrayMesh.new()
+var _double_beat_bloom_mesh_resource := ArrayMesh.new()
 var _parcels: Array[Dictionary] = []
 var _double_parcels: Array[Dictionary] = []
 var _emission_accumulator := 0.0
@@ -107,15 +114,19 @@ func _ready() -> void:
 	_edge_mesh.mesh = _edge_mesh_resource
 	_body_mesh.mesh = _body_mesh_resource
 	_highlight_mesh.mesh = _highlight_mesh_resource
+	_beat_bloom_mesh.mesh = _beat_bloom_mesh_resource
 	_double_edge_mesh.mesh = _double_edge_mesh_resource
 	_double_body_mesh.mesh = _double_body_mesh_resource
 	_double_highlight_mesh.mesh = _double_highlight_mesh_resource
+	_double_beat_bloom_mesh.mesh = _double_beat_bloom_mesh_resource
 	_edge_mesh.modulate = Color("#493719")
 	_body_mesh.modulate = liquid_color
 	_highlight_mesh.modulate = Color("#fff3a0")
+	_beat_bloom_mesh.modulate = Color.WHITE
 	_double_edge_mesh.modulate = Color("#493719")
 	_double_body_mesh.modulate = liquid_color
 	_double_highlight_mesh.modulate = Color("#fff3a0")
+	_double_beat_bloom_mesh.modulate = Color.WHITE
 	_configure_depth_particles()
 	_ensure_depth_band_nodes()
 	_apply_depth_render_order()
@@ -376,7 +387,7 @@ func set_current_stream_direction(direction: Vector2) -> void:
 
 
 func trigger_pulse(amplitude := 1.0) -> void:
-	## Starts a width pulse at the source. Music can call this once per beat.
+	## Starts a width and bloom pulse at the source. Music can call this once per beat.
 	var pulse_amplitude := clampf(amplitude, 0.0, 1.0)
 	_pulses.append(
 		{
@@ -524,9 +535,11 @@ func _set_live_visuals(enabled: bool) -> void:
 	_edge_mesh.visible = stream_visible
 	_body_mesh.visible = stream_visible
 	_highlight_mesh.visible = stream_visible
+	_beat_bloom_mesh.visible = stream_visible
 	_double_edge_mesh.visible = stream_visible and (_double_stream_active or not _double_parcels.is_empty())
 	_double_body_mesh.visible = stream_visible and (_double_stream_active or not _double_parcels.is_empty())
 	_double_highlight_mesh.visible = stream_visible and (_double_stream_active or not _double_parcels.is_empty())
+	_double_beat_bloom_mesh.visible = stream_visible and (_double_stream_active or not _double_parcels.is_empty())
 	_set_depth_base_visibility()
 	if not stream_visible:
 		_hide_depth_band_group("")
@@ -698,21 +711,20 @@ func _advance_pulses(delta: float) -> void:
 
 
 func _pulse_width_multiplier_for_age(age: float) -> float:
+	return lerpf(1.0, pulse_width_multiplier, _beat_bloom_strength_for_age(age))
+
+
+func _beat_bloom_strength_for_age(age: float) -> float:
 	if _pulses.is_empty():
-		return 1.0
+		return 0.0
 	var width := maxf(pulse_width_seconds, 0.001)
-	var multiplier := 1.0
+	var strength := 0.0
 	for pulse in _pulses:
 		var pulse_age := float(pulse["age"])
 		var distance_from_peak := (age - pulse_age) / width
 		var influence := exp(-0.5 * distance_from_peak * distance_from_peak)
-		var pulse_multiplier := lerpf(
-			1.0,
-			pulse_width_multiplier,
-			influence * float(pulse["amplitude"]),
-		)
-		multiplier = maxf(multiplier, pulse_multiplier)
-	return multiplier
+		strength = maxf(strength, influence * float(pulse["amplitude"]))
+	return clampf(strength, 0.0, 1.0)
 
 
 func get_stream_profile() -> Dictionary:
@@ -788,9 +800,11 @@ func _set_impact_depth(world_position: Vector2) -> void:
 
 func _apply_depth_render_order() -> void:
 	var renderables := [
+		_beat_bloom_mesh,
 		_edge_mesh,
 		_body_mesh,
 		_highlight_mesh,
+		_double_beat_bloom_mesh,
 		_double_edge_mesh,
 		_double_body_mesh,
 		_double_highlight_mesh,
@@ -813,9 +827,11 @@ func _ensure_depth_band_nodes() -> void:
 	if depth_map == null:
 		return
 	var specs := [
+		{ "key": "beat_bloom", "node": _beat_bloom_mesh },
 		{ "key": "edge", "node": _edge_mesh },
 		{ "key": "body", "node": _body_mesh },
 		{ "key": "highlight", "node": _highlight_mesh },
+		{ "key": "double_beat_bloom", "node": _double_beat_bloom_mesh },
 		{ "key": "double_edge", "node": _double_edge_mesh },
 		{ "key": "double_body", "node": _double_body_mesh },
 		{ "key": "double_highlight", "node": _double_highlight_mesh },
@@ -854,12 +870,14 @@ func _set_depth_base_visibility() -> void:
 	_edge_mesh.visible = stream_visible and not use_bands
 	_body_mesh.visible = stream_visible and not use_bands
 	_highlight_mesh.visible = stream_visible and not use_bands
+	_beat_bloom_mesh.visible = stream_visible and not use_bands
 	var double_visible := stream_visible and (
 			_double_stream_active or not _double_parcels.is_empty()
 	)
 	_double_edge_mesh.visible = double_visible and not use_bands
 	_double_body_mesh.visible = double_visible and not use_bands
 	_double_highlight_mesh.visible = double_visible and not use_bands
+	_double_beat_bloom_mesh.visible = double_visible and not use_bands
 
 
 func _depth_band_points(
@@ -934,6 +952,7 @@ func _update_depth_banded_ribbons(
 		point_depths := PackedFloat32Array(),
 ) -> void:
 	var style_specs := [
+		{ "key": "%sbeat_bloom" % prefix, "width": beat_bloom_width, "offset": 0.0, "bloom": true },
 		{ "key": "%sedge" % prefix, "width": 36.0, "offset": 0.0 },
 		{ "key": "%sbody" % prefix, "width": 32.0, "offset": 0.0 },
 		{ "key": "%shighlight" % prefix, "width": 8.0, "offset": 1.7 },
@@ -981,6 +1000,7 @@ func _update_depth_banded_ribbons(
 				float(render_metrics["depth_origin"]),
 				float(render_metrics["effective_length"]),
 				band_path_depths,
+				bool(spec.get("bloom", false)),
 			)
 			band_node.z_index = depth_map.get_render_z_index(
 				float(band) / float(maxi(depth_band_count - 1, 1)),
@@ -1005,6 +1025,10 @@ func _base_ribbon_node_for_key(key: String) -> MeshInstance2D:
 			return _double_body_mesh
 		"double_highlight":
 			return _double_highlight_mesh
+		"beat_bloom":
+			return _beat_bloom_mesh
+		"double_beat_bloom":
+			return _double_beat_bloom_mesh
 	return _body_mesh
 
 
@@ -1379,13 +1403,16 @@ func _update_double_stream_meshes(
 	_double_edge_mesh.visible = should_render and depth_map == null
 	_double_body_mesh.visible = should_render and depth_map == null
 	_double_highlight_mesh.visible = should_render and depth_map == null
+	_double_beat_bloom_mesh.visible = should_render and depth_map == null
 	if not should_render:
+		_double_beat_bloom_mesh_resource.clear_surfaces()
 		_double_edge_mesh_resource.clear_surfaces()
 		_double_body_mesh_resource.clear_surfaces()
 		_double_highlight_mesh_resource.clear_surfaces()
 		_hide_depth_band_group("double_")
 		return
 	if depth_map != null:
+		_set_ribbon_mesh(_double_beat_bloom_mesh_resource, points, beat_bloom_width, 0.0, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths, true)
 		_set_ribbon_mesh(_double_edge_mesh_resource, points, 36.0, 0.0, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
 		_set_ribbon_mesh(_double_body_mesh_resource, points, 32.0, 0.0, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
 		_set_ribbon_mesh(_double_highlight_mesh_resource, points, 8.0, 1.7, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
@@ -1400,6 +1427,21 @@ func _update_double_stream_meshes(
 		)
 		return
 
+	_set_ribbon_mesh(
+		_double_beat_bloom_mesh_resource,
+		points,
+		beat_bloom_width,
+		0.0,
+		depth_length,
+		ribbon_alpha,
+		hit_target,
+		point_ages,
+		0.0,
+		-1.0,
+		-1.0,
+		PackedFloat32Array(),
+		true,
+	)
 	_set_ribbon_mesh(
 		_double_edge_mesh_resource,
 		points,
@@ -1441,6 +1483,7 @@ func update_ribbon_meshes(
 		point_depths := PackedFloat32Array(),
 ) -> void:
 	if depth_map != null:
+		_set_ribbon_mesh(_beat_bloom_mesh_resource, points, beat_bloom_width, 0.0, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths, true)
 		_set_ribbon_mesh(_edge_mesh_resource, points, 36.0, 0.0, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
 		_set_ribbon_mesh(_body_mesh_resource, points, 32.0, 0.0, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
 		_set_ribbon_mesh(_highlight_mesh_resource, points, 8.0, 1.7, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
@@ -1454,6 +1497,21 @@ func update_ribbon_meshes(
 			point_depths,
 		)
 		return
+	_set_ribbon_mesh(
+		_beat_bloom_mesh_resource,
+		points,
+		beat_bloom_width,
+		0.0,
+		depth_length,
+		ribbon_alpha,
+		hit_target,
+		point_ages,
+		0.0,
+		-1.0,
+		-1.0,
+		PackedFloat32Array(),
+		true,
+	)
 	_set_ribbon_mesh(
 		_edge_mesh_resource,
 		points,
@@ -1499,6 +1557,7 @@ func _set_ribbon_mesh(
 		depth_origin := -1.0,
 		effective_depth_length := -1.0,
 		point_depths := PackedFloat32Array(),
+		is_bloom := false,
 ) -> void:
 	mesh.clear_surfaces()
 	if points.size() < 2:
@@ -1546,13 +1605,17 @@ func _set_ribbon_mesh(
 		# where accuracy matters.
 		var distal_bloom := smoothstep(0.25, 1.0, depth_fraction)
 		width += _aim_bloom_radius * bloom_width_scale * distal_bloom
+		var pulse_strength := 0.0
 		if i < point_ages.size():
+			pulse_strength = _beat_bloom_strength_for_age(point_ages[i])
 			width *= _pulse_width_multiplier_for_age(point_ages[i])
 		var fade := 1.0
 		if not hit_target:
 			var distal_fade := smoothstep(distal_fade_start, 1.0, depth_fraction)
 			fade = lerpf(1.0, distal_end_alpha, distal_fade)
 		var alpha := clampf(fade * ribbon_alpha, 0.0, 1.0)
+		if is_bloom:
+			alpha *= pulse_strength * beat_bloom_alpha
 		var center := points[i] + normal * center_offset
 		var left := center - normal * width * 0.5
 		var right := center + normal * width * 0.5
@@ -1582,7 +1645,12 @@ func _set_ribbon_mesh(
 
 
 func _hide_depth_band_group(prefix: String) -> void:
-	for key in ["%sedge" % prefix, "%sbody" % prefix, "%shighlight" % prefix]:
+	for key in [
+		"%sbeat_bloom" % prefix,
+		"%sedge" % prefix,
+		"%sbody" % prefix,
+		"%shighlight" % prefix,
+	]:
 		if not _depth_band_resources.has(key):
 			continue
 		for band_mesh in _depth_band_resources[key]:
