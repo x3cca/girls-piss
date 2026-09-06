@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/piss_meter.gd" id="1_meter"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/PissOMeterInner.png" id="2_inner"]
@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" path="res://assets/art/drive/PissOMeterLemonDrip1.png" id="6_drip_one"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/PissOMeterLemonDrop2.png" id="7_drip_two"]
 [ext_resource type="Material" path="res://resources/materials/piss_meter_liquid.tres" id="8_liquid"]
+[ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="9_boil"]
 
 [node name="PissMeter" type="Node2D"]
 script = ExtResource("1_meter")
@@ -20,6 +21,7 @@ offset_right = 137.0
 offset_bottom = 385.0
 max_value = 1.0
 texture_under = ExtResource("2_inner")
+material = ExtResource("9_boil")
 fill_mode = 3
 value = 1.0
 
@@ -38,21 +40,25 @@ expand_mode = 1
 texture_filter = 1
 centered = false
 texture = ExtResource("4_frame")
+material = ExtResource("9_boil")
 
 [node name="Lemon" type="Sprite2D" parent="."]
 texture_filter = 1
 centered = false
 position = Vector2(-8, 255)
 texture = ExtResource("5_lemon")
+material = ExtResource("9_boil")
 
 [node name="DripOne" type="Sprite2D" parent="."]
 texture_filter = 1
 centered = false
 position = Vector2(155, 326)
 texture = ExtResource("6_drip_one")
+material = ExtResource("9_boil")
 
 [node name="DripTwo" type="Sprite2D" parent="."]
 texture_filter = 1
 centered = false
 position = Vector2(176, 377)
 texture = ExtResource("7_drip_two")
+material = ExtResource("9_boil")

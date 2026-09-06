@@ -1,8 +1,9 @@
 ; Edit this scene to align the orange bubble and its text.
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/art/drive/OrangeTextBubble.png" id="1_bubble"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/OrangeText.png" id="2_text"]
+[ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="3_boil"]
 
 [node name="OrangeWarning" type="Control"]
 layout_mode = 0
@@ -17,6 +18,7 @@ offset_bottom = 248.333
 mouse_filter = 2
 texture_filter = 1
 texture = ExtResource("1_bubble")
+material = ExtResource("3_boil")
 expand_mode = 1
 stretch_mode = 5
 

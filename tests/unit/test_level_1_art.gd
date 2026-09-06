@@ -4,6 +4,7 @@ const LEVEL_SCENE := preload("res://scenes/level_1.tscn")
 const METER_SCENE := preload("res://scenes/piss_meter.tscn")
 const STRIKE_EFFECT := preload("res://scenes/strike_vignette.tscn")
 const SUCCESS_EFFECT := preload("res://scenes/success_vignette.tscn")
+const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
 
 
 func test_level_1_uses_the_authored_target_set_and_background() -> void:
@@ -186,6 +187,16 @@ func test_piss_meter_has_a_one_minute_continuous_stream_budget() -> void:
 	assert_almost_eq(meter.get_time_remaining(), 50.0, 0.001)
 
 
+func test_piss_meter_art_uses_the_shared_boil_material() -> void:
+	var meter := METER_SCENE.instantiate() as PissMeter
+	add_child_autofree(meter)
+
+	for node_path in ["Fill", "Frame", "Lemon", "DripOne", "DripTwo"]:
+		var canvas_item := meter.get_node(node_path) as CanvasItem
+		assert_not_null(canvas_item, "%s should be a meter canvas item." % node_path)
+		assert_true(canvas_item.material == BOIL_MATERIAL, "%s should use the boil material." % node_path)
+
+
 func test_empty_piss_meter_fails_the_level() -> void:
 	var level := LEVEL_SCENE.instantiate() as Level1
 	level.skip_title_screen = true
@@ -224,3 +235,5 @@ func test_feedback_scenes_use_the_downloaded_overlay_art() -> void:
 		success_frames.get_frame_texture(&"default", 1).resource_path,
 		"res://assets/art/drive/actionWiggleFlipForAffect.png",
 	)
+	assert_true(strike.get_node("AnimatedSprite2D").material == BOIL_MATERIAL)
+	assert_true(success.get_node("AnimatedSprite2D").material == BOIL_MATERIAL)

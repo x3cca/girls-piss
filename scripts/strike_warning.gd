@@ -15,11 +15,13 @@ const ORANGE_WARNING := 2
 const RED_WARNING := 3
 
 @export_range(0.0, 10.0, 0.01) var warning_duration := 4.0
-@export_range(0.0, 0.2, 0.005) var top_margin_ratio := 0.025
 @export_range(0.0, 0.2, 0.005) var right_margin_ratio := 0.035
 @export_range(0.2, 0.6, 0.01) var bubble_width_ratio := 0.44
 @export_range(180.0, 480.0, 1.0) var max_bubble_width := 360.0
 @export_range(0.1, 1.0, 0.01) var min_bubble_width := 220.0
+@export_range(0.05, 1.0, 0.01) var entrance_shake_duration := 0.28
+@export_range(0.0, 80.0, 1.0) var entrance_shake_amplitude := 26.0
+@export_range(0.0, 0.2, 0.005) var entrance_shake_rotation := 0.035
 
 @onready var yellow_warning: Control = $YellowWarning
 @onready var orange_warning: Control = $OrangeWarning
@@ -27,6 +29,9 @@ const RED_WARNING := 3
 
 var _active_warning := 0
 var _remaining := 0.0
+var _shake_elapsed := 0.0
+var _shake_offset := Vector2.ZERO
+var _shake_rotation := 0.0
 
 
 func _ready() -> void:
@@ -41,6 +46,7 @@ func _process(delta: float) -> void:
 
 
 func process_frame(delta: float) -> void:
+	_advance_entrance_shake(maxf(delta, 0.0))
 	_layout_warnings()
 	if _active_warning == 0:
 		return
@@ -57,6 +63,7 @@ func show_warning(strike: int, duration := -1.0) -> void:
 	_active_warning = strike
 	_remaining = warning_duration if duration < 0.0 else maxf(duration, 0.0)
 	_warning_for(strike).visible = true
+	_start_entrance_shake()
 	_layout_warnings()
 	if _remaining <= 0.0:
 		hide_warning()
@@ -65,6 +72,7 @@ func show_warning(strike: int, duration := -1.0) -> void:
 func hide_warning() -> void:
 	_active_warning = 0
 	_remaining = 0.0
+	_reset_entrance_shake()
 	if is_instance_valid(yellow_warning):
 		yellow_warning.visible = false
 	if is_instance_valid(orange_warning):
@@ -141,17 +149,50 @@ func _layout_warnings() -> void:
 		max_bubble_width,
 	)
 	var right_margin := maxf(viewport_size.x * right_margin_ratio, 16.0)
-	var top_margin := maxf(viewport_size.y * top_margin_ratio, 16.0)
 	var right_position := viewport_size.x - right_margin - bubble_width
 
-	_layout_warning(yellow_warning, Vector2(right_position, top_margin), bubble_width)
-	_layout_warning(orange_warning, Vector2(right_position, top_margin), bubble_width)
-	_layout_warning(red_warning, Vector2(right_position, top_margin), bubble_width)
+	_layout_warning(yellow_warning, right_position, bubble_width, viewport_size.y)
+	_layout_warning(orange_warning, right_position, bubble_width, viewport_size.y)
+	_layout_warning(red_warning, right_position, bubble_width, viewport_size.y)
 
 
-func _layout_warning(warning: Control, origin: Vector2, width: float) -> void:
+func _layout_warning(warning: Control, right_position: float, width: float, viewport_height: float) -> void:
 	if not is_instance_valid(warning) or warning.size.x <= 1.0:
 		return
-	warning.position = origin
+	var is_active := warning == _warning_for(_active_warning)
 	var scale_factor := width / warning.size.x
+	var centered_y := (viewport_height - warning.size.y * scale_factor) * 0.5
+	warning.position = Vector2(right_position, centered_y) + (_shake_offset if is_active else Vector2.ZERO)
 	warning.scale = Vector2.ONE * scale_factor
+	warning.pivot_offset = warning.size * 0.5
+	warning.rotation = _shake_rotation if is_active else 0.0
+
+
+func _start_entrance_shake() -> void:
+	_shake_elapsed = 0.0
+	_apply_entrance_shake()
+
+
+func _advance_entrance_shake(delta: float) -> void:
+	if _shake_elapsed >= entrance_shake_duration:
+		return
+	_shake_elapsed = minf(_shake_elapsed + delta, entrance_shake_duration)
+	_apply_entrance_shake()
+
+
+func _apply_entrance_shake() -> void:
+	if entrance_shake_duration <= 0.0 or _shake_elapsed >= entrance_shake_duration:
+		_reset_entrance_shake()
+		return
+	var progress := clampf(_shake_elapsed / entrance_shake_duration, 0.0, 1.0)
+	var envelope := pow(1.0 - progress, 2.2)
+	var horizontal_wave := sin(progress * TAU * 4.5 + PI * 0.5)
+	var vertical_wave := sin(progress * TAU * 6.0)
+	_shake_offset = Vector2(horizontal_wave, vertical_wave * 0.65) * entrance_shake_amplitude * envelope
+	_shake_rotation = sin(progress * TAU * 5.0 + PI * 0.5) * entrance_shake_rotation * envelope
+
+
+func _reset_entrance_shake() -> void:
+	_shake_elapsed = entrance_shake_duration
+	_shake_offset = Vector2.ZERO
+	_shake_rotation = 0.0

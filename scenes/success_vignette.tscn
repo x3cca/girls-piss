@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/screen_overlay_effect.gd" id="1_effect"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/ActionLines.png" id="2_action"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/actionWiggleFlipForAffect.png" id="3_action_two"]
+[ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="4_boil"]
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_action"]
 animations = [{
@@ -26,4 +27,5 @@ opacity = 0.9
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_action")
+material = ExtResource("4_boil")
 animation = &"default"

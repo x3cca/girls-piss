@@ -1,6 +1,7 @@
 extends GutTest
 
 const WARNING_SCENE := preload("res://scenes/strike_warning.tscn")
+const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
 const YELLOW_BUBBLE := preload("res://assets/art/drive/YellowTextBubble.png")
 const YELLOW_TEXT := preload("res://assets/art/drive/YellowText.png")
 const ORANGE_BUBBLE := preload("res://assets/art/drive/OrangeTextBubble.png")
@@ -34,6 +35,15 @@ func test_warning_assets_are_selected_for_each_strike() -> void:
 	assert_eq(red["text"], RED_TEXT_1)
 	assert_eq(red["row"], [RED_TEXT_2, RED_TEXT_3])
 	assert_eq(red["emergency"], RED_TEXT_4)
+
+
+func test_strike_bubbles_use_the_shared_boil_material() -> void:
+	var warning := _make_warning()
+
+	for node_path in ["YellowWarning/Bubble", "OrangeWarning/Bubble", "RedWarning/Bubble"]:
+		var bubble := warning.get_node(node_path) as TextureRect
+		assert_not_null(bubble, "%s should be a bubble texture." % node_path)
+		assert_true(bubble.material == BOIL_MATERIAL, "%s should use the boil material." % node_path)
 
 
 func test_red_warning_places_its_text_in_two_rows() -> void:
@@ -102,6 +112,30 @@ func test_warning_is_visible_immediately_and_expires_after_cooldown() -> void:
 	warning.process_frame(0.01)
 	assert_eq(warning.get_active_warning(), 0)
 	assert_false(warning.is_warning_visible(StrikeWarning.YELLOW_WARNING))
+
+
+func test_warning_entrance_shake_decays_to_a_resting_position() -> void:
+	var warning := _make_warning()
+	warning.show_warning(StrikeWarning.YELLOW_WARNING, 1.0)
+	var entering_position := warning.yellow_warning.position
+
+	warning.process_frame(warning.entrance_shake_duration)
+	var resting_position := warning.yellow_warning.position
+
+	assert_gt(entering_position.distance_to(resting_position), warning.entrance_shake_amplitude * 0.8)
+	assert_eq(warning.yellow_warning.rotation, 0.0)
+
+
+func test_warning_panels_are_centered_vertically() -> void:
+	var warning := _make_warning()
+	var viewport_height := warning.get_viewport_rect().size.y
+
+	for strike in [StrikeWarning.YELLOW_WARNING, StrikeWarning.ORANGE_WARNING, StrikeWarning.RED_WARNING]:
+		warning.show_warning(strike, 1.0)
+		warning.process_frame(warning.entrance_shake_duration)
+		var panel := warning._warning_for(strike)
+		var panel_center := panel.position.y + panel.size.y * panel.scale.y * 0.5
+		assert_almost_eq(panel_center, viewport_height * 0.5, 0.5)
 
 
 func test_first_three_warnings_use_their_own_panel() -> void:

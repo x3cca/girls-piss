@@ -2,6 +2,14 @@ extends GutTest
 
 const EFFECT_SCENE := preload("res://scenes/screen_overlay_effect.tscn")
 const OVERLAY_SCENE := preload("res://scenes/screen_overlay.tscn")
+const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
+
+
+func test_effect_sprite_uses_the_shared_boil_material() -> void:
+	var effect := EFFECT_SCENE.instantiate() as ScreenOverlayEffect
+	add_child_autofree(effect)
+
+	assert_true(effect.get_node("AnimatedSprite2D").material == BOIL_MATERIAL)
 
 
 func test_effect_stretches_each_frame_to_the_full_control_size() -> void:

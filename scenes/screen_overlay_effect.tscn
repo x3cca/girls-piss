@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/screen_overlay_effect.gd" id="1_effect"]
+[ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="2_boil"]
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_default"]
 animations = [{
@@ -23,5 +24,6 @@ sprite_frames = SubResource("SpriteFrames_default")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_default")
+material = ExtResource("2_boil")
 animation = &"default"
 centered = false
