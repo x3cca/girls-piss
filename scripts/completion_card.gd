@@ -4,23 +4,33 @@ class_name CompletionCard
 
 signal play_again_pressed
 
+const CURSOR_TEXTURE: Texture2D = preload(
+	"res://assets/placeholders/cursor_pixel_pack/Tiles/tile_0026.png"
+)
+
 @onready var _play_again_button: Button = $PlayAgainButton
 var failure_state := false
 
 
 func _ready() -> void:
+	Input.set_custom_mouse_cursor(CURSOR_TEXTURE, Input.CURSOR_ARROW, Vector2.ZERO)
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	_play_again_button.pressed.connect(_on_play_again_pressed)
 	_layout_card()
 	queue_redraw()
 
 
 func _process(_delta: float) -> void:
+	if visible:
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	_layout_card()
 
 
 func show_card() -> void:
 	failure_state = false
 	visible = true
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	_layout_card()
 	_play_again_button.grab_focus()
 	queue_redraw()
@@ -29,6 +39,8 @@ func show_card() -> void:
 func show_failure_card() -> void:
 	failure_state = true
 	visible = true
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	_layout_card()
 	_play_again_button.grab_focus()
 	queue_redraw()
@@ -41,6 +53,7 @@ func is_failure_card() -> bool:
 func hide_card() -> void:
 	visible = false
 	failure_state = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 
 
 func _on_play_again_pressed() -> void:

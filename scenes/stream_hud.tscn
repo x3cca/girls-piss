@@ -81,5 +81,6 @@ theme_override_font_sizes/font_size = 18
 theme_override_styles/normal = SubResource("StyleBox_button")
 theme_override_styles/hover = SubResource("StyleBox_button_hover")
 text = "PLAY AGAIN"
+mouse_default_cursor_shape = 0
 
 [node name="GameOver" parent="." instance=ExtResource("10_game_over")]

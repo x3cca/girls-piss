@@ -197,6 +197,20 @@ func test_piss_meter_art_uses_the_shared_boil_material() -> void:
 		assert_true(canvas_item.material == BOIL_MATERIAL, "%s should use the boil material." % node_path)
 
 
+func test_completion_card_shows_the_kenney_cursor() -> void:
+	var level := LEVEL_SCENE.instantiate() as Level1
+	level.skip_title_screen = true
+	add_child_autofree(level)
+	var completion := level.hud.completion_card
+	var play_again_button := completion.get_node("PlayAgainButton") as Button
+
+	completion.show_card()
+
+	assert_true(completion.visible)
+	assert_eq(Input.get_mouse_mode(), Input.MOUSE_MODE_VISIBLE)
+	assert_eq(play_again_button.mouse_default_cursor_shape, Control.CURSOR_ARROW)
+
+
 func test_piss_meter_reveals_with_a_left_slide_when_pissing_starts() -> void:
 	var meter := METER_SCENE.instantiate() as PissMeter
 	var controller := InputController.new()
