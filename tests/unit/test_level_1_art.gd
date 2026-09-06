@@ -102,6 +102,15 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 		)
 
 
+func test_web_export_uses_level_1_as_the_main_scene() -> void:
+	var export_presets := FileAccess.get_file_as_string("res://export_presets.cfg")
+	assert_true(
+		export_presets.contains(
+			'export_files=PackedStringArray("res://scenes/level_1.tscn")',
+		),
+	)
+
+
 func test_level_1_floor_is_bad_but_toilet_and_wall_are_neutral() -> void:
 	var level := LEVEL_SCENE.instantiate() as Level1
 	level.skip_title_screen = true
