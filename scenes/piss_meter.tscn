@@ -11,6 +11,7 @@
 [ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="9_boil"]
 
 [node name="PissMeter" type="Node2D"]
+visible = false
 script = ExtResource("1_meter")
 
 [node name="Fill" type="TextureProgressBar" parent="."]

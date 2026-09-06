@@ -5,6 +5,9 @@ class_name PissMeter
 signal depleted
 
 const REFERENCE_SIZE := Vector2(1080.0, 1920.0)
+const METER_BOUNDS_RIGHT := 245.0
+const METER_SLIDE_MARGIN := 24.0
+const METER_SHOW_DURATION := 0.65
 
 @export_range(1.0, 1800.0, 1.0) var duration_seconds := 60.0
 @export var meter_position := Vector2(38.0, 1400.0)
@@ -22,17 +25,30 @@ var time_remaining := 0.0
 @onready var _drip_one: Sprite2D = $DripOne
 @onready var _drip_two: Sprite2D = $DripTwo
 var _layout_signature := Vector2.ZERO
+var _rest_position := Vector2.ZERO
+var _hidden_position := Vector2.ZERO
+var _meter_revealed := false
+var _show_tween: Tween
+var _wired_input_controller: InputController
 
 
 func _ready() -> void:
 	time_remaining = duration_seconds * clampf(starting_value, 0.0, 1.0)
 	_layout()
 	_update_fill()
+	visible = false
 	set_process(true)
 
 
 func _process(delta: float) -> void:
 	_layout()
+	_wire_input_controller()
+	if (
+			gameplay_active
+			and is_instance_valid(input_controller)
+			and input_controller.is_stream_input_held()
+	):
+		_reveal_meter()
 	if not gameplay_active or input_controller == null:
 		return
 	if not input_controller.is_stream_input_held():
@@ -49,11 +65,15 @@ func _process(delta: float) -> void:
 
 func set_gameplay_active(active: bool) -> void:
 	gameplay_active = active
+	_wire_input_controller()
+	if not active:
+		_hide_meter()
 
 
 func reset_meter() -> void:
 	time_remaining = duration_seconds * clampf(starting_value, 0.0, 1.0)
 	_update_fill()
+	_hide_meter()
 
 
 func get_time_remaining() -> float:
@@ -89,5 +109,55 @@ func _layout() -> void:
 		viewport_size.x / REFERENCE_SIZE.x,
 		viewport_size.y / REFERENCE_SIZE.y,
 	)
-	position = meter_position * composition_scale
+	_rest_position = meter_position * composition_scale
+	_hidden_position = Vector2(
+		-(METER_BOUNDS_RIGHT + METER_SLIDE_MARGIN) * composition_scale.x,
+		_rest_position.y,
+	)
+	position = _rest_position if _meter_revealed else _hidden_position
 	scale = composition_scale
+
+
+func _wire_input_controller() -> void:
+	if input_controller == _wired_input_controller:
+		return
+	if is_instance_valid(_wired_input_controller) and _wired_input_controller.stream_hold_changed.is_connected(
+		_on_stream_hold_changed,
+	):
+		_wired_input_controller.stream_hold_changed.disconnect(_on_stream_hold_changed)
+	_wired_input_controller = input_controller
+	if is_instance_valid(_wired_input_controller) and not _wired_input_controller.stream_hold_changed.is_connected(
+		_on_stream_hold_changed,
+	):
+		_wired_input_controller.stream_hold_changed.connect(_on_stream_hold_changed)
+
+
+func _on_stream_hold_changed(active: bool) -> void:
+	if active and gameplay_active:
+		_reveal_meter()
+
+
+func _reveal_meter() -> void:
+	if _meter_revealed:
+		return
+	_meter_revealed = true
+	visible = true
+	position = _hidden_position
+	if _show_tween:
+		_show_tween.kill()
+	_show_tween = create_tween()
+	_show_tween.tween_property(
+		self,
+		"position",
+		_rest_position,
+		METER_SHOW_DURATION,
+	).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _hide_meter() -> void:
+	_meter_revealed = false
+	if _show_tween:
+		_show_tween.kill()
+		_show_tween = null
+	visible = false
+	position = _hidden_position

@@ -93,6 +93,14 @@ func show_input_prompt(source: int) -> void:
 	input_prompt.show_prompt(source)
 
 
+func show_start_prompt(source: int) -> void:
+	## The title gate hides gameplay controls, but the start gesture still tells
+	## us which control scheme to explain immediately.
+	if not is_instance_valid(input_prompt):
+		return
+	input_prompt.show_prompt(source)
+
+
 func hide_input_prompt() -> void:
 	if is_instance_valid(input_prompt):
 		input_prompt.hide_prompt()

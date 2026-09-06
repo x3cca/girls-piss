@@ -174,6 +174,66 @@ func test_mouse_hold_keeps_its_start_position_through_input_processing() -> void
 	assert_eq(stream.parcel_at(0)["launch_target"], click_position)
 
 
+func test_player_release_lets_emitted_parcels_finish_their_arc() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+	var controller := InputController.new()
+	add_child_autofree(controller)
+	controller.set_process(false)
+	stream.set_process(false)
+	stream.input_controller = controller
+	stream.gravity = Vector2.ZERO
+	stream.stream_speed = 1000.0
+	stream.source_position = Vector2(100.0, 100.0)
+	var target := Vector2(100.0, 90.0)
+	controller.set_target_position(target)
+
+	var space_down := InputEventKey.new()
+	space_down.physical_keycode = KEY_SPACE
+	space_down.pressed = true
+	controller.handle_input_event(space_down)
+	stream.process_frame(0.05)
+	stream.process_frame(0.05)
+	var position_at_release: Vector2 = stream.parcel_at(0)["position"]
+
+	var space_up := InputEventKey.new()
+	space_up.physical_keycode = KEY_SPACE
+	space_up.pressed = false
+	controller.handle_input_event(space_up)
+	stream.process_frame(0.01)
+
+	assert_true(stream._stream_draining)
+	assert_true(stream.parcel_at(0)["position"] != position_at_release)
+	assert_true((stream.get_node("BodyRibbon").mesh as ArrayMesh).get_surface_count() > 0)
+
+	stream.process_frame(0.13)
+	assert_false(stream._stream_draining)
+	assert_eq((stream.get_node("BodyRibbon").mesh as ArrayMesh).get_surface_count(), 0)
+
+
+func test_forceful_live_stop_also_drains_emitted_parcels() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+	stream.gravity = Vector2.ZERO
+	stream.stream_speed = 1000.0
+	stream.source_position = Vector2.ZERO
+	stream.emit_parcels(Vector2(0.0, -10.0), 0.0)
+	stream.emit_parcels(Vector2(0.0, -10.0), 0.0)
+	var position_at_cancel: Vector2 = stream.parcel_at(0)["position"]
+
+	stream.set_live_enabled(false)
+	stream.process_frame(0.05)
+
+	assert_false(stream.is_live_enabled())
+	assert_true(stream.parcel_at(0)["position"] != position_at_cancel)
+	assert_true(stream._stream_draining)
+	assert_true((stream.get_node("BodyRibbon").mesh as ArrayMesh).get_surface_count() > 0)
+
+	stream.process_frame(0.1)
+	assert_false(stream._stream_draining)
+	assert_false(stream.get_node("BodyRibbon").visible)
+
+
 func test_first_shot_flies_from_source_before_endpoint_becomes_active() -> void:
 	var stream := STREAM_SCENE.instantiate() as LiquidStream
 	add_child_autofree(stream)

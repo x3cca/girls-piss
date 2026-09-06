@@ -178,6 +178,7 @@ func test_title_start_input_is_consumed_before_gameplay_begins() -> void:
 	var instance := SMOKE_TEST_SCENE.instantiate() as Main
 	add_child_autofree(instance)
 	var input_controller := instance.get_node("InputController") as InputController
+	var hud := instance.get_node("HUDLayer/HUD") as StreamHUD
 	var title := instance.get_node("TitleLayer/TitleScreen") as TitleScreen
 
 	var key := InputEventKey.new()
@@ -187,6 +188,23 @@ func test_title_start_input_is_consumed_before_gameplay_begins() -> void:
 
 	assert_true(title.is_start_locked())
 	assert_false(input_controller.is_pissing())
+	assert_true(hud.input_prompt.is_showing())
+	assert_eq(hud.input_prompt.current_source, InputPrompt.PromptSource.KEYBOARD)
 	await get_tree().create_timer(0.6).timeout
 	assert_true(instance.gameplay_started)
 	assert_false(input_controller.is_pissing())
+
+
+func test_mouse_start_shows_mouse_controls_immediately() -> void:
+	var instance := SMOKE_TEST_SCENE.instantiate() as Main
+	add_child_autofree(instance)
+	var input_controller := instance.get_node("InputController") as InputController
+	var hud := instance.get_node("HUDLayer/HUD") as StreamHUD
+
+	var mouse := InputEventMouseButton.new()
+	mouse.button_index = MOUSE_BUTTON_LEFT
+	mouse.pressed = true
+	input_controller.handle_input_event(mouse)
+
+	assert_true(hud.input_prompt.is_showing())
+	assert_eq(hud.input_prompt.current_source, InputPrompt.PromptSource.MOUSE)

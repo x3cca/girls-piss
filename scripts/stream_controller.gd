@@ -95,6 +95,8 @@ var _pulses: Array[Dictionary] = []
 var _depth_band_nodes: Dictionary = { }
 var _depth_band_resources: Dictionary = { }
 var _stream_hold_was_active := false
+var _stream_draining := false
+var _active_parcel_count := 0
 var _initial_shot_in_flight := false
 var _strike_flash_remaining := 0.0
 
@@ -165,32 +167,41 @@ func get_depth_band_at(world_position: Vector2) -> int:
 
 
 func _process(delta: float) -> void:
-	if input_controller == null:
-		return
 	_advance_strike_flash(delta)
 	if not _live_enabled:
-		# Replay owns the only visible path after tracing completes. Keep the
-		# physics chain untouched until the level is reset, but do not advance or
-		# render it while the replay is on screen.
-		drawing_point_updated.emit(Vector2.ZERO, false)
-		return
-	# The input controller keeps its public visual-start state persistent for
-	# compatibility, but gameplay streams are hold-based. A release must clear
-	# the old parcel chain so the next hold gets a fresh endpoint path.
-	var is_pissing := input_controller.is_stream_input_held()
-	var target := input_controller.get_target_position()
-	_update_aim_bloom(target, delta)
-	var stream_hold_started := is_pissing and not _stream_hold_was_active
-	if stream_hold_started:
-		# The controller snapshots the input that began this hold. Reading the
-		# live target here would allow the input process (including music cursor
-		# offset) to move it before the stream gets its first parcel.
-		_start_stream_hold(input_controller.get_stream_start_position())
-	elif not _stream_target_initialized:
-		_stream_target_position = target
-		_stream_target_initialized = true
-	else:
-		_advance_stream_target(target, delta)
+		# A cancelled stream still owns its already-emitted parcels. Let those
+		# parcels finish their committed flight before hiding the live ribbon.
+		if not _stream_draining:
+			drawing_point_updated.emit(Vector2.ZERO, false)
+			return
+		update_parcels(delta)
+		_prune_parcel_chain(_parcels, true)
+		_prune_parcel_chain(_double_parcels)
+		_update_stream_draining_state()
+		if not _stream_draining:
+			_set_live_visuals(false)
+	var is_pissing := false
+	var target := _stream_target_position
+	if _live_enabled:
+		if input_controller == null:
+			return
+		# The input controller keeps its public visual-start state persistent for
+		# compatibility, but gameplay streams are hold-based. A release starts a
+		# drain instead of clearing the old parcel chain.
+		is_pissing = input_controller.is_stream_input_held()
+		target = input_controller.get_target_position()
+		_update_aim_bloom(target, delta)
+		var stream_hold_started := is_pissing and not _stream_hold_was_active
+		if stream_hold_started:
+			# The controller snapshots the input that began this hold. Reading the
+			# live target here would allow the input process (including music cursor
+			# offset) to move it before the stream gets its first parcel.
+			_start_stream_hold(input_controller.get_stream_start_position())
+		elif not _stream_target_initialized:
+			_stream_target_position = target
+			_stream_target_initialized = true
+		else:
+			_advance_stream_target(target, delta)
 	var direction := (_stream_target_position - source_position).normalized()
 	if direction == Vector2.ZERO:
 		direction = Vector2.UP
@@ -201,19 +212,27 @@ func _process(delta: float) -> void:
 		_update_preview_pulses(delta)
 		emit_parcels(_stream_target_position, delta)
 	else:
-		# Releasing Space/a finger closes the stream immediately. A later press
-		# starts a fresh visible jet while the crosshair keeps its position. Reset
-		# the inertial target too; otherwise the next endpoint inherits the prior
-		# hold's momentum and can skip a checkpoint.
+		# Releasing Space/a finger closes the live stream immediately. Its existing
+		# parcels continue to the targets they were already committed to.
 		if _stream_hold_was_active:
-			reset_stream()
+			cancel_stream()
 		_stream_hold_was_active = false
-	if not _double_stream_active:
+		if _stream_draining:
+			update_parcels(delta)
+			_prune_parcel_chain(_parcels, true)
+			_prune_parcel_chain(_double_parcels)
+			_update_stream_draining_state()
+	if not _double_stream_active and not _stream_draining:
 		_double_parcels.clear()
+	var stream_visual_active := (is_pissing and _live_enabled) or _stream_draining
 	var current_samples := _build_parcel_samples(_parcels)
 	_current_points = _positions_from_samples(current_samples)
 	_current_point_depths = _depths_from_samples(current_samples)
 	_current_point_ages = _ages_from_samples(current_samples)
+	var active_samples := _build_active_parcel_samples()
+	var active_points := _positions_from_samples(active_samples)
+	var active_point_depths := _depths_from_samples(active_samples)
+	var active_point_ages := _ages_from_samples(active_samples)
 	var double_samples := _build_parcel_samples(_double_parcels)
 	var double_points := _positions_from_samples(double_samples)
 	_double_point_depths = _depths_from_samples(double_samples)
@@ -225,29 +244,29 @@ func _process(delta: float) -> void:
 	_impact.spread = _impact_spread()
 	_impact_secondary.spread = _impact_spread()
 	var hit := _truncate_at_target(
-		_current_points,
-		_current_point_ages,
-		_current_point_depths,
+		active_points,
+		active_point_ages,
+		active_point_depths,
 	)
 	var hit_target: bool = hit.get("classification", "") == COLLISION_TARGET_HIT
 	_impact.emitting = false
 	_impact_secondary.emitting = false
-	if is_pissing and not hit.is_empty():
-		_current_points = hit.points
-		_current_point_depths = hit.depths
-		_current_point_ages = hit.ages
+	if stream_visual_active and not hit.is_empty() and is_pissing and _live_enabled:
+		active_points = hit.points
+		active_point_depths = hit.depths
+		active_point_ages = hit.ages
 		if hit_target:
 			_emit_hit(hit, delta)
 		else:
 			_emit_floor_impact(hit.position)
-	elif is_pissing and _current_points.size() >= 2:
-		_emit_floor_impact(_current_points[_current_points.size() - 1])
+	elif stream_visual_active and is_pissing and _live_enabled and active_points.size() >= 2:
+		_emit_floor_impact(active_points[active_points.size() - 1])
 
 	var profile := get_stream_profile()
 	update_ribbon_meshes(
 		_current_points,
 		_path_length(_current_points),
-		float(profile["ribbon_alpha"]) if is_pissing else 0.0,
+		float(profile["ribbon_alpha"]) if stream_visual_active else 0.0,
 		hit_target,
 		_current_point_ages,
 		_current_point_depths,
@@ -255,7 +274,7 @@ func _process(delta: float) -> void:
 	_update_double_stream_meshes(
 		double_points,
 		_path_length(double_points),
-		float(profile["ribbon_alpha"]) if is_pissing else 0.0,
+		float(profile["ribbon_alpha"]) if stream_visual_active else 0.0,
 		hit_target,
 		_double_point_ages,
 		_double_point_depths,
@@ -264,14 +283,15 @@ func _process(delta: float) -> void:
 	_droplets.position = _current_points[droplet_index] if droplet_index >= 0 else source_position
 	_droplets.direction = _tangent_at(droplet_index, direction)
 	_set_droplet_depth(_droplets.global_position)
-	_update_stream_effects(direction, is_pissing)
+	_update_stream_effects(direction, stream_visual_active and is_pissing and _live_enabled)
 	var endpoint_active := (
-			is_pissing
-			and _current_points.size() >= 2
+		is_pissing
+			and _live_enabled
+			and active_points.size() >= 2
 			and not _initial_shot_in_flight
 	)
 	if endpoint_active:
-		drawing_point_updated.emit(_current_points[_current_points.size() - 1], true)
+		drawing_point_updated.emit(active_points[active_points.size() - 1], true)
 	else:
 		drawing_point_updated.emit(Vector2.ZERO, false)
 	queue_redraw()
@@ -282,6 +302,8 @@ func process_frame(delta: float) -> void:
 
 
 func set_live_enabled(enabled: bool) -> void:
+	if not enabled:
+		cancel_stream()
 	_live_enabled = enabled
 	_set_live_visuals(enabled)
 	if not enabled:
@@ -297,9 +319,10 @@ func get_stream_target_position() -> Vector2:
 
 
 func get_current_stream_endpoint() -> Vector2:
-	if _current_points.size() < 2:
+	var active_samples := _build_active_parcel_samples()
+	if active_samples.size() < 2:
 		return Vector2.ZERO
-	return _current_points[_current_points.size() - 1]
+	return active_samples[active_samples.size() - 1]["position"]
 
 
 func has_active_stream_endpoint() -> bool:
@@ -308,7 +331,7 @@ func has_active_stream_endpoint() -> bool:
 			and input_controller != null
 			and input_controller.is_stream_input_held()
 			and not _initial_shot_in_flight
-			and _current_points.size() >= 2
+			and _build_active_parcel_samples().size() >= 2
 	)
 
 
@@ -355,6 +378,8 @@ func trigger_pulse(amplitude := 1.0) -> void:
 
 func reset_stream() -> void:
 	_stream_hold_was_active = false
+	_stream_draining = false
+	_active_parcel_count = 0
 	_initial_shot_in_flight = false
 	_strike_flash_remaining = 0.0
 	modulate = Color.WHITE
@@ -385,9 +410,42 @@ func reset_stream() -> void:
 	queue_redraw()
 
 
+func cancel_stream() -> void:
+	## Stop emitting and contact immediately, but let committed parcels finish.
+	## This is deliberately separate from reset_stream(), which is used when a
+	## level is reset and must clear all old motion synchronously.
+	_stream_hold_was_active = false
+	for parcel in _parcels:
+		parcel["draining"] = true
+	for parcel in _double_parcels:
+		parcel["draining"] = true
+	_active_parcel_count = 0
+	_stream_draining = _has_draining_parcels()
+	_initial_shot_in_flight = false
+	_emission_accumulator = 0.0
+	_preview_beat_elapsed = 0.0
+	_stream_target_position = Vector2.ZERO
+	_stream_target_velocity = Vector2.ZERO
+	_stream_target_initialized = false
+	_current_stream_direction = Vector2.UP
+	_last_input_target = Vector2.ZERO
+	_input_target_initialized = false
+	_aim_bloom_radius = 0.0
+	_bloom_angle = 0.0
+	_bloom_spin_velocity = 0.0
+	_bloom_offset = Vector2.ZERO
+	_double_stream_active = false
+	_impact.emitting = false
+	_impact_secondary.emitting = false
+	_droplets.emitting = false
+	_set_live_visuals(_live_enabled)
+	queue_redraw()
+
+
 func _start_stream_hold(target: Vector2) -> void:
 	# The first parcel of a hold must begin at the aim position that caused the
 	# hold. Do not carry idle cursor easing or aim bloom into the first shot.
+	_active_parcel_count = 0
 	_stream_target_position = target
 	_stream_target_velocity = Vector2.ZERO
 	_stream_target_initialized = true
@@ -402,9 +460,9 @@ func _start_stream_hold(target: Vector2) -> void:
 
 
 func _update_initial_shot_state() -> void:
-	if not _initial_shot_in_flight or _parcels.is_empty():
+	if not _initial_shot_in_flight or _active_parcel_count <= 0:
 		return
-	var first_shot: Dictionary = _parcels.back()
+	var first_shot: Dictionary = _parcels[_active_parcel_count - 1]
 	if float(first_shot["age"]) >= float(first_shot.get("flight_time", 0.0)):
 		_initial_shot_in_flight = false
 
@@ -450,19 +508,20 @@ func _apply_strike_flash() -> void:
 
 
 func _set_live_visuals(enabled: bool) -> void:
-	_edge_mesh.visible = enabled
-	_body_mesh.visible = enabled
-	_highlight_mesh.visible = enabled
-	_double_edge_mesh.visible = enabled and _double_stream_active
-	_double_body_mesh.visible = enabled and _double_stream_active
-	_double_highlight_mesh.visible = enabled and _double_stream_active
+	var stream_visible := enabled or _stream_draining
+	_edge_mesh.visible = stream_visible
+	_body_mesh.visible = stream_visible
+	_highlight_mesh.visible = stream_visible
+	_double_edge_mesh.visible = stream_visible and (_double_stream_active or not _double_parcels.is_empty())
+	_double_body_mesh.visible = stream_visible and (_double_stream_active or not _double_parcels.is_empty())
+	_double_highlight_mesh.visible = stream_visible and (_double_stream_active or not _double_parcels.is_empty())
 	_set_depth_base_visibility()
-	if not enabled:
+	if not stream_visible:
 		_hide_depth_band_group("")
 		_hide_depth_band_group("double_")
 	_droplets.visible = enabled
-	_impact.visible = enabled
-	_impact_secondary.visible = enabled
+	_impact.visible = stream_visible
+	_impact_secondary.visible = stream_visible
 	if not enabled:
 		_droplets.emitting = false
 		_impact.emitting = false
@@ -499,6 +558,8 @@ func double_parcel_at(index: int) -> Dictionary:
 
 func set_parcel_chain(parcels: Array[Dictionary]) -> void:
 	_parcels = parcels.duplicate(true)
+	_active_parcel_count = _parcels.size()
+	_stream_draining = false
 
 
 func emit_parcels(
@@ -532,8 +593,10 @@ func emit_parcels(
 				secondary_offset,
 			)
 		parcel_index += 1
-	_prune_parcel_chain(_parcels)
+	_active_parcel_count += emitted
+	_prune_parcel_chain(_parcels, true)
 	_prune_parcel_chain(_double_parcels)
+	_update_stream_draining_state()
 
 
 func _emit_parcel(
@@ -559,6 +622,7 @@ func _emit_parcel(
 			"depth": launch_depth,
 			"flight_time": travel_time,
 			"age": 0.0,
+			"draining": false,
 			# A parcel must live through the calculated flight, but it should be
 			# removed as soon as it reaches its committed target instead of
 			# overshooting the cursor when the configured default is longer.
@@ -567,7 +631,7 @@ func _emit_parcel(
 	)
 
 
-func _prune_parcel_chain(chain: Array[Dictionary]) -> void:
+func _prune_parcel_chain(chain: Array[Dictionary], is_primary := false) -> void:
 	while (
 			not chain.is_empty()
 			and (
@@ -577,6 +641,22 @@ func _prune_parcel_chain(chain: Array[Dictionary]) -> void:
 			)
 	):
 		chain.pop_back()
+	if is_primary:
+		_active_parcel_count = mini(_active_parcel_count, _parcels.size())
+
+
+func _has_draining_parcels() -> bool:
+	for parcel in _parcels:
+		if bool(parcel.get("draining", false)):
+			return true
+	for parcel in _double_parcels:
+		if bool(parcel.get("draining", false)):
+			return true
+	return false
+
+
+func _update_stream_draining_state() -> void:
+	_stream_draining = _has_draining_parcels()
 
 
 func _update_preview_pulses(delta: float) -> void:
@@ -758,12 +838,16 @@ func _ensure_depth_band_nodes() -> void:
 
 func _set_depth_base_visibility() -> void:
 	var use_bands := depth_map != null and not _depth_band_nodes.is_empty()
-	_edge_mesh.visible = _live_enabled and not use_bands
-	_body_mesh.visible = _live_enabled and not use_bands
-	_highlight_mesh.visible = _live_enabled and not use_bands
-	_double_edge_mesh.visible = _live_enabled and _double_stream_active and not use_bands
-	_double_body_mesh.visible = _live_enabled and _double_stream_active and not use_bands
-	_double_highlight_mesh.visible = _live_enabled and _double_stream_active and not use_bands
+	var stream_visible := _live_enabled or _stream_draining
+	_edge_mesh.visible = stream_visible and not use_bands
+	_body_mesh.visible = stream_visible and not use_bands
+	_highlight_mesh.visible = stream_visible and not use_bands
+	var double_visible := stream_visible and (
+			_double_stream_active or not _double_parcels.is_empty()
+	)
+	_double_edge_mesh.visible = double_visible and not use_bands
+	_double_body_mesh.visible = double_visible and not use_bands
+	_double_highlight_mesh.visible = double_visible and not use_bands
 
 
 func _depth_band_points(
@@ -892,7 +976,7 @@ func _update_depth_banded_ribbons(
 				depth_band_count,
 				depth_band_z_step,
 			)
-			band_node.visible = _live_enabled and ribbon_alpha > 0.0
+			band_node.visible = (_live_enabled or _stream_draining) and ribbon_alpha > 0.0
 
 
 func _base_ribbon_node_for_key(key: String) -> MeshInstance2D:
@@ -925,6 +1009,14 @@ func build_double_parcel_centerline() -> PackedVector2Array:
 
 func _build_parcel_centerline(chain: Array[Dictionary]) -> PackedVector2Array:
 	return _positions_from_samples(_build_parcel_samples(chain))
+
+
+func _build_active_parcel_samples() -> Array[Dictionary]:
+	var active_chain: Array[Dictionary] = []
+	var active_count := mini(_active_parcel_count, _parcels.size())
+	for index in active_count:
+		active_chain.append(_parcels[index])
+	return _build_parcel_samples(active_chain)
 
 
 func _build_parcel_samples(chain: Array[Dictionary]) -> Array[Dictionary]:
@@ -1267,8 +1359,8 @@ func _update_double_stream_meshes(
 		point_depths := PackedFloat32Array(),
 ) -> void:
 	var should_render := (
-			_live_enabled
-			and _double_stream_active
+			(_live_enabled or _stream_draining)
+			and (_double_stream_active or _stream_draining)
 			and ribbon_alpha > 0.0
 			and points.size() >= 2
 	)

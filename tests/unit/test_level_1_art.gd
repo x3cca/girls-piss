@@ -197,6 +197,33 @@ func test_piss_meter_art_uses_the_shared_boil_material() -> void:
 		assert_true(canvas_item.material == BOIL_MATERIAL, "%s should use the boil material." % node_path)
 
 
+func test_piss_meter_reveals_with_a_left_slide_when_pissing_starts() -> void:
+	var meter := METER_SCENE.instantiate() as PissMeter
+	var controller := InputController.new()
+	add_child_autofree(controller)
+	add_child_autofree(meter)
+	meter.input_controller = controller
+	meter.set_gameplay_active(true)
+
+	assert_false(meter.visible)
+	var hidden_x := meter.position.x
+	var rest_x := meter._rest_position.x
+	assert_lt(hidden_x, 0.0)
+
+	var space_down := InputEventKey.new()
+	space_down.physical_keycode = KEY_SPACE
+	space_down.pressed = true
+	controller.handle_input_event(space_down)
+
+	assert_true(meter.visible)
+	assert_eq(meter.position.x, hidden_x)
+	await get_tree().process_frame
+	assert_gt(meter.position.x, hidden_x)
+
+	await get_tree().create_timer(0.8).timeout
+	assert_almost_eq(meter.position.x, rest_x, 0.01)
+
+
 func test_empty_piss_meter_fails_the_level() -> void:
 	var level := LEVEL_SCENE.instantiate() as Level1
 	level.skip_title_screen = true

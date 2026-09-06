@@ -19,9 +19,10 @@ material. `StartMenuExample.png` remains a visual reference only. The title
 composition fades out on the first recognized input.
 
 The first input is handled by `InputController`, starts the title exit, and is
-consumed. Duplicate requests are ignored while the exit tween is running. Once
-the transition completes, `Main` resets held input state, enables gameplay, and
-shows the prompt for the source that started the game.
+consumed. Its source-specific controls prompt appears immediately while the
+title fades. Duplicate requests are ignored while the exit tween is running.
+Once the transition completes, `Main` resets held input state and enables
+gameplay.
 
 To bypass the title in the editor, enable `skip_title_screen` on the root
 `Main` node. Code-driven startup should call `start_gameplay_immediately()`;
@@ -77,14 +78,15 @@ polygon/area nodes for validating bad-region behavior. The reticle uses
 `Crosshair3.png` for the short success burst. Actual contact is evaluated from
 the stream endpoint rather than the requested reticle position.
 
-Checkpoint and bad-zone contact each require `0.35` seconds of continuous
-endpoint contact. Leaving a region resets its timer. A bad hit gives a strike
-and starts a `4` second safety cooldown while stopping the stream. The first
+Checkpoint contact requires `0.35` seconds of continuous endpoint contact. A
+negative-zone overlap is fully sensitive: the first committed endpoint frame in
+the region immediately gives a strike, even if contact lasts only briefly. A
+bad hit starts a `4` second safety cooldown while stopping the stream. The first
 three strikes show a
 yellow, orange, or red warning bubble in the top-right corner, and each bubble
 is hidden when that cooldown ends. If the endpoint remains in the bad region,
-another strike is possible as soon as that grace period ends. Four strikes stop
-the attempt and show the authored game-over treatment: the dread frame,
+another strike is possible as soon as that safety cooldown ends. Four strikes
+stop the attempt and show the authored game-over treatment: the dread frame,
 layered GAME/OVER artwork, failure sound, and Piss Again arrow. Retry resets
 the trace, meter, strike count, stream, and all overlay effects.
 

@@ -18,9 +18,11 @@ mouse_filter = 0
 mouse_default_cursor_shape = 0
 
 [node name="BackShadow" type="Sprite2D" parent="."]
+visible = false
 texture_filter = 1
 texture = ExtResource("3_back_shadow")
 
 [node name="Back" type="Sprite2D" parent="."]
+visible = false
 texture_filter = 1
 texture = ExtResource("4_back")

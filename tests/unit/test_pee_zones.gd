@@ -33,7 +33,7 @@ func test_checkpoint_requires_sustained_contact() -> void:
 	assert_eq(trace.get_checkpoint_contact_elapsed(), 0.0)
 
 
-func test_negative_contact_requires_sustained_endpoint_contact() -> void:
+func test_negative_contact_strikes_on_first_endpoint_contact() -> void:
 	var level := LEVEL_SCENE.instantiate() as Main
 	level.skip_title_screen = true
 	add_child_autofree(level)
@@ -41,16 +41,15 @@ func test_negative_contact_requires_sustained_endpoint_contact() -> void:
 	level.get_node("LiquidStream").set_process(false)
 	var bad_position := Vector2(120.0, 220.0)
 
-	level.evaluate_stream_endpoint(bad_position, true, 0.34)
-	assert_eq(level.get_strikes(), 0)
-	level.evaluate_stream_endpoint(bad_position, true, 0.01)
+	# A single committed frame in the negative region is enough.
+	level.evaluate_stream_endpoint(bad_position, true, 0.0)
 	assert_eq(level.get_strikes(), 1)
 	assert_true(level.stream.is_strike_flash_active())
 	level.evaluate_stream_endpoint(bad_position, true, 1.0)
 	assert_eq(level.get_strikes(), 1)
 
-	# Contact that stays in the bad zone remains armed during the grace period.
-	# Once the cooldown expires, the held endpoint can trigger the next strike.
+	# Contact that stays in the bad zone remains blocked during the safety
+	# cooldown. Once it expires, the held endpoint can trigger the next strike.
 	level._process(level.safety_cooldown)
 	level.evaluate_stream_endpoint(bad_position, true, 0.0)
 	assert_eq(level.get_strikes(), 2)

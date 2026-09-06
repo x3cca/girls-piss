@@ -7,8 +7,8 @@ The playable sample opens with a transparent title overlay over the first
 level. The logo is positioned around the upper third of the portrait frame
 (roughly two-thirds up from the bottom), while the press-start art enters from
 below. A recognized input starts the exit transition; that first input is
-consumed so it cannot also move the aimer or start the stream. Once gameplay is
-active, a contextual prompt shows the current input scheme.
+consumed so it cannot also move the aimer or start the stream. Its contextual
+prompt appears immediately for the input source that started the game.
 
 The level traces an authored loop with a continuous inertial stream entering
 from below the bottom-center of the frame, then replays the recorded line in a

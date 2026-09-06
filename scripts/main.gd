@@ -33,7 +33,7 @@ const FAILED := State.FAILED
 const FAILURE := State.FAILED
 const GAME_OVER := State.FAILED
 
-const CONTACT_DURATION := 0.35
+const CONTACT_DURATION := 0.0
 const SAFETY_COOLDOWN := 4.0
 const MAX_STRIKES := 4
 
@@ -75,7 +75,11 @@ var _strike_light_remaining := 0.0
 var _target_hit_light_remaining := 0.0
 var gameplay_started := false
 var initial_input_source := InputController.AimSource.KEYBOARD
-@export_range(0.01, 2.0, 0.01) var negative_contact_duration := CONTACT_DURATION
+var _start_prompt_shown := false
+## A negative-zone overlap is a strike on the first committed endpoint frame.
+## Keep this exported for scene/API compatibility, but default it to zero so
+## even a brief touch is fully sensitive.
+@export_range(0.0, 2.0, 0.01) var negative_contact_duration := CONTACT_DURATION
 @export_range(0.0, 10.0, 0.01) var safety_cooldown := SAFETY_COOLDOWN
 @export_range(1, 9, 1) var max_strikes := MAX_STRIKES
 var negative_zones: Array[NegativeZone] = []
@@ -241,6 +245,13 @@ func _on_input_detected(source: int) -> void:
 		return
 	if title_screen.request_start(source):
 		initial_input_source = source
+		# The input that starts the title transition is the best indication of the
+		# player's control scheme. Show its prompt while the title fades so the
+		# controls do not wait for the transition to finish.
+		hud.show_start_prompt(source)
+		_start_prompt_shown = true
+
+
 func _on_volume_pointer_changed(active: bool) -> void:
 	input_controller.set_pointer_input_blocked(active)
 	if is_instance_valid(hud):
@@ -270,7 +281,9 @@ func _start_gameplay(source: int) -> void:
 	input_controller.set_process_unhandled_input(true)
 	input_controller.set_process(true)
 	hud.set_gameplay_controls_visible(true)
-	hud.show_input_prompt(source)
+	if not _start_prompt_shown:
+		hud.show_input_prompt(source)
+	_start_prompt_shown = false
 
 
 func _on_stream_pulse(amplitude: float) -> void:
@@ -415,7 +428,7 @@ func _on_stream_hold_changed(active: bool) -> void:
 	_has_stream_endpoint = false
 	if state == PLAYING:
 		shape_trace.observe_drawing_point(Vector2.ZERO, false, 0.0)
-		stream.reset_stream()
+		stream.cancel_stream()
 
 
 func evaluate_stream_endpoint(
@@ -533,7 +546,7 @@ func _take_strike() -> void:
 	_strike_light_remaining = strike_light_duration
 	_set_effect_lights_enabled(false)
 	input_controller.stop_pissing()
-	stream.reset_stream()
+	stream.cancel_stream()
 	hud.set_strikes(strike_count)
 	if strike_count < max_strikes:
 		hud.show_strike_warning(strike_count, safety_cooldown)
