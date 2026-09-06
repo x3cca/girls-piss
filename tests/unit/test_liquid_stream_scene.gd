@@ -15,6 +15,9 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 	assert_not_null(instance.get_node_or_null("InputController"))
 	assert_not_null(instance.get_node_or_null("LiquidStream"))
 	assert_not_null(instance.get_node_or_null("HUDLayer/HUD"))
+	var stream := instance.get_node("LiquidStream") as LiquidStream
+	var visible_size := instance.get_viewport().get_visible_rect().size
+	assert_gt(stream.to_global(stream.source_position).y, visible_size.y)
 	var input_controller := instance.get_node_or_null("InputController") as InputController
 	var shape_trace := instance.get_node_or_null("ShapeTrace") as ShapeTrace
 	assert_not_null(shape_trace)

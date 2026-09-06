@@ -94,6 +94,56 @@ func test_stream_starts_at_the_aim_position_when_hold_begins() -> void:
 	assert_eq(stream.parcel_at(0)["launch_target"], start_target)
 
 
+func test_mouse_hold_starts_at_the_click_position() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+	var controller := InputController.new()
+	add_child_autofree(controller)
+	controller.set_process(false)
+	stream.set_process(false)
+	stream.input_controller = controller
+	stream.source_position = Vector2(360.0, 1328.0)
+	controller.set_target_position(Vector2(240.0, 500.0))
+	stream.process_frame(0.1)
+
+	var click_position := Vector2(600.0, 260.0)
+	var mouse_down := InputEventMouseButton.new()
+	mouse_down.button_index = MOUSE_BUTTON_LEFT
+	mouse_down.position = click_position
+	mouse_down.pressed = true
+	controller.handle_input_event(mouse_down)
+	stream.process_frame(1.0 / 60.0)
+
+	assert_eq(stream.get_stream_target_position(), click_position)
+	assert_eq(stream.parcel_at(0)["launch_target"], click_position)
+	assert_eq(stream.parcel_at(0)["position"], stream.source_position)
+
+
+func test_touch_hold_starts_at_the_tap_position() -> void:
+	var stream := STREAM_SCENE.instantiate() as LiquidStream
+	add_child_autofree(stream)
+	var controller := InputController.new()
+	add_child_autofree(controller)
+	controller.set_process(false)
+	stream.set_process(false)
+	stream.input_controller = controller
+	stream.source_position = Vector2(360.0, 1328.0)
+	controller.set_target_position(Vector2(240.0, 500.0))
+	stream.process_frame(0.1)
+
+	var tap_position := Vector2(600.0, 260.0)
+	var touch_down := InputEventScreenTouch.new()
+	touch_down.index = 1
+	touch_down.position = tap_position
+	touch_down.pressed = true
+	controller.handle_input_event(touch_down)
+	stream.process_frame(1.0 / 60.0)
+
+	assert_eq(stream.get_stream_target_position(), tap_position)
+	assert_eq(stream.parcel_at(0)["launch_target"], tap_position)
+	assert_eq(stream.parcel_at(0)["position"], stream.source_position)
+
+
 func test_stream_follow_has_a_small_overshoot_and_settles() -> void:
 	var stream := STREAM_SCENE.instantiate() as LiquidStream
 	add_child_autofree(stream)
