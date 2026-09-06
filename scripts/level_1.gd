@@ -18,17 +18,19 @@ const TARGET_TEXTURES: Array[Texture2D] = [
 var target_points := PackedVector2Array(
 	[
 		# Centers match the objects in Example of play Screen.png, in the
-		# same order as TARGET_TEXTURES, on the 1080x1920 reference canvas.
-		Vector2(0.27, 0.53), # RedTicket
-		Vector2(0.34, 0.40), # Floss
-		Vector2(0.43, 0.41), # Gum
-		Vector2(0.70, 0.52), # Cigarette
-		Vector2(0.46, 0.80), # Lollipop
-		Vector2(0.61, 0.43), # Condom
-		Vector2(0.64, 0.74), # Bandaid
-		Vector2(0.69, 0.61), # Fly
-		Vector2(0.52, 0.59), # Straw
-		Vector2(0.28, 0.65), # Tampon
+		# same order as TARGET_TEXTURES, on the 1080x1920 reference canvas. They
+		# are inset 15% toward the bowl center so the seat can overlap the edges
+		# without hiding the small target sprites.
+		Vector2(0.305, 0.541), # RedTicket
+		Vector2(0.364, 0.430), # Floss
+		Vector2(0.441, 0.439), # Gum
+		Vector2(0.670, 0.532), # Cigarette
+		Vector2(0.466, 0.770), # Lollipop
+		Vector2(0.594, 0.456), # Condom
+		Vector2(0.619, 0.719), # Bandaid
+		Vector2(0.662, 0.609), # Fly
+		Vector2(0.517, 0.592), # Straw
+		Vector2(0.313, 0.643), # Tampon
 	]
 )
 
@@ -44,10 +46,9 @@ func _ready() -> void:
 	shape_trace.normalized_points = target_points
 	shape_trace.closed_path = false
 	shape_trace.show_outline = false
-	# Keep the same readable three-target preview as the smoke test. The first
-	# target is fully visible; upcoming objects fade using ShapeTrace's shared
-	# look-ahead rules instead of revealing the entire toilet pattern at once.
-	shape_trace.checkpoint_look_ahead = 3
+	# Level 1 reveals only the current object. The player discovers the ordered
+	# pattern one target at a time instead of seeing the next objects in advance.
+	shape_trace.checkpoint_look_ahead = 1
 	shape_trace.target_texture = TARGET_TEXTURES[0]
 	shape_trace.target_textures = TARGET_TEXTURES
 	shape_trace.use_native_target_sizes = true

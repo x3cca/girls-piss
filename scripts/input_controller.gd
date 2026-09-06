@@ -14,9 +14,10 @@ signal input_detected(source: int)
 signal input_source_changed(source: int)
 
 @export var target_move_speed := 620.0
-@export var music_target_offset_max := 200.0
+@export var music_target_offset_max := 24.0
 @export var music_target_offset_angle_increment := 45.0
 @export var music_target_offset_power := 3
+@export var music_target_offset_response := 8.0
 @export var force_pissing_after_start := true
 @export var bus_name: String = "Master"
 
@@ -30,7 +31,6 @@ var input_mode := "desktop"
 var touch_controls_visible := false
 var gameplay_input_enabled := true
 var music_target_offset_angle_current := 0.0
-var music_direction_toggle := 1
 var bus_index := 0
 
 var _previous_input_position := Vector2.ZERO
@@ -51,6 +51,7 @@ var _current_input_source := AimSource.KEYBOARD
 var _pissing := false
 var _has_started_pissing := false
 var _music_target_offset_position := Vector2.ZERO
+var _music_target_offset_amplitude := 0.0
 
 var current_input_source: int:
 	get:
@@ -103,18 +104,8 @@ func process_frame(delta: float) -> void:
 	if movement.length_squared() > 0.0:
 		_previous_input_position += movement * target_move_speed * delta
 	
-	# Make the aiming target jiggle from the music
-	# make it so that the offset jiggles back and forth every frame
-	# and that it spins slowly over time
-	music_direction_toggle = -music_direction_toggle
-	music_target_offset_angle_current += music_target_offset_angle_increment * delta
-	var _db = _get_music_amplitutde()
-	var _music_target_offset_value = pow(_db, music_target_offset_power) * music_target_offset_max * music_direction_toggle
-	_music_target_offset_position = Vector2.RIGHT.rotated(deg_to_rad(music_target_offset_angle_current)) * _music_target_offset_value
-	# _target_position += _music_target_offset_position
-	
+	_update_music_target_offset(delta, _get_music_amplitude())
 	set_target_position(_previous_input_position)
-		
 
 
 func _input(event: InputEvent) -> void:
@@ -263,7 +254,7 @@ func _clear_controller_state() -> void:
 
 func set_target_position(position: Vector2) -> void:
 	_previous_input_position = _clamp_target(position)
-	_target_position = _previous_input_position + _music_target_offset_position
+	_target_position = _clamp_target(_previous_input_position + _music_target_offset_position)
 	if target_position == _target_position:
 		return
 	target_position = _target_position
@@ -306,6 +297,9 @@ func reset_input() -> void:
 	_move_down_pressed = false
 	_last_aim_source = AimSource.KEYBOARD
 	_current_input_source = AimSource.KEYBOARD
+	music_target_offset_angle_current = 0.0
+	_music_target_offset_position = Vector2.ZERO
+	_music_target_offset_amplitude = 0.0
 	_target_position = _default_target_position()
 	_previous_input_position = _target_position
 	target_position = _target_position
@@ -438,14 +432,36 @@ func _clamp_target(position: Vector2) -> Vector2:
 	)
 
 
-func _get_music_amplitutde() -> float:
-	# Get peak decibels for left and right channels on the Master bus (index 0)
-	var peak_left = AudioServer.get_bus_peak_volume_left_db(bus_index, 0)
-	var peak_right = AudioServer.get_bus_peak_volume_right_db(bus_index, 0)
-	
-	# Average them out or use one channel
-	var current_db = (peak_left + peak_right) / 2.0
-	var linear_vol = db_to_linear(current_db)
-	# print("Volume DB: " + str(linear_vol))
-	
-	return linear_vol
+func _update_music_target_offset(delta: float, amplitude: float) -> void:
+	## Keep the beat-driven cursor movement continuous. The old implementation
+	## inverted its direction every frame, which made a 200 px offset teleport
+	## across the aim point at the render rate.
+	music_target_offset_angle_current = fmod(
+			music_target_offset_angle_current
+			+ music_target_offset_angle_increment * maxf(delta, 0.0),
+			360.0,
+	)
+	var safe_amplitude := clampf(amplitude, 0.0, 1.0)
+	var safe_power := maxf(float(music_target_offset_power), 0.0)
+	var target_offset_amplitude := pow(safe_amplitude, safe_power) * maxf(
+		music_target_offset_max,
+		0.0,
+	)
+	_music_target_offset_amplitude = move_toward(
+		_music_target_offset_amplitude,
+		target_offset_amplitude,
+		maxf(music_target_offset_response, 0.0) * maxf(delta, 0.0),
+	)
+	_music_target_offset_position = Vector2.RIGHT.rotated(
+			deg_to_rad(music_target_offset_angle_current),
+		) * _music_target_offset_amplitude
+
+
+func _get_music_amplitude() -> float:
+	if bus_index < 0:
+		return 0.0
+	var peak_left_db := AudioServer.get_bus_peak_volume_left_db(bus_index, 0)
+	var peak_right_db := AudioServer.get_bus_peak_volume_right_db(bus_index, 0)
+	var linear_left := db_to_linear(peak_left_db)
+	var linear_right := db_to_linear(peak_right_db)
+	return clampf((linear_left + linear_right) * 0.5, 0.0, 1.0)
