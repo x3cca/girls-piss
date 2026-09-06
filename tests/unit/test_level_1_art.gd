@@ -214,7 +214,7 @@ func test_empty_piss_meter_fails_the_level() -> void:
 	assert_true(meter.is_depleted())
 	assert_eq(level.state, Main.FAILED)
 	assert_false(level.input_controller.is_gameplay_input_enabled())
-	assert_true(level.hud.completion_card.is_failure_card())
+	assert_true(level.hud.game_over.is_showing())
 
 
 func test_feedback_scenes_use_the_downloaded_overlay_art() -> void:

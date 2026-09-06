@@ -157,6 +157,7 @@ func test_mouse_hold_keeps_its_start_position_through_input_processing() -> void
 
 	# A live controller frame can change the public target after the click, so
 	# keep a nonzero cursor offset active while the stream starts.
+	controller._music_target_offset_amplitude = 1.0
 	controller._music_target_offset_position = Vector2(24.0, 0.0)
 	var click_position := Vector2(600.0, 260.0)
 	var mouse_down := InputEventMouseButton.new()

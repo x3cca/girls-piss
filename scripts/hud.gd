@@ -2,6 +2,8 @@ extends Control
 
 class_name StreamHUD
 
+signal retry_pressed
+
 var input_controller: InputController
 var stream: LiquidStream
 var target_nodes: Array[WettableTarget] = []
@@ -13,6 +15,7 @@ var safe_margin := 28.0
 @onready var input_prompt: InputPrompt = $InputPrompt
 @onready var strike_warning: StrikeWarning = $StrikeWarning
 @onready var piss_meter: PissMeter = $PissMeter
+@onready var game_over: GameOver = $GameOver
 var _wired_input_controller: InputController
 var gameplay_controls_visible := true
 var aim_pointer_blocked := false
@@ -21,6 +24,8 @@ var aim_zone_state := TouchReticle.ReticleState.NEUTRAL
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	completion_card.play_again_pressed.connect(_on_retry_pressed)
+	game_over.retry_pressed.connect(_on_retry_pressed)
 	piss_meter.input_controller = input_controller
 	piss_meter.stream = stream
 	set_process(true)
@@ -95,16 +100,23 @@ func hide_input_prompt() -> void:
 
 func show_completion_card() -> void:
 	set_gameplay_controls_visible(false)
+	game_over.hide_card()
 	completion_card.show_card()
 
 
 func show_failure_card() -> void:
 	set_gameplay_controls_visible(false)
-	completion_card.show_failure_card()
+	completion_card.hide_card()
+	game_over.show_card()
+
+
+func show_game_over() -> void:
+	show_failure_card()
 
 
 func hide_completion_card() -> void:
 	completion_card.hide_card()
+	game_over.hide_card()
 
 
 func reset_piss_meter() -> void:
@@ -138,6 +150,10 @@ func set_reticle_state(next_state: int) -> void:
 func play_success_burst() -> void:
 	if is_instance_valid(aim_reticle):
 		aim_reticle.play_success_burst()
+
+
+func _on_retry_pressed() -> void:
+	retry_pressed.emit()
 
 
 func _wire_input_controller() -> void:
