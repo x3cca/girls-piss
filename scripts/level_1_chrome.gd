@@ -71,7 +71,7 @@ func _set_sprite_layout(
 func _set_volume_layout(authored_position: Vector2, composition_scale: Vector2) -> void:
 	_volume.centered = true
 	_volume.position = (
-		authored_position + Vector2(_volume.texture.get_width(), _volume.texture.get_height()) * 0.5
+			authored_position + Vector2(_volume.texture.get_width(), _volume.texture.get_height()) * 0.5
 	) * composition_scale
 	_volume.scale = composition_scale
 
