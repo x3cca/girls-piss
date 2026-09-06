@@ -8,7 +8,7 @@ const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
 func test_negative_zone_uses_normalized_polygon_geometry() -> void:
 	var zone := ZONE_SCENE.instantiate() as NegativeZone
 	zone.normalized_points = PackedVector2Array(
-		[Vector2(0.25, 0.25), Vector2(0.75, 0.25), Vector2(0.75, 0.75), Vector2(0.25, 0.75)]
+		[Vector2(0.25, 0.25), Vector2(0.75, 0.25), Vector2(0.75, 0.75), Vector2(0.25, 0.75)],
 	)
 	add_child_autofree(zone)
 

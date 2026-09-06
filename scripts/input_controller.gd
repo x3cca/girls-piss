@@ -73,7 +73,7 @@ func _ready() -> void:
 	aim_target_changed.emit(target_position)
 	if not Input.joy_connection_changed.is_connected(_on_joy_connection_changed):
 		Input.joy_connection_changed.connect(_on_joy_connection_changed)
-		
+
 	# Get the index of the audio bus and the first effect (index 0) on it
 	bus_index = AudioServer.get_bus_index(bus_name)
 
@@ -103,7 +103,7 @@ func process_frame(delta: float) -> void:
 			movement = _controller_aim
 	if movement.length_squared() > 0.0:
 		_previous_input_position += movement * target_move_speed * delta
-	
+
 	_update_music_target_offset(delta, _get_music_amplitude())
 	set_target_position(_previous_input_position)
 
@@ -437,9 +437,9 @@ func _update_music_target_offset(delta: float, amplitude: float) -> void:
 	## inverted its direction every frame, which made a 200 px offset teleport
 	## across the aim point at the render rate.
 	music_target_offset_angle_current = fmod(
-			music_target_offset_angle_current
-			+ music_target_offset_angle_increment * maxf(delta, 0.0),
-			360.0,
+		music_target_offset_angle_current
+		+ music_target_offset_angle_increment * maxf(delta, 0.0),
+		360.0,
 	)
 	var safe_amplitude := clampf(amplitude, 0.0, 1.0)
 	var safe_power := maxf(float(music_target_offset_power), 0.0)
@@ -453,8 +453,8 @@ func _update_music_target_offset(delta: float, amplitude: float) -> void:
 		maxf(music_target_offset_response, 0.0) * maxf(delta, 0.0),
 	)
 	_music_target_offset_position = Vector2.RIGHT.rotated(
-			deg_to_rad(music_target_offset_angle_current),
-		) * _music_target_offset_amplitude
+		deg_to_rad(music_target_offset_angle_current),
+	) * _music_target_offset_amplitude
 
 
 func _get_music_amplitude() -> float:

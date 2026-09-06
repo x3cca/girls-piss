@@ -269,6 +269,7 @@ func _draw() -> void:
 					true,
 				)
 
+
 func _sync_target_sprites() -> void:
 	if _targets.size() == normalized_points.size():
 		return
