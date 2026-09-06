@@ -95,6 +95,7 @@ var _pulses: Array[Dictionary] = []
 var _depth_band_nodes: Dictionary = { }
 var _depth_band_resources: Dictionary = { }
 var _stream_hold_was_active := false
+var _initial_shot_in_flight := false
 var _strike_flash_remaining := 0.0
 
 
@@ -196,6 +197,7 @@ func _process(delta: float) -> void:
 	if is_pissing:
 		_stream_hold_was_active = true
 		update_parcels(delta)
+		_update_initial_shot_state()
 		_update_preview_pulses(delta)
 		emit_parcels(_stream_target_position, delta)
 	else:
@@ -263,7 +265,11 @@ func _process(delta: float) -> void:
 	_droplets.direction = _tangent_at(droplet_index, direction)
 	_set_droplet_depth(_droplets.global_position)
 	_update_stream_effects(direction, is_pissing)
-	var endpoint_active := is_pissing and _current_points.size() >= 2
+	var endpoint_active := (
+			is_pissing
+			and _current_points.size() >= 2
+			and not _initial_shot_in_flight
+	)
 	if endpoint_active:
 		drawing_point_updated.emit(_current_points[_current_points.size() - 1], true)
 	else:
@@ -301,6 +307,7 @@ func has_active_stream_endpoint() -> bool:
 			_live_enabled
 			and input_controller != null
 			and input_controller.is_stream_input_held()
+			and not _initial_shot_in_flight
 			and _current_points.size() >= 2
 	)
 
@@ -348,6 +355,7 @@ func trigger_pulse(amplitude := 1.0) -> void:
 
 func reset_stream() -> void:
 	_stream_hold_was_active = false
+	_initial_shot_in_flight = false
 	_strike_flash_remaining = 0.0
 	modulate = Color.WHITE
 	_parcels.clear()
@@ -390,31 +398,15 @@ func _start_stream_hold(target: Vector2) -> void:
 	_double_stream_active = false
 	_last_input_target = target
 	_input_target_initialized = true
-	# Draw the first hold directly to its aim point. The physical source remains
-	# below the frame, but a projectile that visibly travels up from it can cross
-	# the floor's bad zone before reaching a valid toilet target.
-	_seed_startup_endpoint(target)
+	_initial_shot_in_flight = true
 
 
-func _seed_startup_endpoint(target: Vector2) -> void:
-	var target_sample := sample_stream_position(target)
-	var target_depth := float(target_sample.get("depth", 0.0))
-	_parcels.push_back(
-		{
-			"position": target,
-			"velocity": Vector2.ZERO,
-			"launch_velocity": Vector2.ZERO,
-			"launch_target": target,
-			"bloom_offset": Vector2.ZERO,
-			"launch_depth": target_depth,
-			"target_depth": target_depth,
-			"depth": target_depth,
-			"flight_time": 0.0,
-			"age": 0.0,
-			"lifetime": 1.0e30,
-			"startup_endpoint": true,
-		},
-	)
+func _update_initial_shot_state() -> void:
+	if not _initial_shot_in_flight or _parcels.is_empty():
+		return
+	var first_shot: Dictionary = _parcels.back()
+	if float(first_shot["age"]) >= float(first_shot.get("flight_time", 0.0)):
+		_initial_shot_in_flight = false
 
 
 func play_strike_flash() -> void:
@@ -490,8 +482,6 @@ func update_parcels(delta: float) -> void:
 
 func _advance_parcel_chain(chain: Array[Dictionary], delta: float) -> void:
 	for parcel in chain:
-		if bool(parcel.get("startup_endpoint", false)):
-			continue
 		var velocity: Vector2 = parcel["velocity"]
 		parcel["position"] = parcel["position"] + velocity * delta + gravity * (delta * delta * 0.5)
 		parcel["velocity"] = velocity + gravity * delta
@@ -578,10 +568,6 @@ func _emit_parcel(
 
 
 func _prune_parcel_chain(chain: Array[Dictionary]) -> void:
-	if chain.size() >= 2 and bool(chain.back().get("startup_endpoint", false)):
-		var oldest_parcel: Dictionary = chain[chain.size() - 2]
-		if float(oldest_parcel["age"]) >= float(oldest_parcel.get("flight_time", 0.0)):
-			chain.pop_back()
 	while (
 			not chain.is_empty()
 			and (

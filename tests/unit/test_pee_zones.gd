@@ -229,7 +229,7 @@ func test_initial_stream_to_toilet_does_not_cross_the_floor_first() -> void:
 		level.stream.process_frame(1.0 / 60.0)
 
 	assert_eq(level.get_strikes(), 0)
-	assert_eq(level.get_last_stream_endpoint(), checkpoint)
+	assert_false(level.stream.has_active_stream_endpoint())
 
 
 func test_live_mouse_stream_signal_reaches_a_negative_zone() -> void:
