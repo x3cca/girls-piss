@@ -34,9 +34,6 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 	var aim_reticle := hud.get_node_or_null("AimReticle") if hud else null
 	assert_true(aim_reticle is TouchReticle)
 	assert_not_null(aim_reticle.get_node_or_null("Sprite") if aim_reticle else null)
-	var carrot_marker := hud.get_node_or_null("CarrotMarker") if hud else null
-	assert_true(carrot_marker is TextureRect)
-	assert_not_null(carrot_marker.texture if carrot_marker is TextureRect else null)
 	var edge := instance.get_node_or_null("LiquidStream/EdgeRibbon")
 	var body := instance.get_node_or_null("LiquidStream/BodyRibbon")
 	var highlight := instance.get_node_or_null("LiquidStream/HighlightRibbon")

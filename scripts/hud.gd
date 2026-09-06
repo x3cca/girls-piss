@@ -8,9 +8,7 @@ var input_controller: InputController
 var stream: LiquidStream
 var target_nodes: Array[WettableTarget] = []
 var show_touch_controls := false
-var safe_margin := 28.0
 @onready var aim_reticle: TouchReticle = $AimReticle
-@onready var carrot_marker: TextureRect = $CarrotMarker
 @onready var completion_card: CompletionCard = $CompletionCard
 @onready var input_prompt: InputPrompt = $InputPrompt
 @onready var strike_warning: StrikeWarning = $StrikeWarning
@@ -29,7 +27,6 @@ func _ready() -> void:
 	piss_meter.input_controller = input_controller
 	piss_meter.stream = stream
 	set_process(true)
-	_layout_controls()
 
 
 func _process(_delta: float) -> void:
@@ -49,11 +46,6 @@ func process_frame(_delta: float) -> void:
 			input_controller.get_target_position() if input_controller else Vector2.ZERO,
 			gameplay_controls_visible and not aim_pointer_blocked,
 		)
-	if is_instance_valid(carrot_marker):
-		carrot_marker.visible = gameplay_controls_visible
-		if stream:
-			carrot_marker.rotation = Vector2.UP.angle_to(stream.get_current_stream_direction())
-	_layout_controls()
 	queue_redraw()
 
 
@@ -64,8 +56,6 @@ func set_gameplay_controls_visible(enabled: bool) -> void:
 			aim_reticle.position,
 			enabled and not aim_pointer_blocked,
 		)
-	if is_instance_valid(carrot_marker):
-		carrot_marker.visible = enabled
 	if is_instance_valid(input_prompt) and not enabled:
 		input_prompt.hide_prompt()
 	if is_instance_valid(strike_warning) and not enabled:
@@ -197,17 +187,3 @@ func _on_touch_target_changed(position: Vector2, active: bool) -> void:
 func _on_input_source_changed(source: int) -> void:
 	if gameplay_controls_visible:
 		show_input_prompt(source)
-
-
-func _layout_controls() -> void:
-	# The crosshair is a viewport-space target, so no hidden aim or pressure track
-	# needs to intercept the pointer. The carrot is only the centered player marker.
-	if not is_instance_valid(carrot_marker):
-		return
-	var viewport := get_viewport_rect()
-	var safe := viewport.grow(-minf(safe_margin, minf(viewport.size.x, viewport.size.y) * 0.04))
-	carrot_marker.pivot_offset = Vector2(carrot_marker.size.x * 0.5, carrot_marker.size.y)
-	carrot_marker.position = Vector2(
-		viewport.get_center().x - carrot_marker.size.x * 0.5,
-		safe.end.y - 32.0 - carrot_marker.size.y,
-	)
