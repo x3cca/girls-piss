@@ -285,7 +285,7 @@ func _process(delta: float) -> void:
 	_set_droplet_depth(_droplets.global_position)
 	_update_stream_effects(direction, stream_visual_active and is_pissing and _live_enabled)
 	var endpoint_active := (
-		is_pissing
+			is_pissing
 			and _live_enabled
 			and active_points.size() >= 2
 			and not _initial_shot_in_flight

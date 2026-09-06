@@ -158,11 +158,11 @@ func _on_drawing_point_updated(position: Vector2, active: bool) -> void:
 	var bowl_contact_started := (
 			surface == SURFACE_BOWL
 			and (
-				not _endpoint_active
-				or _last_endpoint_surface != SURFACE_BOWL
-				or not bool(state["active"])
+					not _endpoint_active
+					or _last_endpoint_surface != SURFACE_BOWL
+					or not bool(state["active"])
 			)
-		)
+	)
 	if surface == SURFACE_BOWL:
 		# Water noise accumulates along the committed stream endpoint. The ripple
 		# itself is reset only when contact begins, so it never follows the aim.
@@ -524,7 +524,7 @@ func _stamp_noise(pixel: Vector2i, serial: int) -> float:
 	var value := sin(
 		float(pixel.x) * 12.9898
 		+ float(pixel.y) * 78.233
-		+ float(serial) * 37.719
+		+ float(serial) * 37.719,
 	) * 43758.5453
 	return value - floorf(value)
 
