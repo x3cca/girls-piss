@@ -128,7 +128,7 @@ func test_four_strikes_stop_gameplay_and_show_retry_state() -> void:
 	assert_true(level.hud.game_over.visible)
 	assert_true(level.hud.game_over.is_showing())
 
-	var retry_button := level.hud.game_over.get_node("Presentation/RetryButton") as Button
+	var retry_button := level.hud.game_over.get_node("Presentation/RetryButton") as TextureButton
 	retry_button.pressed.emit()
 	assert_eq(level.state, Main.PLAYING)
 	assert_eq(level.get_strikes(), 0)
