@@ -124,6 +124,10 @@ func handle_input_event(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion:
 		if pointer_input_blocked:
 			return
+		# On Web, pointer motion is the normal aiming gesture. Claim it only once
+		# gameplay has begun so moving the cursor over the title cannot start it.
+		if OS.has_feature("web") and gameplay_input_enabled:
+			_claim_input_source(AimSource.MOUSE)
 		_update_mouse_target((event as InputEventMouseMotion).position)
 	elif event is InputEventMouseButton:
 		if pointer_input_blocked:

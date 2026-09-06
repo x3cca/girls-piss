@@ -40,8 +40,9 @@ both paths leave the scene in the same playable state.
 `InputController` emits `input_detected` for recognized activity and
 `input_source_changed` only when the source changes. Keyboard key presses,
 left mouse clicks, touch-down events, controller button presses, and meaningful
-controller stick/trigger movement are recognized. Mouse motion is intentionally
-not a source-change event, even though it continues to move the target.
+controller stick/trigger movement are recognized. On Web, mouse motion also
+claims the mouse scheme because pointer movement is the primary aiming gesture;
+on desktop, motion continues to move the target without changing the prompt.
 
 While the title is active, input is still detected for startup, but
 `gameplay_input_enabled` prevents aiming, touch reticle updates, and stream
@@ -91,8 +92,9 @@ stop the attempt and show the authored game-over treatment: the dread frame,
 layered GAME/OVER artwork, failure sound, and Piss Again arrow. Retry resets
 the trace, meter, strike count, stream, and all overlay effects.
 
-The Level 1 Piss-O-Meter begins with one minute of stream time and drains only
-while the stream input is held. The stream uses the baked
+The Level 1 Piss-O-Meter begins with thirty seconds of stream time and drains
+only while the stream input is held. The ten bathroom-object targets are
+randomly assigned to the ten bowl positions on each attempt. The stream uses the baked
 `resources/depth_map_baked.png` through `DepthMap2D`.
 The environment is split into four depth bands so stream ribbons, particles,
 and the world can be ordered consistently in the portrait scene. The offline

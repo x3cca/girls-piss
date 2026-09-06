@@ -109,13 +109,20 @@ var _prompt_tween: Tween
 var _final_position := Vector2.ZERO
 var _exit_position := Vector2.ZERO
 var _last_texture_paths: Array[String] = []
+var _last_layout_size := Vector2.ZERO
+var _last_body_size := Vector2.ZERO
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	prompt_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	set_process(true)
 	visible = false
+	prompt_body.modulate.a = 0.0
 	_layout_prompt()
+	# The HUD can receive its final stretched size one frame after the Web
+	# canvas is created. Recalculate after that layout pass as well.
+	call_deferred("_layout_prompt")
 
 
 func _process(_delta: float) -> void:
@@ -237,16 +244,29 @@ func _set_icons(row: HBoxContainer, paths: Array[String]) -> void:
 func _layout_prompt() -> void:
 	if not is_instance_valid(prompt_body):
 		return
-	var viewport_size := get_viewport_rect().size
+	var viewport_size := size
+	if viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
+		viewport_size = get_viewport().get_visible_rect().size
+	if viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
+		return
 	var body_size := prompt_body.get_combined_minimum_size()
+	if body_size.x <= 1.0 or body_size.y <= 1.0:
+		return
+	var layout_changed := viewport_size != _last_layout_size or body_size != _last_body_size
 	prompt_body.size = body_size
 	_final_position = Vector2(
 		viewport_size.x - body_size.x - right_margin,
 		top_margin,
 	)
 	_exit_position = Vector2(viewport_size.x + body_size.x * 0.35, top_margin)
-	if not visible:
+	_last_layout_size = viewport_size
+	_last_body_size = body_size
+	if not visible or (_prompt_tween == null and layout_changed):
 		prompt_body.position = _exit_position
+	elif layout_changed:
+		# A browser resize changes the local canvas coordinates. Do not leave the
+		# notification at its pre-resize/default position while a tween is active.
+		prompt_body.position = _final_position
 
 
 func _hide_after_tween() -> void:

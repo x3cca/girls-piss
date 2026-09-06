@@ -29,6 +29,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+visible = false
+z_index = 50
 script = ExtResource("1_prompt")
 
 [node name="PromptBody" type="PanelContainer" parent="."]
