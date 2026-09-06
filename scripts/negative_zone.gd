@@ -1,3 +1,4 @@
+@tool
 extends Area2D
 
 class_name NegativeZone
@@ -30,6 +31,7 @@ var _viewport_polygon := PackedVector2Array()
 var _viewport_excluded_polygon := PackedVector2Array()
 var _polygon_node: Polygon2D
 var _collision_polygon: CollisionPolygon2D
+var _show_zone_signature := false
 
 
 func _ready() -> void:
@@ -80,11 +82,13 @@ func _sync_polygon() -> void:
 			and _normalized_signature == normalized_points
 			and _excluded_signature == excluded_normalized_points
 			and _viewport_polygon.size() == normalized_points.size()
+			and _show_zone_signature == show_zone
 	):
 		return
 	_viewport_signature = viewport_size
 	_normalized_signature = normalized_points.duplicate()
 	_excluded_signature = excluded_normalized_points.duplicate()
+	_show_zone_signature = show_zone
 	_viewport_polygon = PackedVector2Array()
 	for point in normalized_points:
 		_viewport_polygon.append(point * viewport_size)
@@ -94,14 +98,14 @@ func _sync_polygon() -> void:
 	if _polygon_node:
 		_polygon_node.polygon = _viewport_polygon
 		_polygon_node.color = zone_color
-		_polygon_node.visible = show_zone
+		_polygon_node.visible = show_zone and Engine.is_editor_hint()
 	if _collision_polygon:
 		_collision_polygon.polygon = _viewport_polygon
 	queue_redraw()
 
 
 func _draw() -> void:
-	if not show_zone or _viewport_polygon.size() < 2:
+	if not Engine.is_editor_hint() or not show_zone or _viewport_polygon.size() < 2:
 		return
 	draw_polyline(_closed_polygon(), outline_color, outline_width, true)
 
