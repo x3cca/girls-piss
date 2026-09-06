@@ -32,27 +32,48 @@ func test_warning_assets_are_selected_for_each_strike() -> void:
 	var red := warning.get_warning_assets(StrikeWarning.RED_WARNING)
 	assert_eq(red["bubble"], RED_BUBBLE)
 	assert_eq(red["text"], RED_TEXT_1)
-	assert_eq(red["row"], [RED_TEXT_2, RED_TEXT_3, RED_TEXT_4])
+	assert_eq(red["row"], [RED_TEXT_2, RED_TEXT_3])
+	assert_eq(red["emergency"], RED_TEXT_4)
 
 
-func test_red_warning_places_three_textures_in_one_row() -> void:
+func test_red_warning_places_its_text_in_two_rows() -> void:
 	var warning := _make_warning()
 	var red := warning.get_node("RedWarning") as Control
 	var row := red.get_node("RedTextRow") as Control
 	var text_2 := row.get_node("RedText2") as TextureRect
 	var text_3 := row.get_node("RedText3") as TextureRect
-	var text_4 := row.get_node("RedText4") as TextureRect
+	var emergency := red.get_node("RedText4") as TextureRect
 
 	assert_gt(row.size.x, 0.0)
 	assert_gt(row.size.y, 0.0)
 	assert_gt(text_2.size.x, 0.0)
 	assert_gt(text_3.size.x, 0.0)
-	assert_gt(text_4.size.x, 0.0)
+	assert_gt(emergency.size.x, 0.0)
 	assert_almost_eq(text_2.position.y + text_2.size.y * 0.5, row.size.y * 0.5, 0.001)
 	assert_almost_eq(text_3.position.y + text_3.size.y * 0.5, row.size.y * 0.5, 0.001)
-	assert_almost_eq(text_4.position.y + text_4.size.y * 0.5, row.size.y * 0.5, 0.001)
 	assert_lte(text_2.position.x + text_2.size.x, text_3.position.x)
-	assert_lte(text_3.position.x + text_3.size.x, text_4.position.x)
+	assert_almost_eq(emergency.position.x, row.position.x, 0.001)
+	assert_almost_eq(emergency.size.x, row.size.x, 0.001)
+	assert_gt(emergency.position.y, row.position.y + row.size.y)
+
+
+func test_yellow_text_is_shifted_up_in_its_bubble() -> void:
+	var warning := _make_warning()
+	var yellow := warning.get_node("YellowWarning") as Control
+	var bubble := yellow.get_node("Bubble") as TextureRect
+	var text := yellow.get_node("Text") as TextureRect
+
+	assert_lt(text.position.y, bubble.size.y * 0.25)
+
+
+func test_red_first_line_is_shifted_up_above_emergency() -> void:
+	var warning := _make_warning()
+	var red := warning.get_node("RedWarning") as Control
+	var row := red.get_node("RedTextRow") as Control
+	var emergency := red.get_node("RedText4") as TextureRect
+
+	assert_lt(row.position.y, red.size.y * 0.5)
+	assert_gt(emergency.position.y, row.position.y + row.size.y)
 
 
 func test_orange_text_is_shifted_up_in_its_bubble() -> void:

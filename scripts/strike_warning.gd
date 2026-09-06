@@ -104,8 +104,8 @@ func get_warning_assets(strike: int) -> Dictionary:
 				"row": [
 					$RedWarning/RedTextRow/RedText2.texture,
 					$RedWarning/RedTextRow/RedText3.texture,
-					$RedWarning/RedTextRow/RedText4.texture,
 				],
+				"emergency": $RedWarning/RedText4.texture,
 			}
 	return {}
 
@@ -149,7 +149,7 @@ func _layout_warnings() -> void:
 		yellow_warning.get_node("Text") as TextureRect,
 		Vector2(right_position, top_margin),
 		bubble_width,
-		0.27,
+		0.22,
 	)
 	_layout_simple_warning(
 		orange_warning,
@@ -164,6 +164,7 @@ func _layout_warnings() -> void:
 		red_warning.get_node("Bubble") as TextureRect,
 		red_warning.get_node("RedText1") as TextureRect,
 		red_warning.get_node("RedTextRow") as Control,
+		red_warning.get_node("RedText4") as TextureRect,
 		Vector2(right_position, top_margin),
 		bubble_width,
 	)
@@ -196,6 +197,7 @@ func _layout_red_warning(
 	bubble: TextureRect,
 	heading: TextureRect,
 	row: Control,
+	emergency: TextureRect,
 	origin: Vector2,
 	bubble_width: float,
 ) -> void:
@@ -210,16 +212,15 @@ func _layout_red_warning(
 	heading.size = Vector2(heading_width, heading_height)
 	heading.position = Vector2((bubble_width - heading_width) * 0.5, bubble_height * 0.16)
 
-	row.position = Vector2(bubble_width * 0.075, bubble_height * 0.52)
-	row.size = Vector2(bubble_width * 0.85, bubble_height * 0.28)
+	row.position = Vector2(bubble_width * 0.075, bubble_height * 0.42)
+	row.size = Vector2(bubble_width * 0.85, bubble_height * 0.20)
 	var row_nodes: Array[TextureRect] = [
 		row.get_node("RedText2") as TextureRect,
 		row.get_node("RedText3") as TextureRect,
-		row.get_node("RedText4") as TextureRect,
 	]
-	var widths := [row.size.x * 0.16, row.size.x * 0.14, row.size.x * 0.52]
+	var widths := [row.size.x * 0.18, row.size.x * 0.16]
 	var gap := row.size.x * 0.04
-	var cursor := 0.0
+	var cursor: float = (row.size.x - (widths[0] + widths[1] + gap)) * 0.5
 	for index in row_nodes.size():
 		var node := row_nodes[index]
 		var width: float = widths[index]
@@ -227,6 +228,13 @@ func _layout_red_warning(
 		node.position = Vector2(cursor, (row.size.y - height) * 0.5)
 		node.size = Vector2(width, height)
 		cursor += width + gap
+
+	var emergency_width := row.size.x
+	emergency.position = Vector2(row.position.x, bubble_height * 0.65)
+	emergency.size = Vector2(
+		emergency_width,
+		_texture_height(emergency.texture, emergency_width),
+	)
 
 
 func _texture_height(texture: Texture2D, width: float) -> float:
