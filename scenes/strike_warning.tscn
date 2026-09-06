@@ -101,7 +101,7 @@ texture = ExtResource("9_red_text_3")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="RedText4" type="TextureRect" parent="RedWarning/RedTextRow"]
+[node name="RedText4" type="TextureRect" parent="RedWarning"]
 layout_mode = 0
 mouse_filter = 2
 texture_filter = 1
