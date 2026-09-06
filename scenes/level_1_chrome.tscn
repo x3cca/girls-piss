@@ -1,57 +1,53 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene format=3 uid="uid://rlq84p4mfx38"]
 
-[ext_resource type="Script" path="res://scripts/level_1_chrome.gd" id="1_chrome"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/Volume1.png" id="2_volume1"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/Volume2.png" id="3_volume2"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/Volume3.png" id="4_volume3"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/MuteVolumeX.svg" id="5_mute_volume"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/Back1Shadow.png" id="6_back_shadow"]
-[ext_resource type="Texture2D" path="res://assets/art/drive/Back1.png" id="7_back"]
-[ext_resource type="AudioStream" path="res://assets/audio/orchestra_hit.ogg" id="8_volume_sound"]
+[ext_resource type="Script" uid="uid://cjfwlpohscren" path="res://scripts/level_1_chrome.gd" id="1_chrome"]
+[ext_resource type="Texture2D" uid="uid://crritf7q2qi8d" path="res://assets/art/drive/Volume1.png" id="2_volume1"]
+[ext_resource type="Texture2D" uid="uid://bia5vu6si6p8a" path="res://assets/art/drive/Volume2.png" id="3_volume2"]
+[ext_resource type="Texture2D" uid="uid://cbq2mhdyhjeuo" path="res://assets/art/drive/Volume3.png" id="4_volume3"]
+[ext_resource type="Texture2D" uid="uid://cplsykdvygj0r" path="res://assets/art/drive/MuteVolumeX.svg" id="5_mute_volume"]
+[ext_resource type="Texture2D" uid="uid://da6lpykqkavxl" path="res://assets/art/drive/Back1Shadow.png" id="6_back_shadow"]
+[ext_resource type="Texture2D" uid="uid://d0birox4ffto1" path="res://assets/art/drive/Back1.png" id="7_back"]
+[ext_resource type="AudioStream" uid="uid://bm8ikeg5n2f10" path="res://assets/audio/orchestra_hit.ogg" id="8_volume_sound"]
 
-[node name="Level1Chrome" type="Node2D"]
+[node name="Level1Chrome" type="Node2D" unique_id=1837453706]
 z_index = 6
 script = ExtResource("1_chrome")
 
-[node name="VolumeIcons" type="Node2D" parent="."]
+[node name="VolumeIcons" type="Node2D" parent="." unique_id=1335960049]
 
-[node name="Volume1" type="Sprite2D" parent="VolumeIcons"]
+[node name="Volume1" type="Sprite2D" parent="VolumeIcons" unique_id=490420382]
 texture_filter = 1
+position = Vector2(996, 106.5)
 texture = ExtResource("2_volume1")
-position = Vector2(996, 106.5)
-visible = false
 
-[node name="Volume2" type="Sprite2D" parent="VolumeIcons"]
+[node name="Volume2" type="Sprite2D" parent="VolumeIcons" unique_id=772638816]
 texture_filter = 1
+position = Vector2(983, 106.5)
 texture = ExtResource("3_volume2")
-position = Vector2(996, 106.5)
-visible = false
 
-[node name="Volume3" type="Sprite2D" parent="VolumeIcons"]
+[node name="Volume3" type="Sprite2D" parent="VolumeIcons" unique_id=981788454]
 texture_filter = 1
+position = Vector2(971, 106.5)
 texture = ExtResource("4_volume3")
-position = Vector2(996, 106.5)
 
-[node name="MuteVolume" type="Sprite2D" parent="VolumeIcons"]
+[node name="MuteVolume" type="Sprite2D" parent="VolumeIcons" unique_id=710156268]
 texture_filter = 1
-texture = ExtResource("5_mute_volume")
 position = Vector2(996, 106.5)
-visible = false
+texture = ExtResource("5_mute_volume")
 
-[node name="VolumeHitbox" type="Control" parent="."]
-mouse_filter = 0
-mouse_default_cursor_shape = 0
+[node name="VolumeHitbox" type="Control" parent="." unique_id=523925713]
+layout_mode = 3
+anchors_preset = 0
 
-[node name="VolumeSound" type="AudioStreamPlayer" parent="."]
+[node name="VolumeSound" type="AudioStreamPlayer" parent="." unique_id=67603124]
 stream = ExtResource("8_volume_sound")
-bus = &"Master"
 
-[node name="BackShadow" type="Sprite2D" parent="."]
+[node name="BackShadow" type="Sprite2D" parent="." unique_id=531647468]
 visible = false
 texture_filter = 1
 texture = ExtResource("6_back_shadow")
 
-[node name="Back" type="Sprite2D" parent="."]
+[node name="Back" type="Sprite2D" parent="." unique_id=826573253]
 visible = false
 texture_filter = 1
 texture = ExtResource("7_back")

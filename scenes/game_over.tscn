@@ -165,3 +165,4 @@ stretch_mode = 6
 
 [node name="FailureSound" type="AudioStreamPlayer" parent="." unique_id=81230534]
 stream = ExtResource("9_failure")
+bus = &"Game"

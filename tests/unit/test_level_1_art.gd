@@ -55,7 +55,7 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 		"res://assets/art/drive/Floor.png",
 	)
 	assert_eq(
-		level.get_node("Level1Chrome/Volume").texture.resource_path,
+		level.get_node("Level1Chrome/VolumeIcons/Volume3").texture.resource_path,
 		"res://assets/art/drive/Volume3.png",
 	)
 	assert_eq(

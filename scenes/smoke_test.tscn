@@ -13,10 +13,10 @@
 [ext_resource type="Texture2D" uid="uid://m44oqg56v0ay" path="res://resources/depth_map_baked.png" id="13_depth_texture"]
 [ext_resource type="PackedScene" path="res://scenes/depth_environment.tscn" id="14_depth_environment"]
 [ext_resource type="PackedScene" path="res://scenes/negative_zone.tscn" id="15_negative_zone"]
-[ext_resource type="PackedScene" path="res://scenes/piss_toilet.tscn" id="16_piss_toilet"]
-[ext_resource type="Script" path="res://scripts/surface_effects.gd" id="17_surface_effects"]
+[ext_resource type="PackedScene" uid="uid://dargvn33ideep" path="res://scenes/piss_toilet.tscn" id="16_piss_toilet"]
+[ext_resource type="Script" uid="uid://b4l6kjhnky0xc" path="res://scripts/surface_effects.gd" id="17_surface_effects"]
 [ext_resource type="PackedScene" path="res://scenes/music_controller.tscn" id="18_music"]
-[ext_resource type="AudioStream" path="res://assets/audio/spray_loop.ogg" id="19_spray_sound"]
+[ext_resource type="AudioStream" uid="uid://b55eofxdnymxw" path="res://assets/audio/spray_loop.ogg" id="19_spray_sound"]
 
 [sub_resource type="Gradient" id="Gradient_light"]
 colors = PackedColorArray(1, 1, 1, 0.95, 1, 1, 1, 0)
@@ -60,32 +60,32 @@ target_size = 144.0
 
 [node name="NegativeZone01" parent="." unique_id=2103637511 instance=ExtResource("15_negative_zone")]
 normalized_points = PackedVector2Array(0.04, 0.11, 0.3, 0.11, 0.26, 0.29, 0.06, 0.29)
+excluded_normalized_points = PackedVector2Array()
 
 [node name="NegativeZone02" parent="." unique_id=776967907 instance=ExtResource("15_negative_zone")]
 normalized_points = PackedVector2Array(0.72, 0.1, 0.97, 0.1, 0.92, 0.29, 0.75, 0.27)
+excluded_normalized_points = PackedVector2Array()
 
 [node name="PissLineRecorder" parent="." unique_id=1552256490 instance=ExtResource("9_recorder")]
 
 [node name="PissLineReplay" parent="." unique_id=1262491738 instance=ExtResource("10_replay")]
 
 [node name="Ambient" type="CanvasModulate" parent="." unique_id=1496793359]
-color = Color(1, 1, 1, 1)
 
 [node name="BroadMoonLight" type="PointLight2D" parent="." unique_id=687514520]
 position = Vector2(360, 640)
+enabled = false
 color = Color(1, 0.95, 0.9, 1)
-energy = 1
 texture = SubResource("GradientTexture_light")
 texture_scale = 2.85
-enabled = false
 
 [node name="StreamImpactLight" type="PointLight2D" parent="." unique_id=172867828]
 position = Vector2(360, 1328)
+enabled = false
 color = Color(1, 0.95, 0.9, 1)
 energy = 1.15
 texture = SubResource("GradientTexture_light")
 texture_scale = 0.9
-enabled = false
 
 [node name="ScreenOverlay" parent="." unique_id=125728605 instance=ExtResource("7_overlay")]
 
@@ -97,8 +97,9 @@ enabled = false
 
 [node name="TitleScreen" parent="TitleLayer" unique_id=2068530869 instance=ExtResource("11_title")]
 
-[node name="MusicController" parent="." instance=ExtResource("18_music")]
+[node name="MusicController" parent="." unique_id=414390264 instance=ExtResource("18_music")]
 
-[node name="SpraySound" type="AudioStreamPlayer" parent="."]
+[node name="SpraySound" type="AudioStreamPlayer" parent="." unique_id=265636619]
 stream = ExtResource("19_spray_sound")
+bus = &"Game"
 pitch_scale = 1.122462

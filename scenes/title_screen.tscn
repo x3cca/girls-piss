@@ -21,3 +21,4 @@ mouse_filter = 2
 
 [node name="StartSound" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("3_start_sound")
+bus = &"Game"
