@@ -14,9 +14,9 @@ and normal pass while keeping the strip tileable along its long axis.
 separate from the stream mesh so the impact treatment can become a decal or
 particle sprite later.
 
-`stream_particle_placeholder.png` is the current particle sprite: a white
-circle with a black outline and transparent corners. It is shared by the
-ambient droplets and the continuous floor impact effect.
+The stream particles use the lemon squirt artwork from `drive/`: the
+`PissOMeterLemonDrip1.png` sprite is used for ambient droplets and the primary
+impact, while `PissOMeterLemonDrop2.png` is used for the secondary impact.
 
 `carrot_aim_placeholder.png` is the temporary centered player marker. It is a
 visual-only sprite now; the circular aimer owns all aiming input.
@@ -32,6 +32,10 @@ Artwork pulled from the shared Google Drive lives under `drive/`. Use
 and convert them to lossless PNGs. The title uses the separate transparent
 layers in `drive/` through `scenes/title_composition.tscn`; keep their authored
 1080x1920 placements when composing them.
+
+`drive/GirlpissWaterin bowl.png` is the centered alpha mask for the bowl water
+overlay. It is intentionally rendered above `Pissbowl.png` with the ripple
+shader, while the bowl artwork remains the static silhouette underneath.
 
 The contextual prompt still uses temporary labels under
 `assets/placeholders/`: `aim.png` and `piss.png`. Keep those rows separate until

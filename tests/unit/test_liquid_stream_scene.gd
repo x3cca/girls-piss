@@ -47,6 +47,15 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 	assert_not_null(instance.get_node_or_null("LiquidStream/Droplets"))
 	assert_not_null(instance.get_node_or_null("LiquidStream/ImpactBurst"))
 	assert_not_null(instance.get_node_or_null("LiquidStream/ImpactBurstSecondary"))
+	var droplets := instance.get_node_or_null("LiquidStream/Droplets") as CPUParticles2D
+	assert_not_null(droplets)
+	if droplets:
+		assert_not_null(droplets.texture)
+		if droplets.texture:
+			assert_eq(
+				droplets.texture.resource_path,
+				"res://assets/art/drive/PissOMeterLemonDrip1.png",
+			)
 	assert_null(instance.get_node_or_null("WettablePlot01"))
 	assert_null(instance.get_node_or_null("WettablePlot02"))
 	assert_null(instance.get_node_or_null("WettablePlot03"))
@@ -99,7 +108,7 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 		if impact.texture:
 			assert_eq(
 				impact.texture.resource_path,
-				"res://assets/art/drive/YellowTextFX1.png",
+				"res://assets/art/drive/PissOMeterLemonDrip1.png",
 			)
 	var secondary_impact := instance.get_node_or_null(
 		"LiquidStream/ImpactBurstSecondary",
@@ -130,7 +139,7 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 		if secondary_impact.texture:
 			assert_eq(
 				secondary_impact.texture.resource_path,
-				"res://assets/art/drive/YellowTextFX2.png",
+				"res://assets/art/drive/PissOMeterLemonDrop2.png",
 			)
 	if impact:
 		assert_eq(impact.amount, 1)
