@@ -50,6 +50,7 @@ var _last_aim_source := AimSource.KEYBOARD
 var _current_input_source := AimSource.KEYBOARD
 var _pissing := false
 var _has_started_pissing := false
+var _stream_start_position := Vector2.ZERO
 var _music_target_offset_position := Vector2.ZERO
 var _music_target_offset_amplitude := 0.0
 
@@ -70,6 +71,7 @@ func _ready() -> void:
 	_target_position = _default_target_position()
 	target_position = _target_position
 	_previous_input_position = _target_position
+	_stream_start_position = _target_position
 	aim_target_changed.emit(target_position)
 	if not Input.joy_connection_changed.is_connected(_on_joy_connection_changed):
 		Input.joy_connection_changed.connect(_on_joy_connection_changed)
@@ -198,7 +200,7 @@ func _update_mouse_button_state(event: InputEventMouseButton) -> void:
 		# Publish the click position before the hold signal reaches the stream.
 		# This makes the first parcel use the position where the mouse started
 		# clicking instead of the previous reticle position.
-		_begin_pissing()
+		_begin_pissing(event.position)
 	else:
 		_mouse_pressed = false
 	_update_pissing()
@@ -278,6 +280,10 @@ func is_stream_input_held() -> bool:
 	return _pissing
 
 
+func get_stream_start_position() -> Vector2:
+	return _stream_start_position
+
+
 func stop_pissing() -> void:
 	## Clear every active stream input after a strike. The player must release and
 	## press again before another stream can start, even when force-pissing mode
@@ -320,6 +326,7 @@ func reset_input() -> void:
 	_target_position = _default_target_position()
 	_previous_input_position = _target_position
 	target_position = _target_position
+	_stream_start_position = _target_position
 	aim_target_changed.emit(target_position)
 	touch_target_changed.emit(Vector2.ZERO, false)
 
@@ -361,7 +368,7 @@ func _claim_touch(index: int, position: Vector2) -> void:
 	_touch_index = index
 	_update_touch_target(position)
 	# As with a mouse click, the tap position is the first shot's target.
-	_begin_pissing()
+	_begin_pissing(position)
 
 
 func _release_touch(index: int) -> void:
@@ -395,8 +402,11 @@ func _update_pissing() -> void:
 	_set_stream_input_held(next_pissing)
 
 
-func _begin_pissing() -> void:
+func _begin_pissing(start_position: Vector2) -> void:
+	var hold_was_active := _pissing
 	_set_stream_input_held(true)
+	if not hold_was_active:
+		_stream_start_position = _clamp_target(start_position)
 
 
 func _set_stream_input_held(held: bool) -> void:
@@ -407,6 +417,7 @@ func _set_stream_input_held(held: bool) -> void:
 	_pissing = held
 	if held:
 		_has_started_pissing = true
+		_stream_start_position = target_position
 	stream_hold_changed.emit(held)
 
 

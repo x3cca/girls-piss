@@ -181,7 +181,10 @@ func _process(delta: float) -> void:
 	_update_aim_bloom(target, delta)
 	var stream_hold_started := is_pissing and not _stream_hold_was_active
 	if stream_hold_started:
-		_start_stream_hold(target)
+		# The controller snapshots the input that began this hold. Reading the
+		# live target here would allow the input process (including music cursor
+		# offset) to move it before the stream gets its first parcel.
+		_start_stream_hold(input_controller.get_stream_start_position())
 	elif not _stream_target_initialized:
 		_stream_target_position = target
 		_stream_target_initialized = true
