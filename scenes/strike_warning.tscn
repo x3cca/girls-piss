@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/strike_warning.gd" id="1_warning"]
 [ext_resource type="PackedScene" path="res://scenes/strike_warning_yellow.tscn" id="2_yellow"]
@@ -7,6 +7,7 @@
 [ext_resource type="AudioStream" path="res://assets/audio/wall/wall_pound_light.ogg" id="5_light_pounds"]
 [ext_resource type="AudioStream" path="res://assets/audio/wall/wall_pound_medium.ogg" id="6_medium_pounds"]
 [ext_resource type="AudioStream" path="res://assets/audio/wall/wall_pound_heavy.ogg" id="7_heavy_pounds"]
+[ext_resource type="AudioStream" path="res://assets/audio/cute_cozy_ui/Sounds/Warning.ogg" id="8_warning_sound"]
 
 [node name="StrikeWarning" type="Control"]
 layout_mode = 3
@@ -34,4 +35,8 @@ bus = &"Master"
 
 [node name="HeavyPounds" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("7_heavy_pounds")
+bus = &"Master"
+
+[node name="WarningSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("8_warning_sound")
 bus = &"Master"

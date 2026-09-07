@@ -46,6 +46,8 @@ const RETRY_FINAL_POSITION := Vector2(167.0, 1494.0)
 @onready var _piss_again_text_two: TextureRect = (
 		$Presentation/Art/PissAgainGroup/PissAgainText2
 )
+@onready var _win_sound: AudioStreamPlayer = $WinSound
+@onready var _star_sound: AudioStreamPlayer = $StarSound
 @onready var _credit_chunks: Array[CanvasItem] = [
 	$Presentation/Art/Credits/PissListQuote,
 	$Presentation/Art/Credits/DottyCredit,
@@ -101,6 +103,8 @@ func is_failure_card() -> bool:
 
 func hide_card() -> void:
 	_kill_animation()
+	_win_sound.stop()
+	_star_sound.stop()
 	visible = false
 	set_process(false)
 	failure_state = false
@@ -110,6 +114,8 @@ func hide_card() -> void:
 
 func _show_card(next_failure_state: bool) -> void:
 	_kill_animation()
+	_win_sound.stop()
+	_star_sound.stop()
 	failure_state = next_failure_state
 	visible = true
 	set_process(true)
@@ -118,6 +124,8 @@ func _show_card(next_failure_state: bool) -> void:
 	_layout_card()
 	_reset_animation_state()
 	_retry_button.grab_focus()
+	if not failure_state:
+		_win_sound.play()
 	_start_reveal_sequence()
 
 
@@ -133,6 +141,8 @@ func _start_reveal_sequence() -> void:
 		good_job_fade_duration,
 	).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	_animation_tween.tween_interval(star_entry_delay)
+	if not failure_state:
+		_animation_tween.tween_callback(_play_star_sound)
 	_animation_tween.set_parallel(true)
 	_animation_tween.tween_property(
 		_good_job_sticker,
@@ -211,6 +221,11 @@ func _set_bowl_elapsed(value: float) -> void:
 	var material := _bowl_water.material as ShaderMaterial
 	if material:
 		material.set_shader_parameter("ripple_age", value)
+
+
+func _play_star_sound() -> void:
+	_star_sound.stop()
+	_star_sound.play()
 
 
 func _set_retry_shake(progress: float) -> void:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3]
+[gd_scene load_steps=31 format=3]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scripts/completion_card.gd" id="4_completion"]
@@ -27,6 +27,9 @@
 [ext_resource type="Texture2D" path="res://assets/art/drive/Pissbowl.png" id="28_bowl"]
 [ext_resource type="Material" path="res://resources/materials/bowl_water_surface.tres" id="29_bowl_water_material"]
 [ext_resource type="Texture2D" path="res://assets/art/drive/GirlpissWaterin bowl.png" id="30_bowl_water"]
+[ext_resource type="AudioStream" path="res://assets/audio/cute_cozy_ui/Sounds/Confirm.ogg" id="31_target_sound"]
+[ext_resource type="AudioStream" path="res://assets/audio/cute_cozy_ui/Sounds/Success.ogg" id="32_win_sound"]
+[ext_resource type="AudioStream" path="res://assets/audio/cute_cozy_ui/Sounds/Unlock.ogg" id="33_star_sound"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_transparent_button"]
 bg_color = Color(0, 0, 0, 0)
@@ -49,6 +52,10 @@ script = ExtResource("1_hud")
 
 [node name="PissMeter" parent="." instance=ExtResource("9_meter")]
 
+[node name="TargetSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("31_target_sound")
+bus = &"Master"
+
 [node name="CompletionCard" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
@@ -59,6 +66,14 @@ grow_vertical = 2
 mouse_filter = 0
 visible = false
 script = ExtResource("4_completion")
+
+[node name="WinSound" type="AudioStreamPlayer" parent="CompletionCard"]
+stream = ExtResource("32_win_sound")
+bus = &"Master"
+
+[node name="StarSound" type="AudioStreamPlayer" parent="CompletionCard"]
+stream = ExtResource("33_star_sound")
+bus = &"Master"
 
 [node name="Backdrop" type="ColorRect" parent="CompletionCard"]
 layout_mode = 1

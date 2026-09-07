@@ -24,6 +24,7 @@ mouse_filter = 2
 script = ExtResource("1_effect")
 sprite_frames = SubResource("SpriteFrames_dread")
 opacity = 0.9
+fade_out_enabled = true
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_dread")

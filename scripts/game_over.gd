@@ -371,6 +371,7 @@ func _start_door_bang_fx() -> void:
 	_door_knock_tween.tween_interval(DOOR_BANG_HOLD_AFTER_LAST)
 	_door_knock_tween.tween_callback(_hide_door_bang)
 
+
 func _show_door_bang_frame(frame_index: int) -> void:
 	if not _door_bang.visible:
 		return

@@ -11,13 +11,19 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_wall_surface"]
 shader = ExtResource("7_drips")
+shader_parameter/splat_threshold = 0.5
+shader_parameter/splat_edge = 0.04
 shader_parameter/stain_color = Color(0.95, 0.83, 0.31, 1)
 shader_parameter/stain_opacity = 0.62
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_floor_surface"]
 shader = ExtResource("6_paint")
+shader_parameter/splat_threshold = 0.5
+shader_parameter/splat_edge = 0.04
 shader_parameter/stain_color = Color(0.95, 0.83, 0.31, 1)
 shader_parameter/stain_opacity = 0.62
+shader_parameter/water_mask_uv_transform = Vector4(1, 1, 0, 0)
+shader_parameter/water_mask_enabled = 0.0
 
 [node name="Level1Background" type="Node2D" unique_id=459621023]
 z_index = -10
@@ -41,9 +47,11 @@ texture = ExtResource("4_shadow")
 [node name="WallPaper" type="Sprite2D" parent="." unique_id=1519478633]
 modulate = Color(1, 1, 1, 0.2)
 texture_filter = 1
+position = Vector2(803, 0)
 texture = ExtResource("5_paper")
 
 [node name="ToiletPaper" type="Sprite2D" parent="." unique_id=1715672251]
 z_index = 1
 texture_filter = 1
+position = Vector2(775, 0)
 texture = ExtResource("8_toilet_paper")

@@ -120,7 +120,7 @@ func play_start_flash() -> bool:
 
 	_start_flash_tween = create_tween()
 	var flash_duration := maxf(start_flash_duration, 0.01)
-	for _flash_index in range(maxi(start_flash_count, 1)):
+	for flash_index in range(maxi(start_flash_count, 1)):
 		_start_flash_tween.tween_property(
 			_start_frame_1,
 			"modulate:a",

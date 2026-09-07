@@ -39,6 +39,7 @@ signal warning_finished(strike: int)
 @onready var _light_pounds: AudioStreamPlayer = $LightPounds
 @onready var _medium_pounds: AudioStreamPlayer = $MediumPounds
 @onready var _heavy_pounds: AudioStreamPlayer = $HeavyPounds
+@onready var _warning_sound: AudioStreamPlayer = $WarningSound
 
 var _active_warning := 0
 var _remaining := 0.0
@@ -189,6 +190,8 @@ func _warning_for(strike: int) -> Control:
 
 
 func _play_pounding_warning(strike: int) -> void:
+	_warning_sound.stop()
+	_warning_sound.play()
 	var player := _pounding_player_for(strike)
 	if is_instance_valid(player):
 		player.play()
@@ -198,6 +201,8 @@ func _stop_pounding_warnings() -> void:
 	for player in [_light_pounds, _medium_pounds, _heavy_pounds]:
 		if is_instance_valid(player):
 			player.stop()
+	if is_instance_valid(_warning_sound):
+		_warning_sound.stop()
 
 
 func _advance_pound_timing(delta: float) -> void:

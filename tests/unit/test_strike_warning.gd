@@ -17,6 +17,7 @@ const RED_TEXT_3 := preload("res://assets/art/drive/RedText3.png")
 const RED_TEXT_4 := preload("res://assets/art/drive/RedText4.png")
 const RED_FX_1 := preload("res://assets/art/drive/RedTextFX1.png")
 const RED_FX_2 := preload("res://assets/art/drive/RedTextFX2.png")
+const WARNING_SOUND := preload("res://assets/audio/cute_cozy_ui/Sounds/Warning.ogg")
 
 
 func _make_warning() -> StrikeWarning:
@@ -210,11 +211,15 @@ func test_each_warning_plays_its_three_pound_variant() -> void:
 	for strike in variants:
 		warning.show_warning(strike, 4.0)
 		var player := warning.get_node(variants[strike][0]) as AudioStreamPlayer
+		var warning_sound := warning.get_node("WarningSound") as AudioStreamPlayer
 		assert_eq(player.stream.resource_path, variants[strike][1])
 		assert_almost_eq(player.stream.get_length(), 0.6, 0.01)
 		assert_true(player.playing)
+		assert_eq(warning_sound.stream, WARNING_SOUND)
+		assert_true(warning_sound.playing)
 		warning.hide_warning()
 		assert_false(player.playing)
+		assert_false(warning_sound.playing)
 
 
 func test_each_pound_emits_on_the_wall_pound_timeline() -> void:

@@ -4,6 +4,7 @@ const LEVEL_SCENE := preload("res://scenes/smoke_test.tscn")
 const LEVEL_1_SCENE := preload("res://scenes/level_1.tscn")
 const ZONE_SCENE := preload("res://scenes/negative_zone.tscn")
 const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
+const TARGET_SOUND := preload("res://assets/audio/cute_cozy_ui/Sounds/Confirm.ogg")
 
 
 func test_negative_zone_uses_normalized_polygon_geometry() -> void:
@@ -126,7 +127,15 @@ func test_third_strike_waits_for_red_warning_then_stops_gameplay() -> void:
 	assert_eq(level.get_strikes(), 3)
 	assert_eq(level.state, Main.FAILED)
 	assert_true(
-		level.hud.strike_warning.is_warning_visible(StrikeWarning.RED_WARNING)
+		level.hud.strike_warning.is_warning_visible(StrikeWarning.RED_WARNING),
+	)
+	var effect_host := level.screen_overlay.get_node("EffectHost") as Control
+	var dread_effect := effect_host.get_child(effect_host.get_child_count() - 1) as ScreenOverlayEffect
+	assert_not_null(dread_effect)
+	assert_almost_eq(
+		dread_effect.get_animation_duration(),
+		Main.FINAL_STRIKE_WARNING_DURATION,
+		0.001,
 	)
 	assert_eq(
 		level.hud.strike_warning.get_remaining_duration(),
@@ -138,7 +147,7 @@ func test_third_strike_waits_for_red_warning_then_stops_gameplay() -> void:
 	level.hud.strike_warning.process_frame(Main.FINAL_STRIKE_WARNING_DURATION - 0.01)
 	assert_eq(level.state, Main.FAILED)
 	assert_true(
-		level.hud.strike_warning.is_warning_visible(StrikeWarning.RED_WARNING)
+		level.hud.strike_warning.is_warning_visible(StrikeWarning.RED_WARNING),
 	)
 	level.hud.strike_warning.process_frame(0.01)
 
@@ -257,6 +266,8 @@ func test_checkpoint_completion_plays_success_crosshair_burst() -> void:
 		level.hud.aim_reticle.get_node("Sprite").texture,
 		TouchReticle.CROSSHAIR_SUCCESS,
 	)
+	assert_eq(level.hud.get_node("TargetSound").stream, TARGET_SOUND)
+	assert_true(level.hud.get_node("TargetSound").playing)
 
 
 func test_reticle_is_double_sized_and_uses_the_boil_material() -> void:

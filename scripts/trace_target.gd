@@ -202,13 +202,13 @@ func _get_collision_polygons() -> Array[PackedVector2Array]:
 	var source_rect := _get_source_rect(image)
 	var sprite_rect := _sprite.get_rect()
 	if (
-		_collision_mask_ready
-		and _collision_mask_texture == texture
-		and _collision_mask_source_rect == source_rect
-		and _collision_mask_sprite_rect == sprite_rect
-		and _collision_mask_flip_h == _sprite.flip_h
-		and _collision_mask_flip_v == _sprite.flip_v
-		and is_equal_approx(_collision_mask_threshold, hit_alpha_threshold)
+			_collision_mask_ready
+			and _collision_mask_texture == texture
+			and _collision_mask_source_rect == source_rect
+			and _collision_mask_sprite_rect == sprite_rect
+			and _collision_mask_flip_h == _sprite.flip_h
+			and _collision_mask_flip_v == _sprite.flip_v
+			and is_equal_approx(_collision_mask_threshold, hit_alpha_threshold)
 	):
 		return _collision_polygons
 
@@ -325,21 +325,21 @@ func _segments_intersect(
 	var between_starts := second_start - first_start
 	if absf(denominator) <= 0.0001:
 		return (
-			absf(_cross(between_starts, first_vector)) <= 0.0001
-			and (
-				_point_is_on_segment(second_start, first_start, first_end)
-				or _point_is_on_segment(second_end, first_start, first_end)
-				or _point_is_on_segment(first_start, second_start, second_end)
-				or _point_is_on_segment(first_end, second_start, second_end)
-			)
+				absf(_cross(between_starts, first_vector)) <= 0.0001
+				and (
+						_point_is_on_segment(second_start, first_start, first_end)
+						or _point_is_on_segment(second_end, first_start, first_end)
+						or _point_is_on_segment(first_start, second_start, second_end)
+						or _point_is_on_segment(first_end, second_start, second_end)
+				)
 		)
 	var first_fraction := _cross(between_starts, second_vector) / denominator
 	var second_fraction := _cross(between_starts, first_vector) / denominator
 	return (
-		first_fraction >= 0.0
-		and first_fraction <= 1.0
-		and second_fraction >= 0.0
-		and second_fraction <= 1.0
+			first_fraction >= 0.0
+			and first_fraction <= 1.0
+			and second_fraction >= 0.0
+			and second_fraction <= 1.0
 	)
 
 
@@ -366,10 +366,10 @@ func _segments_within_distance(
 	if _segments_intersect(first_start, first_end, second_start, second_end):
 		return true
 	return (
-		_distance_to_segment(first_start, second_start, second_end) <= max_distance
-		or _distance_to_segment(first_end, second_start, second_end) <= max_distance
-		or _distance_to_segment(second_start, first_start, first_end) <= max_distance
-		or _distance_to_segment(second_end, first_start, first_end) <= max_distance
+			_distance_to_segment(first_start, second_start, second_end) <= max_distance
+			or _distance_to_segment(first_end, second_start, second_end) <= max_distance
+			or _distance_to_segment(second_start, first_start, first_end) <= max_distance
+			or _distance_to_segment(second_end, first_start, first_end) <= max_distance
 	)
 
 

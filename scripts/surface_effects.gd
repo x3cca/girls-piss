@@ -517,7 +517,7 @@ func _set_water_material_parameters(material: ShaderMaterial) -> void:
 	material.resource_name = "SurfaceEffect_BowlWater"
 
 
-func _apply_surface_state(surface: String, state: Dictionary) -> void:
+func _apply_surface_state(surface: String, _state: Dictionary) -> void:
 	var material: ShaderMaterial = _surface_materials.get(surface) as ShaderMaterial
 	if material == null:
 		return

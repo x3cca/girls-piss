@@ -20,6 +20,10 @@ config/icon="res://assets/icon.svg"
 
 default_bus_layout="res://audio/default_bus_layout.tres"
 
+[autoload]
+
+AudioResources="*res://scripts/audio_preloader.gd"
+
 [display]
 
 window/size/viewport_width=540

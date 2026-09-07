@@ -140,11 +140,6 @@ The placeholder cursor art is from [Kenney's Cursor Pixel
 Pack](https://kenney.nl/assets/cursor-pixel-pack) and is released under CC0.
 See `assets/placeholders/cursor_pixel_pack/License.txt`.
 
-The `jules_pees_outside_at_four_in_the_morning_loop.ogg` sound is derived from
-[JulesPeesOutsideAtFourInTheMorning.mp3 by theroachyjay](https://freesound.org/s/87253/)
-under Creative Commons Attribution 3.0. See `licenses/` for the audio source and
-license notes.
-
 The spray loop is derived from [WATRSpray-Samsung Galaxy Smartphone, MCU_Water
 Hose, Mist Mode_Nicholas Judy_TDC by designerschoice](https://freesound.org/s/811446/)
 under Creative Commons Attribution 4.0. It is high-passed and pitch-raised for

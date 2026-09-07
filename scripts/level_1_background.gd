@@ -46,9 +46,9 @@ func _layout() -> void:
 	_set_sprite_layout(_floor, floor_y, composition_scale)
 	_set_sprite_layout(_wall_shadow, wall_shadow_y, composition_scale)
 	_set_sprite_layout(_wall_paper, 118.0, composition_scale)
-	_wall_paper.position.x = 887.0 * composition_scale.x
+	_wall_paper.position.x = viewport_size.x - _wall_paper.texture.get_width() * composition_scale.x
 	_set_sprite_layout(_toilet_paper, 118.0, composition_scale)
-	_toilet_paper.position.x = 887.0 * composition_scale.x
+	_toilet_paper.position.x = viewport_size.x - _toilet_paper.texture.get_width() * composition_scale.x
 
 
 func _set_sprite_layout(sprite: Sprite2D, y: float, composition_scale: Vector2) -> void:

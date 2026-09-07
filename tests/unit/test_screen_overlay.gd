@@ -2,6 +2,7 @@ extends GutTest
 
 const EFFECT_SCENE := preload("res://scenes/screen_overlay_effect.tscn")
 const OVERLAY_SCENE := preload("res://scenes/screen_overlay.tscn")
+const STRIKE_EFFECT_SCENE := preload("res://scenes/strike_vignette.tscn")
 const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
 
 
@@ -38,6 +39,39 @@ func test_effect_plays_a_non_looping_series_of_sprite_frames() -> void:
 	assert_eq(sprite.frame, 0)
 	assert_eq(sprite.sprite_frames.get_frame_count(&"default"), 2)
 	assert_false(sprite.sprite_frames.get_animation_loop(&"default"))
+
+
+func test_effect_can_be_paced_to_a_requested_duration() -> void:
+	var effect := STRIKE_EFFECT_SCENE.instantiate() as ScreenOverlayEffect
+	add_child_autofree(effect)
+
+	assert_almost_eq(effect.get_animation_duration(), 2.0 / 7.0, 0.001)
+	effect.play_for_duration(4.0)
+
+	assert_almost_eq(effect.get_animation_duration(), 4.0, 0.001)
+
+
+func test_effect_fades_out_over_its_playback_duration() -> void:
+	var effect := STRIKE_EFFECT_SCENE.instantiate() as ScreenOverlayEffect
+	add_child_autofree(effect)
+	effect.fade_out_enabled = true
+	effect.play_for_duration(4.0)
+
+	assert_almost_eq(effect.modulate.a, 0.9, 0.001)
+	effect.advance_opacity(2.0)
+	assert_almost_eq(effect.modulate.a, 0.45, 0.001)
+	effect.advance_opacity(2.0)
+	assert_almost_eq(effect.modulate.a, 0.0, 0.001)
+
+
+func test_strike_feedback_uses_the_requested_duration() -> void:
+	var overlay := OVERLAY_SCENE.instantiate() as ScreenOverlay
+	add_child_autofree(overlay)
+
+	var effect := overlay.play_strike_feedback(2.0)
+
+	assert_not_null(effect)
+	assert_almost_eq(effect.get_animation_duration(), 2.0, 0.001)
 
 
 func test_timeline_activates_cues_when_their_start_time_is_reached() -> void:
@@ -84,9 +118,9 @@ func test_sine_opacity_uses_configured_bounds() -> void:
 	effect.opacity = 1.0
 	effect.advance_opacity(0.0)
 
-	assert_almost_eq(effect.self_modulate.a, 0.5, 0.001)
+	assert_almost_eq(effect.modulate.a, 0.5, 0.001)
 	effect.advance_opacity(0.25)
-	assert_almost_eq(effect.self_modulate.a, 0.8, 0.001)
+	assert_almost_eq(effect.modulate.a, 0.8, 0.001)
 
 
 func _make_frames(size: Vector2i, frame_count := 1) -> SpriteFrames:

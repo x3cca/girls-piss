@@ -258,6 +258,7 @@ stream = ExtResource("16_fbi_voice")
 
 [node name="DoorSmash" type="AudioStreamPlayer" parent="." unique_id=402378807]
 stream = ExtResource("17_door_smash")
+volume_db = -80.0
 
 [node name="DoorKick" type="AudioStreamPlayer" parent="." unique_id=838259403]
 stream = ExtResource("18_door_kick")

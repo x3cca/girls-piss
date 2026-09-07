@@ -14,6 +14,7 @@ var show_touch_controls := false
 @onready var strike_warning: StrikeWarning = $StrikeWarning
 @onready var piss_meter: PissMeter = $PissMeter
 @onready var game_over: GameOver = $GameOver
+@onready var _target_sound: AudioStreamPlayer = $TargetSound
 var _wired_input_controller: InputController
 var gameplay_controls_visible := true
 var aim_pointer_blocked := false
@@ -152,6 +153,12 @@ func set_reticle_state(next_state: int) -> void:
 func play_success_burst() -> void:
 	if is_instance_valid(aim_reticle):
 		aim_reticle.play_success_burst()
+
+
+func play_target_sound() -> void:
+	if is_instance_valid(_target_sound):
+		_target_sound.stop()
+		_target_sound.play()
 
 
 func _on_retry_pressed() -> void:

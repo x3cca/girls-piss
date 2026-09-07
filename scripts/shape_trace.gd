@@ -258,8 +258,8 @@ func _target_intersects_segment(
 		segment_end: Vector2,
 ) -> bool:
 	return (
-		is_instance_valid(target)
-		and target.intersects_segment(segment_start, segment_end)
+			is_instance_valid(target)
+			and target.intersects_segment(segment_start, segment_end)
 	)
 
 

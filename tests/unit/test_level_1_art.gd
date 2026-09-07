@@ -7,6 +7,8 @@ const SUCCESS_EFFECT := preload("res://scenes/success_vignette.tscn")
 const BOIL_MATERIAL := preload("res://resources/materials/boil_effect.tres")
 const BOWL_SHADER := preload("res://shaders/surface_paint.gdshader")
 const WATER_SHADER := preload("res://shaders/surface_ripple.gdshader")
+const WIN_SOUND := preload("res://assets/audio/cute_cozy_ui/Sounds/Success.ogg")
+const STAR_SOUND := preload("res://assets/audio/cute_cozy_ui/Sounds/Unlock.ogg")
 
 
 func test_level_1_uses_the_authored_target_set_and_background() -> void:
@@ -99,6 +101,18 @@ func test_level_1_uses_the_authored_target_set_and_background() -> void:
 		)
 
 
+func test_level_1_right_aligns_toilet_paper_and_shadow() -> void:
+	var level := LEVEL_SCENE.instantiate() as Level1
+	level.skip_title_screen = true
+	add_child_autofree(level)
+
+	var viewport_width := get_viewport().get_visible_rect().size.x
+	for node_path in ["Level1Background/WallPaper", "Level1Background/ToiletPaper"]:
+		var paper := level.get_node(node_path) as Sprite2D
+		var right_edge := paper.position.x + paper.texture.get_width() * paper.scale.x
+		assert_almost_eq(right_edge, viewport_width, 0.001, "%s should touch the right edge." % node_path)
+
+
 func test_level_1_target_slots_are_spaced_and_edge_weighted() -> void:
 	var level := LEVEL_SCENE.instantiate() as Level1
 	level.skip_title_screen = true
@@ -155,6 +169,23 @@ func test_level_1_floor_and_seat_are_bad_but_wall_and_tank_are_neutral() -> void
 	level._process(level.safety_cooldown)
 	level.evaluate_stream_endpoint(floor_position, true, 0.35)
 	assert_eq(level.get_strikes(), 2)
+
+
+func test_crosshair_uses_x_face_when_aiming_at_toilet_seat() -> void:
+	var level := LEVEL_SCENE.instantiate() as Level1
+	level.skip_title_screen = true
+	add_child_autofree(level)
+	level.set_process(false)
+	level.get_node("LiquidStream").set_process(false)
+
+	var seat_position := Vector2(60.0, 542.0)
+	level.input_controller.set_target_position(seat_position)
+	level._refresh_reticle_preview()
+
+	assert_eq(
+		level.hud.aim_reticle.get_node("Sprite").texture,
+		TouchReticle.CROSSHAIR_NEGATIVE,
+	)
 
 
 func test_title_composition_keeps_level_1_visible_underneath() -> void:
@@ -234,6 +265,29 @@ func test_completion_card_shows_the_kenney_cursor() -> void:
 	assert_true(completion.visible)
 	assert_eq(Input.get_mouse_mode(), Input.MOUSE_MODE_VISIBLE)
 	assert_eq(play_again_button.mouse_default_cursor_shape, Control.CURSOR_ARROW)
+	assert_eq(completion.get_node("WinSound").stream, WIN_SOUND)
+	assert_true(completion.get_node("WinSound").playing)
+
+
+func test_completion_card_plays_the_star_landing_sound() -> void:
+	var level := LEVEL_SCENE.instantiate() as Level1
+	level.skip_title_screen = true
+	add_child_autofree(level)
+	var completion := level.hud.completion_card
+	completion.good_job_fade_duration = 0.01
+	completion.star_entry_delay = 0.01
+	completion.show_card()
+
+	var star_sound := completion.get_node("StarSound") as AudioStreamPlayer
+	var observed_playing := false
+	for _frame in 30:
+		await get_tree().process_frame
+		if star_sound.playing:
+			observed_playing = true
+			break
+
+	assert_eq(star_sound.stream, STAR_SOUND)
+	assert_true(observed_playing)
 
 
 func test_completion_card_bowl_uses_splat_shader_and_water_uses_ripple_shader() -> void:

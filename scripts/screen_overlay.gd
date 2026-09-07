@@ -71,7 +71,11 @@ func schedule_effect(effect_scene: PackedScene, start_time: float) -> ScreenOver
 	return cue
 
 
-func play_effect(effect_scene: PackedScene, cue: ScreenOverlayCue = null) -> ScreenOverlayEffect:
+func play_effect(
+		effect_scene: PackedScene,
+		cue: ScreenOverlayCue = null,
+		duration := -1.0,
+) -> ScreenOverlayEffect:
 	if effect_scene == null:
 		return null
 	var instance := effect_scene.instantiate()
@@ -87,12 +91,15 @@ func play_effect(effect_scene: PackedScene, cue: ScreenOverlayCue = null) -> Scr
 	effect.effect_finished.connect(_on_effect_finished.bind(cue))
 	_active_effects.append(effect)
 	effect_started.emit(effect, cue)
-	effect.play()
+	if duration > 0.0:
+		effect.play_for_duration(duration)
+	else:
+		effect.play()
 	return effect
 
 
-func play_strike_feedback() -> ScreenOverlayEffect:
-	return play_effect(STRIKE_VIGNETTE_SCENE)
+func play_strike_feedback(duration := -1.0) -> ScreenOverlayEffect:
+	return play_effect(STRIKE_VIGNETTE_SCENE, null, duration)
 
 
 func play_success_feedback() -> ScreenOverlayEffect:

@@ -264,7 +264,11 @@ func _refresh_reticle_preview() -> void:
 	var aim_position := input_controller.get_target_position()
 	# A positive target is the authoritative result if authored geometry overlaps.
 	if not shape_trace.is_point_in_current_checkpoint(aim_position):
-		if _negative_zone_at(aim_position) != null:
+		var aiming_at_seat := (
+				is_instance_valid(surface_effects)
+				and surface_effects.detect_surface(aim_position) == SurfaceEffects.SURFACE_SEAT
+		)
+		if aiming_at_seat or _negative_zone_at(aim_position) != null:
 			preview_state = TouchReticle.ReticleState.NEGATIVE
 	hud.set_aim_zone_state(preview_state)
 
@@ -661,7 +665,7 @@ func _take_strike() -> void:
 			and strike_count <= StrikeWarning.RED_WARNING
 	)
 	var warning_duration := (
-		FINAL_STRIKE_WARNING_DURATION if is_final_strike else safety_cooldown
+			FINAL_STRIKE_WARNING_DURATION if is_final_strike else safety_cooldown
 	)
 	if is_final_strike and has_warning:
 		_final_strike_pending = true
@@ -669,7 +673,7 @@ func _take_strike() -> void:
 	if has_warning:
 		hud.show_strike_warning(strike_count, warning_duration)
 	if is_instance_valid(screen_overlay):
-		screen_overlay.play_strike_feedback()
+		screen_overlay.play_strike_feedback(warning_duration if has_warning else -1.0)
 	stream.play_strike_flash()
 	if is_final_strike and has_warning:
 		# Enter FAILED immediately so no gameplay can continue while the final
@@ -915,7 +919,7 @@ func _finish_spray_sound_fade_out() -> void:
 	if is_instance_valid(_spray_sound):
 		_spray_sound.stop()
 		_spray_sound.volume_db = SPRAY_SILENT_VOLUME_DB
-	_spray_fade_tween = null
+		_spray_fade_tween = null
 
 
 func _on_wet_target_hit(
@@ -931,6 +935,7 @@ func _on_wet_target_hit(
 func _on_checkpoint_completed(_index: int) -> void:
 	if state != PLAYING:
 		return
+	hud.play_target_sound()
 	hud.play_success_burst()
 	if is_instance_valid(screen_overlay):
 		screen_overlay.play_success_feedback()
