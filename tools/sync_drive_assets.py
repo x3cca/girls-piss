@@ -28,9 +28,6 @@ from PIL import Image, UnidentifiedImageError
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-DEFAULT_DRIVE_URL = (
-    "REDACTED"
-)
 DEFAULT_OUTPUT_DIR = ROOT_DIR / "assets" / "art" / "drive"
 DEFAULT_CACHE_DIR = ROOT_DIR / ".cache" / "drive-assets"
 MANIFEST_FILENAME = "manifest.json"
@@ -443,7 +440,7 @@ def write_manifest(cache_dir: Path, manifest: Mapping[str, Any]) -> None:
 
 
 def run_sync(
-    source: str = DEFAULT_DRIVE_URL,
+    source: str,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
     cache_dir: Path = DEFAULT_CACHE_DIR,
     *,
@@ -692,8 +689,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     mode.add_argument("--sync", action="store_true", help="download and process new or changed assets")
     parser.add_argument(
         "--source",
-        default=os.environ.get("DRIVE_ASSETS_URL", DEFAULT_DRIVE_URL),
-        help="public Drive folder URL (or set DRIVE_ASSETS_URL)",
+        default=os.environ.get("DRIVE_ASSETS_URL"),
+        help="public Drive folder URL (or set DRIVE_ASSETS_URL; required)",
     )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT_DIR, help="PNG output directory")
     parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE_DIR, help="ignored working cache")
@@ -702,6 +699,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
+    if not args.source:
+        raise SystemExit("error: --source is required unless DRIVE_ASSETS_URL is set")
     result = run_sync(
         source=args.source,
         output_dir=args.output,

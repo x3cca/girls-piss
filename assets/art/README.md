@@ -29,7 +29,8 @@ sprites receive the shared boil shader at runtime.
 Artwork pulled from the shared Google Drive lives under `drive/`. Use
 `tools/sync_drive_assets.py --check` to inspect new source files and
 `tools/sync_drive_assets.py --sync` to download them, trim transparent borders,
-and convert them to lossless PNGs. The title uses the separate transparent
+and convert them to lossless PNGs. Set `DRIVE_ASSETS_URL` or pass `--source`
+with the folder URL at runtime. The title uses the separate transparent
 layers in `drive/` through `scenes/title_composition.tscn`; keep their authored
 1080x1920 placements when composing them.
 

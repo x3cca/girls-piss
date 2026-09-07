@@ -16,6 +16,13 @@ python3 -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
+Set the source folder URL at runtime; it is intentionally not stored in this
+repository:
+
+```sh
+export DRIVE_ASSETS_URL='(your Drive folder URL)'
+```
+
 Inspect the folder without downloading or changing project assets:
 
 ```sh
@@ -39,9 +46,7 @@ commit the raw downloads. If a source file disappears, the tool reports it but
 keeps the existing local output so a remote cleanup cannot silently break a
 scene.
 
-The default source is
-`REDACTED`.
-Use `--source URL` or set `DRIVE_ASSETS_URL` when the folder changes.
+Use `--source URL` instead of `DRIVE_ASSETS_URL` when preferred.
 `--output` and `--cache-dir` are also available for local experiments and
 tests.
 
