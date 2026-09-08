@@ -1,5 +1,10 @@
 # Art source directory
 
+Original project 2D artwork in this directory is covered by
+[`LICENSES/RAQUEL_STONE_CUSTOM_ASSETS.md`](../../LICENSES/RAQUEL_STONE_CUSTOM_ASSETS.md).
+Artwork with a separate attribution or license notice remains subject to that
+notice.
+
 Place opaque or alpha-silhouette PNG artwork here, then run
 `godot --headless --script res://tools/bake_normal_maps.gd` from the project
 root. The baker writes lossless `*_normal.png` maps and matching

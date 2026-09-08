@@ -121,6 +121,12 @@ the main scene; `scenes/smoke_test.tscn` is retained for gameplay tests.
 
 ## Attribution
 
+Project source code by Dot Phillips is available under the [MIT License](LICENSES/MIT.md).
+Original project 2D artwork by Raquel Stone is licensed under CC BY-NC 4.0;
+see
+[`LICENSES/RAQUEL_STONE_CUSTOM_ASSETS.md`](LICENSES/RAQUEL_STONE_CUSTOM_ASSETS.md).
+Third-party assets and plugins remain subject to their own license notices.
+
 The structure and workflow ideas were adapted from dating-chess,
 Date-or-Mate-2, and fvf.x3c.ca. The included Godot MCP addon comes from
 godot-mcp-cli and is kept under its MIT license. See third_party/.
@@ -143,17 +149,17 @@ See `assets/placeholders/cursor_pixel_pack/License.txt`.
 The spray loop is derived from [WATRSpray-Samsung Galaxy Smartphone, MCU_Water
 Hose, Mist Mode_Nicholas Judy_TDC by designerschoice](https://freesound.org/s/811446/)
 under Creative Commons Attribution 4.0. It is high-passed and pitch-raised for
-gameplay; see `licenses/` for the attribution note.
+gameplay; see `LICENSES/` for the attribution note.
 
 The launch crash uses `door_kick.ogg`, derived from [Kicking/Forcing/Breaking
 Wooden Door by qubodup](https://freesound.org/people/qubodup/sounds/160213/) and
-available under CC0. See `licenses/door_kick.md` for provenance.
+available under CC0. See `LICENSES/door_kick.md` for provenance.
 
 The failure transition uses audio from
 [Gaming Sound FX's FBI Open Up - Sound Effect (HD)](https://www.youtube.com/watch?v=QQR7t712Mhg).
 The source video is not marked with a permissive license; see
-`licenses/fbi_open_up.md` before redistributing the project.
+`LICENSES/fbi_open_up.md` before redistributing the project.
 
 The strike warning wall-pound variants are derived from [Heavy Wall Pounding by
 LunaFarrowe](https://freesound.org/people/LunaFarrowe/sounds/448374/) and are
-available under CC0. See `licenses/wall_pounding.md` for processing notes.
+available under CC0. See `LICENSES/wall_pounding.md` for processing notes.
