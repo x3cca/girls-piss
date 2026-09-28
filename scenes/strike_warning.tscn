@@ -20,10 +20,16 @@ mouse_filter = 2
 script = ExtResource("1_warning")
 
 [node name="YellowWarning" parent="." instance=ExtResource("2_yellow")]
+position = Vector2(560, 56)
+scale = Vector2(1.2, 1.2)
 
 [node name="OrangeWarning" parent="." instance=ExtResource("3_orange")]
+position = Vector2(560, 410)
+scale = Vector2(1.2, 1.2)
 
 [node name="RedWarning" parent="." instance=ExtResource("4_red")]
+position = Vector2(560, 712)
+scale = Vector2(1.2, 1.2)
 
 [node name="LightPounds" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("5_light_pounds")

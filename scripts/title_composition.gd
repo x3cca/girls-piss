@@ -27,7 +27,7 @@ const REFERENCE_SIZE := Vector2(1080.0, 1920.0)
 var _frame := 0
 var _frame_elapsed := 0.0
 var _title_active := false
-var _layout_signature := Vector2.ZERO
+var _layout_signature := Vector2(540.0, 960.0)
 var _intro_id := 0
 var _title_entry_tween: Tween
 var _start_entry_tween: Tween

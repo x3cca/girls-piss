@@ -9,8 +9,10 @@
 [node name="YellowWarning" type="Control" unique_id=2004993717]
 layout_mode = 3
 anchors_preset = 0
-offset_right = 320.0
-offset_bottom = 292.493
+position = Vector2(560, 56)
+scale = Vector2(1.2, 1.2)
+offset_right = 880.0
+offset_bottom = 348.493
 mouse_filter = 2
 
 [node name="Bubble" type="TextureRect" parent="." unique_id=436957270]

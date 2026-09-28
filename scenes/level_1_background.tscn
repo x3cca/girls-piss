@@ -31,27 +31,40 @@ script = ExtResource("1_background")
 
 [node name="BackWall" type="Sprite2D" parent="." unique_id=270983008]
 texture_filter = 1
+centered = false
+position = Vector2(0, 0)
+scale = Vector2(0.5, 0.5)
 material = SubResource("ShaderMaterial_wall_surface")
 texture = ExtResource("2_wall")
 
 [node name="Floor" type="Sprite2D" parent="." unique_id=1456829577]
 texture_filter = 1
+centered = false
+position = Vector2(0, 261)
+scale = Vector2(0.5, 0.5)
 material = SubResource("ShaderMaterial_floor_surface")
 texture = ExtResource("3_floor")
 
 [node name="WallShadow" type="Sprite2D" parent="." unique_id=742448307]
 modulate = Color(1, 1, 1, 0.2)
 texture_filter = 1
+centered = false
+position = Vector2(0, 247.5)
+scale = Vector2(0.5, 0.5)
 texture = ExtResource("4_shadow")
 
 [node name="WallPaper" type="Sprite2D" parent="." unique_id=1519478633]
 modulate = Color(1, 1, 1, 0.2)
 texture_filter = 1
-position = Vector2(803, 0)
+centered = false
+position = Vector2(452.5, 59)
+scale = Vector2(0.5, 0.5)
 texture = ExtResource("5_paper")
 
 [node name="ToiletPaper" type="Sprite2D" parent="." unique_id=1715672251]
 z_index = 1
 texture_filter = 1
-position = Vector2(775, 0)
+centered = false
+position = Vector2(476, 59)
+scale = Vector2(0.5, 0.5)
 texture = ExtResource("8_toilet_paper")

@@ -66,7 +66,7 @@ var targets: Array[WettableTarget] = []
 @export_range(0.0, 120.0, 0.5) var failure_knock_shake_strength := 52.0
 @export_range(0.05, 0.5, 0.01) var failure_knock_shake_duration := 0.16
 var _world_size := Vector2(540.0, 960.0)
-var _layout_signature := Vector2.ZERO
+var _layout_signature := Vector2(540.0, 960.0)
 var _elapsed := 0.0
 var _base_position := Vector2.ZERO
 var _base_rotation := 0.0
@@ -276,6 +276,11 @@ func _refresh_reticle_preview() -> void:
 func _layout_world() -> void:
 	if _world_size.x <= 1.0 or _world_size.y <= 1.0:
 		return
+	if _layout_signature == _world_size:
+		if is_instance_valid(piss_toilet):
+			piss_toilet.apply_layout()
+			shape_trace.target_center_position = piss_toilet.get_bowl_anchor_global()
+		return
 	# The source stays just below the visible rectangle; only the jet enters frame.
 	stream.source_position = Vector2(_world_size.x * 0.5, _world_size.y + 48.0)
 	depth_map.world_rect = Rect2(Vector2.ZERO, _world_size)
@@ -283,8 +288,7 @@ func _layout_world() -> void:
 		piss_toilet.apply_layout()
 		shape_trace.target_center_position = piss_toilet.get_bowl_anchor_global()
 	_align_bowl_light()
-	if _layout_signature != _world_size:
-		_layout_signature = _world_size
+	_layout_signature = _world_size
 
 
 func _align_bowl_light() -> void:

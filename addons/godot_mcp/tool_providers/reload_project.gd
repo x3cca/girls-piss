@@ -28,7 +28,8 @@ func execute(params: Dictionary) -> Dictionary:
 	var editor_interface = plugin.get_editor_interface()
 	var save_before_restart: bool = params.get("save", true)
 
-	# Send success response before restarting (since restart will disconnect)
+	# Use call_deferred to allow the response to be sent before restart
+	editor_interface.call_deferred("restart_editor", save_before_restart)
 	return _ok(
 		{
 			"status": "restarting",
@@ -36,6 +37,3 @@ func execute(params: Dictionary) -> Dictionary:
 			"message": "Godot editor is restarting...",
 		},
 	)
-
-	# Use call_deferred to allow the response to be sent before restart
-	editor_interface.call_deferred("restart_editor", save_before_restart)

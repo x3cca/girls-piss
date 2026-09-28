@@ -20,6 +20,7 @@ func _init(path: String, sse: MCPSse, core: MCPServerCore):
 	# Register event connections
 	if _core:
 		_core.sse_notification.connect(_on_sse_notification)
+		_core.jsonrpc_response.connect(_on_jsonrpc_response)
 
 	super(
 		path,
@@ -118,3 +119,9 @@ func _handle_sse(_request: HttpRequest, response: HttpResponse) -> bool:
 func _on_sse_notification(notification: Dictionary) -> void:
 	if _sse:
 		_sse.broadcast_mcp_message(notification)
+
+
+## Forward the completed response for asynchronous tool calls over SSE.
+func _on_jsonrpc_response(response: Dictionary) -> void:
+	if _sse:
+		_sse.broadcast_mcp_message(response)

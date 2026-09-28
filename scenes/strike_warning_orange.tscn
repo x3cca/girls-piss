@@ -9,8 +9,10 @@
 
 [node name="OrangeWarning" type="Control"]
 layout_mode = 0
-offset_right = 320.0
-offset_bottom = 248.333
+position = Vector2(560, 410)
+scale = Vector2(1.2, 1.2)
+offset_right = 880.0
+offset_bottom = 658.333
 mouse_filter = 2
 
 [node name="Bubble" type="TextureRect" parent="."]

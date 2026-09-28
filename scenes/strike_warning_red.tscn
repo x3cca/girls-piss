@@ -12,8 +12,10 @@
 [node name="RedWarning" type="Control" unique_id=1811544833]
 layout_mode = 3
 anchors_preset = 0
-offset_right = 320.0
-offset_bottom = 211.159
+position = Vector2(560, 712)
+scale = Vector2(1.2, 1.2)
+offset_right = 880.0
+offset_bottom = 923.159
 mouse_filter = 2
 
 [node name="Bubble" type="TextureRect" parent="." unique_id=1004860663]

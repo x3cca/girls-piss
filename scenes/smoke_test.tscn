@@ -44,10 +44,11 @@ debug_visualization = true
 [node name="DepthEnvironment" parent="." unique_id=1742420002 instance=ExtResource("14_depth_environment")]
 
 [node name="PissToilet" parent="." unique_id=1742420003 instance=ExtResource("16_piss_toilet")]
-position = Vector2(360, 640)
+position = Vector2(270, 480)
 scale = Vector2(0.5625, 0.5625)
 
 [node name="LiquidStream" parent="." unique_id=1204969384 instance=ExtResource("2_stream")]
+source_position = Vector2(270, 1008)
 
 [node name="SurfaceEffects" type="Node" parent="." unique_id=1992168420]
 script = ExtResource("17_surface_effects")
@@ -73,7 +74,7 @@ excluded_normalized_points = PackedVector2Array()
 [node name="Ambient" type="CanvasModulate" parent="." unique_id=1496793359]
 
 [node name="BroadMoonLight" type="PointLight2D" parent="." unique_id=687514520]
-position = Vector2(360, 640)
+position = Vector2(270, 428)
 enabled = false
 color = Color(1, 0.95, 0.9, 1)
 texture = SubResource("GradientTexture_light")

@@ -17,7 +17,9 @@ const REFERENCE_SIZE := Vector2(1080.0, 1920.0)
 @onready var _wall_shadow: Sprite2D = $WallShadow
 @onready var _wall_paper: Sprite2D = $WallPaper
 @onready var _toilet_paper: Sprite2D = $ToiletPaper
-var _layout_signature := Vector2.ZERO
+# The default playfield layout is authored in the scene. Only rewrite it after
+# the viewport changes from the saved 540x960 starting size.
+var _layout_signature := Vector2(540.0, 960.0)
 
 
 func _ready() -> void:

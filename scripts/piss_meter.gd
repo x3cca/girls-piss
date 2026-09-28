@@ -23,11 +23,7 @@ var _depletion_announced := false
 
 @onready var _fill: TextureProgressBar = $Fill
 @onready var _liquid: TextureRect = $Liquid
-@onready var _frame: Sprite2D = $Frame
-@onready var _lemon: Sprite2D = $Lemon
-@onready var _drip_one: Sprite2D = $DripOne
-@onready var _drip_two: Sprite2D = $DripTwo
-var _layout_signature := Vector2.ZERO
+var _layout_signature := Vector2(540.0, 960.0)
 var _rest_position := Vector2.ZERO
 var _hidden_position := Vector2.ZERO
 var _meter_revealed := false
@@ -36,7 +32,7 @@ var _show_tween: Tween
 
 func _ready() -> void:
 	time_remaining = duration_seconds * clampf(starting_value, 0.0, 1.0)
-	_layout()
+	_update_layout_metrics(get_viewport().get_visible_rect().size)
 	_update_fill()
 	visible = false
 	set_process(true)
@@ -120,6 +116,17 @@ func _layout() -> void:
 	if viewport_size == _layout_signature:
 		return
 	_layout_signature = viewport_size
+	_update_layout_metrics(viewport_size)
+	position = _rest_position if _meter_revealed else _hidden_position
+	scale = Vector2(
+		viewport_size.x / REFERENCE_SIZE.x,
+		viewport_size.y / REFERENCE_SIZE.y,
+	)
+
+
+func _update_layout_metrics(viewport_size: Vector2) -> void:
+	if viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
+		return
 	var composition_scale := Vector2(
 		viewport_size.x / REFERENCE_SIZE.x,
 		viewport_size.y / REFERENCE_SIZE.y,
@@ -129,8 +136,6 @@ func _layout() -> void:
 		-(METER_BOUNDS_RIGHT + METER_SLIDE_MARGIN) * composition_scale.x,
 		_rest_position.y,
 	)
-	position = _rest_position if _meter_revealed else _hidden_position
-	scale = composition_scale
 
 
 func _reveal_meter() -> void:
@@ -151,9 +156,11 @@ func _reveal_meter() -> void:
 
 
 func _hide_meter() -> void:
+	var was_revealed := _meter_revealed
 	_meter_revealed = false
 	if _show_tween:
 		_show_tween.kill()
 		_show_tween = null
 	visible = false
-	position = _hidden_position
+	if was_revealed:
+		position = _hidden_position

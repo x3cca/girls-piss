@@ -49,6 +49,7 @@ var _shake_rotation := 0.0
 var _pound_elapsed := 0.0
 var _next_pound_index := 0
 var _resting_rotations: Dictionary = { }
+var _warning_layout_size := Vector2(540.0, 960.0)
 
 
 func _ready() -> void:
@@ -60,7 +61,6 @@ func _ready() -> void:
 		orange_warning: orange_warning.rotation,
 		red_warning: red_warning.rotation,
 	}
-	_layout_warnings()
 
 
 func _process(delta: float) -> void:
@@ -70,7 +70,8 @@ func _process(delta: float) -> void:
 func process_frame(delta: float) -> void:
 	_advance_entrance_shake(maxf(delta, 0.0))
 	_advance_pound_timing(maxf(delta, 0.0))
-	_layout_warnings()
+	if _active_warning != 0 and get_viewport_rect().size != _warning_layout_size:
+		_layout_warnings()
 	if _active_warning == 0:
 		return
 	_remaining = maxf(_remaining - maxf(delta, 0.0), 0.0)
@@ -167,10 +168,10 @@ func get_warning_rect(strike: int) -> Rect2:
 	if not is_instance_valid(warning):
 		return Rect2()
 	var corners := [
-		warning.to_global(Vector2.ZERO),
-		warning.to_global(Vector2(warning.size.x, 0.0)),
-		warning.to_global(warning.size),
-		warning.to_global(Vector2(0.0, warning.size.y)),
+		warning.get_global_transform() * Vector2.ZERO,
+		warning.get_global_transform() * Vector2(warning.size.x, 0.0),
+		warning.get_global_transform() * warning.size,
+		warning.get_global_transform() * Vector2(0.0, warning.size.y),
 	]
 	var bounds := Rect2(corners[0], Vector2.ZERO)
 	for corner in corners.slice(1):
@@ -234,6 +235,7 @@ func _layout_warnings() -> void:
 	var viewport_size := get_viewport_rect().size
 	if viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
 		return
+	_warning_layout_size = viewport_size
 	var bubble_width := clampf(
 		viewport_size.x * bubble_width_ratio,
 		min_bubble_width,

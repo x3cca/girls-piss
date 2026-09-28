@@ -216,8 +216,9 @@ func _handle_tools_call(params: Dictionary, req_id: Variant) -> Variant:
 		)
 
 	var provider = _provider_map[name]
+	var is_node_provider := provider is MCPNodeToolProviderBase
 
-	if not provider.has_method("execute"):
+	if not is_node_provider and not provider.has_method("execute"):
 		return MCPTypes.make_error_response(
 			req_id,
 			MCPTypes.ErrorCode.INTERNAL_ERROR,
@@ -226,8 +227,11 @@ func _handle_tools_call(params: Dictionary, req_id: Variant) -> Variant:
 
 	# Call execute — may return Dictionary (sync) or awaitable (coroutine)
 	var result
-	if provider is MCPNodeToolProviderBase:
-		result = provider.execute_tool(name, arguments)
+	if is_node_provider:
+		# Node providers can implement async tools. Dispatch dynamically so a
+		# coroutine can be returned to the async resolver without GDScript
+		# rejecting a direct call that omits `await`.
+		result = provider.call("execute_tool", name, arguments)
 	else:
 		result = provider.execute(arguments)
 
@@ -237,7 +241,7 @@ func _handle_tools_call(params: Dictionary, req_id: Variant) -> Variant:
 
 	# Async result (coroutine) — schedule resolution, return 202 Accepted
 	_pending_async_results[name] = { "req_id": req_id, "coro": result }
-	_resolve_async(name)
+	call_deferred("_resolve_async", name)
 	return null
 
 

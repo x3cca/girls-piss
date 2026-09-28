@@ -1,5 +1,5 @@
 @tool
-## Runtime tool provider — async tools using the runtime debugger bridge.
+## Runtime tool provider — two-step scene snapshots and expression evaluation.
 class_name RuntimeProvider
 extends MCPNodeToolProviderBase
 
@@ -42,6 +42,8 @@ func get_definitions() -> Array:
 						"type": "number",
 						"description": "Timeout in ms (default 3000)",
 					},
+					"session_id": { "type": "number" },
+					"request_id": { "type": "number" },
 				},
 				"required": [],
 			},
@@ -53,9 +55,9 @@ func get_definitions() -> Array:
 func execute_tool(tool_name: String, params: Dictionary) -> Dictionary:
 	match tool_name:
 		"get_runtime_scene_structure":
-			return await _runtime_scene(params)
+			return _runtime_scene(params)
 		"evaluate_runtime":
-			return await _eval_runtime(params)
+			return _eval_runtime(params)
 	return _error("Unknown tool: %s" % tool_name)
 
 
@@ -63,34 +65,17 @@ func _runtime_scene(params: Dictionary) -> Dictionary:
 	var rb = _get_runtime_bridge()
 	if rb == null:
 		return _error("Runtime debugger bridge not available. Ensure the project is running.")
-	var timeout := int(params.get("timeout_ms", 3000))
-	if timeout < 100:
-		timeout = 100
-	elif timeout > 5000:
-		timeout = 5000
-
 	var req = rb.request_runtime_scene_snapshot()
 	if req.has("error"):
 		return _ok(req)
 	var sid: int = req.get("session_id", -1)
-	var bv: int = req.get("baseline_version", 0)
-	if not get_tree():
-		return _error("Scene tree unavailable for polling.")
-
-	var dl := Time.get_ticks_msec() + timeout
-	var snap: Dictionary = { }
-	while Time.get_ticks_msec() <= dl:
-		if rb.has_new_runtime_snapshot(sid, bv):
-			var opts := {
-				"include_properties": params.get("include_properties", false),
-				"include_scripts": params.get("include_scripts", false),
-			}
-			snap = rb.build_runtime_snapshot(sid, opts)
-			if not snap.is_empty():
-				break
-		await get_tree().process_frame
+	var opts := {
+		"include_properties": params.get("include_properties", false),
+		"include_scripts": params.get("include_scripts", false),
+	}
+	var snap: Dictionary = rb.build_runtime_snapshot(sid, opts)
 	if snap.is_empty():
-		return _ok({ "error": "Timed out waiting for runtime scene data." })
+		return _ok({ "pending": true, "session_id": sid, "message": "Runtime snapshot requested; call again shortly." })
 	return _ok(snap)
 
 
@@ -98,6 +83,15 @@ func _eval_runtime(params: Dictionary) -> Dictionary:
 	var rb = _get_runtime_bridge()
 	if rb == null:
 		return _ok({ "error": "Runtime bridge not available. Ensure the project is running." })
+	if params.has("session_id") and params.has("request_id"):
+		var sid := int(params.get("session_id", -1))
+		var rid := int(params.get("request_id", -1))
+		if rb.has_eval_result(sid, rid):
+			var response: Dictionary = rb.take_eval_result(sid, rid)
+			if not response.get("success", true) and not response.has("error"):
+				response["error"] = "Runtime evaluation failed."
+			return _ok(response)
+		return _ok({ "pending": true, "session_id": sid, "request_id": rid })
 
 	var expr := ""
 	if params.has("expression"):
@@ -112,12 +106,6 @@ func _eval_runtime(params: Dictionary) -> Dictionary:
 		opts["node_path"] = str(params.get("node_path"))
 	opts["capture_prints"] = _coerce(params.get("capture_prints"), true)
 
-	var timeout := int(params.get("timeout_ms", 3000))
-	if timeout < 100:
-		timeout = 100
-	elif timeout > 5000:
-		timeout = 5000
-
 	var req = rb.evaluate_runtime_expression(expr, opts)
 	if req.has("error"):
 		return _ok(req)
@@ -125,26 +113,7 @@ func _eval_runtime(params: Dictionary) -> Dictionary:
 	var rid: int = req.get("request_id", -1)
 	if sid < 0 or rid < 0:
 		return _ok({ "error": "Failed to enqueue runtime evaluation." })
-	if not get_tree():
-		return _ok({ "error": "Scene tree unavailable." })
-
-	var dl := Time.get_ticks_msec() + timeout
-	var resp: Dictionary = { }
-	while Time.get_ticks_msec() <= dl:
-		if rb.has_eval_result(sid, rid):
-			resp = rb.take_eval_result(sid, rid)
-			;break
-		await get_tree().process_frame
-	if resp.is_empty():
-		return _ok(
-			{
-				"error": "Timed out waiting for runtime evaluation.",
-				"hint": "Ensure the running project registers mcp_eval debugger capture.",
-			},
-		)
-	if not resp.get("success", true) and not resp.has("error"):
-		resp["error"] = "Runtime evaluation failed."
-	return _ok(resp)
+	return _ok({ "pending": true, "session_id": sid, "request_id": rid })
 
 
 func _coerce(v, d: bool) -> bool:

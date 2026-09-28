@@ -31,7 +31,7 @@ signal volume_pointer_changed(active: bool)
 @onready var _back_shadow: Sprite2D = $BackShadow
 @onready var _back: Sprite2D = $Back
 @onready var _volume_hitbox: Control = $VolumeHitbox
-var _layout_signature := Vector2.ZERO
+var _layout_signature := Vector2(540.0, 960.0)
 var _volume_level := MAX_VOLUME_LEVEL
 var _master_bus_index := -1
 var _wobble_tween: Tween

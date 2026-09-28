@@ -10,6 +10,16 @@
 script = ExtResource("2_level_1")
 draw_neutral_canvas = false
 
+[node name="DepthMap" parent="." index="1" unique_id=1742420001]
+debug_visualization = false
+
+[node name="DepthEnvironment" parent="." index="2" unique_id=1742420002]
+visible = false
+
+[node name="PissToilet" parent="." index="3" unique_id=1742420003]
+position = Vector2(270, 600)
+scale = Vector2(0.625, 0.625)
+
 [node name="NegativeZone01" parent="." index="7" unique_id=2103637511]
 visible = false
 normalized_points = PackedVector2Array()
@@ -19,6 +29,9 @@ show_zone = false
 visible = false
 normalized_points = PackedVector2Array()
 show_zone = false
+
+[node name="BroadMoonLight" parent="." index="12" unique_id=687514520]
+position = Vector2(270, 542.4)
 
 [node name="Level1Background" parent="." index="16" unique_id=980382921 instance=ExtResource("3_background")]
 

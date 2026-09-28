@@ -38,6 +38,7 @@ var target_offsets := PackedVector2Array(
 
 var randomized_target_textures: Array[Texture2D] = []
 var target_points := PackedVector2Array()
+var _toilet_layout_size := Vector2(540.0, 960.0)
 
 
 func _ready() -> void:
@@ -126,15 +127,16 @@ func _layout_level1() -> void:
 	if viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
 		return
 	var toilet := get_node_or_null("PissToilet") as PissToilet
+	var viewport_changed := viewport_size != _toilet_layout_size
 	if toilet:
-		# The raw toilet art is authored for the 1080x1920 reference. The complete
-		# toilet composition is intentionally 25% larger in the play screen.
-		# Keep the drain and the first target visually centered when the viewport
-		# changes.
-		toilet.position = Vector2(viewport_size.x * 0.5, viewport_size.y * 0.625)
-		var art_scale := viewport_size.x / 1080.0 * TOILET_COMPOSITION_SCALE
-		toilet.scale = Vector2.ONE * art_scale
-		toilet.apply_layout()
+		if viewport_changed:
+			# The scene stores the live 540x960 starting transform. Recalculate it
+			# only when the playfield is resized.
+			_toilet_layout_size = viewport_size
+			toilet.position = Vector2(viewport_size.x * 0.5, viewport_size.y * 0.625)
+			var art_scale := viewport_size.x / 1080.0 * TOILET_COMPOSITION_SCALE
+			toilet.scale = Vector2.ONE * art_scale
+			toilet.apply_layout()
 		var target_local_points := PackedVector2Array()
 		for offset in target_offsets:
 			target_local_points.append(toilet.get_bowl_anchor_local() + offset)
@@ -155,4 +157,5 @@ func _layout_level1() -> void:
 		shape_trace.target_center_position = toilet.get_bowl_anchor_global()
 	else:
 		target_points = PackedVector2Array()
-	_align_bowl_light()
+	if viewport_changed:
+		_align_bowl_light()
