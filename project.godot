@@ -23,6 +23,7 @@ default_bus_layout="res://audio/default_bus_layout.tres"
 [autoload]
 
 AudioResources="*res://scripts/audio_preloader.gd"
+MCPInputHandler="*res://addons/godot_mcp/mcp/mcp_input_handler.gd"
 
 [display]
 

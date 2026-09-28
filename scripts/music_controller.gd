@@ -12,6 +12,7 @@ signal beat_started(beat_index: int, strength: float)
 @export_range(-24.0, 0.0, 0.5) var room_volume_db := 0.0
 @export_range(-24.0, 0.0, 0.5) var oomph_volume_db := 0.0
 @export_range(-24.0, 0.0, 0.5) var gameplay_volume_db := 0.0
+@export_range(0.0, 3.0, 0.05) var gameplay_crossfade_seconds := 0.6
 @export_group("Music response")
 @export_range(0.0, 1.0, 0.05) var oomph_shake_scale := 0.5
 @export_range(0.0, 1.0, 0.05) var gameplay_shake_scale := 1.0
@@ -30,6 +31,7 @@ var _active_player: AudioStreamPlayer
 var _active_shake_scale := 0.0
 var _last_playback_position := -1.0
 var _last_beat_index := -1
+var _crossfade_tween: Tween
 
 
 func _ready() -> void:
@@ -137,9 +139,9 @@ func set_pissing(active: bool) -> void:
 	if not _gameplay_music_started:
 		return
 	# The bass-boosted mix is a complete peeing track, not an additive bus
-	# layer. Keep exactly one gameplay track audible so the unified Master bus
-	# does not change the intended balance.
-	_switch_to(gameplay_player if active else oomph_player)
+	# layer. Crossfade between complete mixes while keeping their playback phase
+	# aligned, so input changes do not restart the music.
+	_crossfade_to(gameplay_player if active else oomph_player)
 
 
 func get_shake_scale() -> float:
@@ -155,6 +157,9 @@ func _set_looping(player: AudioStreamPlayer) -> void:
 
 
 func _switch_to(target: AudioStreamPlayer, position := -1.0) -> void:
+	if _crossfade_tween and _crossfade_tween.is_running():
+		_crossfade_tween.kill()
+	_crossfade_tween = null
 	if target == _active_player and target.playing:
 		return
 
@@ -172,6 +177,69 @@ func _switch_to(target: AudioStreamPlayer, position := -1.0) -> void:
 	target.play(start_position)
 	_active_player = target
 	_active_shake_scale = _shake_scale_for(target)
+
+
+func _crossfade_to(target: AudioStreamPlayer) -> void:
+	if target == _active_player and target.playing:
+		return
+	if _crossfade_tween and _crossfade_tween.is_running():
+		_crossfade_tween.kill()
+
+	var start_position := 0.0
+	if is_instance_valid(_active_player) and _active_player.playing:
+		start_position = _active_player.get_playback_position()
+	if not target.playing:
+		var target_length := target.stream.get_length() if target.stream else 0.0
+		if target_length > 0.0:
+			start_position = fmod(start_position, target_length)
+		target.volume_db = SILENT_VOLUME_DB
+		target.play(start_position)
+
+	_active_player = target
+	_active_shake_scale = _shake_scale_for(target)
+
+	var players: Array[AudioStreamPlayer] = [oomph_player, gameplay_player]
+	var start_gains: Dictionary = {}
+	for player in players:
+		start_gains[player] = db_to_linear(player.volume_db) if player.playing else 0.0
+
+	if gameplay_crossfade_seconds <= 0.0:
+		_finish_crossfade(target, players)
+		return
+
+	_crossfade_tween = create_tween()
+	_crossfade_tween.tween_method(
+		_apply_crossfade.bind(start_gains, target),
+		0.0,
+		1.0,
+		gameplay_crossfade_seconds,
+	)
+	_crossfade_tween.tween_callback(_finish_crossfade.bind(target, players))
+
+
+func _apply_crossfade(
+		progress: float,
+		start_gains: Dictionary,
+		target: AudioStreamPlayer,
+) -> void:
+	for player in [oomph_player, gameplay_player]:
+		var from_gain: float = start_gains[player]
+		var to_gain := db_to_linear(_volume_for(target)) if player == target else 0.0
+		var gain := lerpf(from_gain, to_gain, progress)
+		player.volume_db = linear_to_db(maxf(gain, db_to_linear(SILENT_VOLUME_DB)))
+
+
+func _finish_crossfade(
+		target: AudioStreamPlayer,
+		players: Array[AudioStreamPlayer],
+) -> void:
+	for player in players:
+		if player == target:
+			player.volume_db = _volume_for(target)
+		else:
+			player.stop()
+			player.volume_db = SILENT_VOLUME_DB
+	_crossfade_tween = null
 
 
 func _stop_other_players(keep: AudioStreamPlayer) -> void:
