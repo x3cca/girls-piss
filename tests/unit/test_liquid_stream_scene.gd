@@ -60,8 +60,9 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 	assert_null(instance.get_node_or_null("WettablePlot02"))
 	assert_null(instance.get_node_or_null("WettablePlot03"))
 	assert_not_null(instance.get_node_or_null("BroadMoonLight"))
-	var music_controller := instance.get_node_or_null("MusicController") as MusicController
+	var music_controller := (instance as Main).music_controller
 	assert_not_null(music_controller)
+	assert_eq(music_controller.get_parent(), GameAudio)
 	if music_controller:
 		var room_music := music_controller.get_node("Room") as AudioStreamPlayer
 		var oomph_music := music_controller.get_node("Oomph") as AudioStreamPlayer
@@ -161,7 +162,8 @@ func test_liquid_stream_scene_builds_playable_nodes() -> void:
 func test_music_controller_uses_one_track_for_each_music_state() -> void:
 	var instance := SMOKE_TEST_SCENE.instantiate()
 	add_child_autofree(instance)
-	var music_controller := instance.get_node("MusicController") as MusicController
+	(instance as Main).music_controller.gameplay_crossfade_seconds = 0.0
+	var music_controller := (instance as Main).music_controller
 	var room_music := music_controller.get_node("Room") as AudioStreamPlayer
 	var oomph_music := music_controller.get_node("Oomph") as AudioStreamPlayer
 	var gameplay_music := music_controller.get_node("Gameplay") as AudioStreamPlayer
@@ -209,7 +211,7 @@ func test_music_controller_uses_one_track_for_each_music_state() -> void:
 func test_music_controller_emits_beats_from_audio_position() -> void:
 	var instance := SMOKE_TEST_SCENE.instantiate()
 	add_child_autofree(instance)
-	var music_controller := instance.get_node("MusicController") as MusicController
+	var music_controller := (instance as Main).music_controller
 	var beat_indices: Array[int] = []
 	music_controller.beat_started.connect(
 		func(beat_index: int, _strength: float): beat_indices.append(beat_index),
@@ -227,7 +229,7 @@ func test_spray_sound_loops_while_the_player_is_peeing() -> void:
 	instance.skip_title_screen = true
 	instance.spray_fade_duration = 0.1
 	add_child_autofree(instance)
-	var spray_sound := instance.get_node("SpraySound") as AudioStreamPlayer
+	var spray_sound := instance._spray_sound as AudioStreamPlayer
 	var input_controller := instance.input_controller
 	input_controller.set_process(false)
 
@@ -351,27 +353,24 @@ func test_strike_pound_shake_scales_with_warning_level() -> void:
 	assert_gt(heavy_strength, medium_strength)
 
 
-func test_title_is_active_and_gameplay_is_gated_by_default() -> void:
+func test_gameplay_is_gated_until_an_attempt_begins() -> void:
 	var instance := SMOKE_TEST_SCENE.instantiate()
 	add_child_autofree(instance)
 	var input_controller := instance.get_node("InputController") as InputController
 	var hud := instance.get_node("HUDLayer/HUD") as StreamHUD
-	var title := instance.get_node("TitleLayer/TitleScreen") as TitleScreen
 
-	assert_true(title.is_active())
+	assert_false(instance.gameplay_started)
 	assert_false(input_controller.is_gameplay_input_enabled())
 	assert_false(hud.gameplay_controls_visible)
 
 
-func test_skip_title_screen_starts_directly_and_consumes_initial_input() -> void:
+func test_direct_level_start_enables_gameplay_input() -> void:
 	var instance := SMOKE_TEST_SCENE.instantiate() as Main
 	instance.skip_title_screen = true
 	add_child_autofree(instance)
 	var input_controller := instance.get_node("InputController") as InputController
 	var hud := instance.get_node("HUDLayer/HUD") as StreamHUD
-	var title := instance.get_node("TitleLayer/TitleScreen") as TitleScreen
 
-	assert_false(title.is_active())
 	assert_true(input_controller.is_gameplay_input_enabled())
 	assert_true(hud.gameplay_controls_visible)
 	assert_true(instance.gameplay_started)
@@ -384,44 +383,43 @@ func test_skip_title_screen_starts_directly_and_consumes_initial_input() -> void
 	assert_true(input_controller.is_pissing())
 
 
-func test_title_start_input_is_consumed_before_gameplay_begins() -> void:
-	var instance := SMOKE_TEST_SCENE.instantiate() as Main
-	add_child_autofree(instance)
-	var input_controller := instance.get_node("InputController") as InputController
-	var hud := instance.get_node("HUDLayer/HUD") as StreamHUD
-	var title := instance.get_node("TitleLayer/TitleScreen") as TitleScreen
-	var music_controller := instance.get_node("MusicController") as MusicController
-	var room_music := music_controller.get_node("Room") as AudioStreamPlayer
-	var oomph_music := music_controller.get_node("Oomph") as AudioStreamPlayer
-	var gameplay_music := music_controller.get_node("Gameplay") as AudioStreamPlayer
-
+func test_title_start_input_is_consumed_before_the_level() -> void:
+	var app := preload("res://scenes/app.tscn").instantiate() as App
+	add_child_autofree(app)
+	var title := app._title_screen as TitleScreen
+	var composition := title.get_node("Overlay/TitleComposition") as TitleComposition
+	composition.start_flash_duration = 0.01
+	composition.start_flash_pause = 0.01
+	title.exit_duration = 0.01
 	var key := InputEventKey.new()
 	key.physical_keycode = KEY_SPACE
 	key.pressed = true
-	input_controller.handle_input_event(key)
+	app._input(key)
 
 	assert_true(title.is_start_locked())
-	assert_false(input_controller.is_pissing())
-	assert_true(hud.input_prompt.is_showing())
-	assert_eq(hud.input_prompt.current_source, InputPrompt.PromptSource.KEYBOARD)
-	await get_tree().create_timer(0.9).timeout
-	assert_true(instance.gameplay_started)
-	assert_false(input_controller.is_pissing())
-	assert_false(room_music.playing)
-	assert_true(oomph_music.playing)
-	assert_false(gameplay_music.playing)
+	assert_null(app._active_level)
+	await get_tree().create_timer(0.2).timeout
+	assert_null(app._main_menu)
+	assert_true(app._active_level is Level1)
+	assert_false((app._active_level as Level1).input_controller.is_pissing())
 
 
 func test_mouse_start_shows_mouse_controls_immediately() -> void:
-	var instance := SMOKE_TEST_SCENE.instantiate() as Main
-	add_child_autofree(instance)
-	var input_controller := instance.get_node("InputController") as InputController
-	var hud := instance.get_node("HUDLayer/HUD") as StreamHUD
+	var app := preload("res://scenes/app.tscn").instantiate() as App
+	add_child_autofree(app)
 
 	var mouse := InputEventMouseButton.new()
 	mouse.button_index = MOUSE_BUTTON_LEFT
 	mouse.pressed = true
-	input_controller.handle_input_event(mouse)
+	app._input(mouse)
+	assert_eq(app._last_input_source, InputController.AimSource.MOUSE)
+	assert_null(app._active_level)
+	app._title_screen.skip_to_gameplay(InputController.AimSource.MOUSE)
+	await get_tree().process_frame
+	assert_null(app._main_menu)
+	var level := app._active_level as Main
+	var hud := level.hud as StreamHUD
 
 	assert_true(hud.input_prompt.is_showing())
 	assert_eq(hud.input_prompt.current_source, InputPrompt.PromptSource.MOUSE)
+	assert_false(level.input_controller.is_pissing())

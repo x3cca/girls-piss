@@ -394,16 +394,20 @@ func _ensure_surface_states() -> void:
 	for surface in SURFACES:
 		if _surface_states.has(surface):
 			continue
-		_surface_states[surface] = {
-			"active": false,
-			"age": 0.0,
-			"strength": 0.0,
-			"position": Vector2.ZERO,
-			"uv": Vector2(0.5, 0.5),
-			"ripple_uv": Vector2(0.5, 0.5),
-			"ripple_age": 0.0,
-			"ripple_strength": 0.0,
-		}
+		_surface_states[surface] = _make_surface_state()
+
+
+func _make_surface_state() -> Dictionary:
+	return {
+		"active": false,
+		"age": 0.0,
+		"strength": 0.0,
+		"position": Vector2.ZERO,
+		"uv": Vector2(0.5, 0.5),
+		"ripple_uv": Vector2(0.5, 0.5),
+		"ripple_age": 0.0,
+		"ripple_strength": 0.0,
+	}
 
 
 func _resolve_surface_nodes() -> void:
@@ -449,16 +453,7 @@ func _prepare_materials() -> void:
 		_prepare_stain_map(surface, node)
 		_set_common_material_parameters(surface, material)
 		if not _surface_states.has(surface):
-			_surface_states[surface] = {
-				"active": false,
-				"age": 0.0,
-				"strength": 0.0,
-				"position": Vector2.ZERO,
-				"uv": Vector2(0.5, 0.5),
-				"ripple_uv": Vector2(0.5, 0.5),
-				"ripple_age": 0.0,
-				"ripple_strength": 0.0,
-			}
+			_surface_states[surface] = _make_surface_state()
 		_apply_surface_state(surface, _surface_states[surface])
 
 

@@ -28,7 +28,7 @@ func test_game_over_starts_hidden_and_uses_authored_failure_assets() -> void:
 	await get_tree().process_frame
 
 	assert_false(game_over.visible)
-	assert_eq(game_over.layer, -1)
+	assert_eq(game_over.layer, 2)
 	assert_eq(
 		(game_over.get_node("Backdrop") as ColorRect).size,
 		get_viewport().get_visible_rect().size,
@@ -75,7 +75,7 @@ func test_game_over_starts_hidden_and_uses_authored_failure_assets() -> void:
 	assert_eq(game_over.get_fbi_voice(), FBI_VOICE)
 	assert_eq(game_over.get_door_smash(), DOOR_SMASH)
 	assert_eq(game_over.get_door_kick(), DOOR_KICK)
-	assert_lt(game_over.get_node("DoorSmash").volume_db, -70.0)
+	assert_lt(game_over._door_smash.volume_db, -70.0)
 	var door_bang := game_over.get_node("RaidOverlay/DoorBang") as AnimatedSprite2D
 	assert_almost_eq(door_bang.rotation, PI * 0.5, 0.00001)
 	assert_eq(door_bang.sprite_frames.get_frame_count(&"default"), 3)
@@ -131,11 +131,11 @@ func test_raid_knocks_start_with_fbi_voice() -> void:
 	assert_true(action_lines.visible)
 	assert_eq(door_bang.frame, 0)
 	assert_eq(knock_count[0], 1)
-	assert_true(game_over.get_node("FbiVoice").playing)
-	assert_false(game_over.get_node("DoorSmash").playing)
+	assert_true(game_over._fbi_voice.playing)
+	assert_false(game_over._door_smash.playing)
 
 	await get_tree().create_timer(game_over.door_smash_delay + 0.1).timeout
-	assert_true(game_over.get_node("DoorSmash").playing)
+	assert_true(game_over._door_smash.playing)
 
 	game_over.hide_card()
 	assert_false(action_lines.visible)

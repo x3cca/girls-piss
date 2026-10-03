@@ -1,7 +1,7 @@
 extends GutTest
 
 func test_web_audio_preloader_keeps_all_runtime_streams_ready() -> void:
-	assert_eq(AudioPreloader.STREAMS.size(), 15)
+	assert_eq(AudioPreloader.STREAMS.size(), 16)
 
 	var expected_paths := [
 		"res://assets/audio/beer_can_open_and_drink.ogg",
@@ -19,12 +19,15 @@ func test_web_audio_preloader_keeps_all_runtime_streams_ready() -> void:
 		"res://assets/audio/zombie_disko_bass_boosted.ogg",
 		"res://assets/audio/zombie_disko_oomph.ogg",
 		"res://assets/audio/zombie_disko_room.ogg",
+		"res://assets/audio/spray_loop.ogg",
 	]
 
 	for index in AudioPreloader.STREAMS.size():
 		var stream := AudioPreloader.STREAMS[index]
 		assert_not_null(stream)
 		assert_eq(stream.resource_path, expected_paths[index])
+		if stream.resource_path in AudioPreloader.LOOPING_STREAM_PATHS:
+			assert_true((stream as AudioStreamOggVorbis).loop)
 
 	var preloader := get_tree().root.get_node_or_null("AudioResources")
 	assert_not_null(preloader)

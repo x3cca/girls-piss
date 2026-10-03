@@ -56,9 +56,9 @@ const RETRY_TEXT_TWO_DESIGN_SIZE := Vector2(556.0, 197.0)
 @onready var _piss_again_text_two: TextureRect = $Presentation/PissAgainText2
 @onready var _action_lines: ScreenOverlayEffect = $RaidOverlay/ActionLines
 @onready var _door_bang: AnimatedSprite2D = $RaidOverlay/DoorBang
-@onready var _fbi_voice: AudioStreamPlayer = $FbiVoice
-@onready var _door_smash: AudioStreamPlayer = $DoorSmash
-@onready var _door_kick: AudioStreamPlayer = $DoorKick
+@onready var _fbi_voice: AudioStreamPlayer = GameAudio.create_player($FbiVoice, self)
+@onready var _door_smash: AudioStreamPlayer = GameAudio.create_player($DoorSmash, self)
+@onready var _door_kick: AudioStreamPlayer = GameAudio.create_player($DoorKick, self)
 
 var _entry_tween: Tween
 var _retry_tween: Tween
@@ -106,6 +106,17 @@ func _process(_delta: float) -> void:
 
 
 func show_card() -> void:
+	_prepare_card()
+	_set_card_art_visible(false)
+	_start_raid_sequence()
+
+
+func show_standalone_card() -> void:
+	_prepare_card()
+	reveal_card()
+
+
+func _prepare_card() -> void:
 	if _entry_tween:
 		_entry_tween.kill()
 		_entry_tween = null
@@ -114,7 +125,7 @@ func show_card() -> void:
 	visible = true
 	set_process(true)
 	_card_revealed = false
-	_set_card_art_visible(false)
+	_set_card_art_visible(true)
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	_presentation.pivot_offset = get_viewport().get_visible_rect().size * 0.5
@@ -122,7 +133,6 @@ func show_card() -> void:
 	_presentation.scale = Vector2.ONE * entry_start_scale
 	_layout_card_art()
 	_set_retry_affordance_position(_get_retry_entry_offset())
-	_start_raid_sequence()
 
 
 func reveal_card() -> void:

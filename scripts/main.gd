@@ -2,6 +2,10 @@ extends Node2D
 
 class_name Main
 
+signal level_completed
+signal level_failed
+signal failure_presentation_ready
+
 ## Playable portrait-first sample level using the fixed 540x960 playfield.
 ## The stream source is deliberately below the frame: the player controls the
 ## jet, never a visible wand or nozzle.
@@ -15,9 +19,8 @@ class_name Main
 @onready var line_replay: PissLineReplay = $PissLineReplay
 @onready var hud: StreamHUD = $HUDLayer/HUD
 @onready var _hud_layer: CanvasLayer = $HUDLayer
-@onready var title_screen: TitleScreen = $TitleLayer/TitleScreen
-@onready var music_controller: MusicController = $MusicController
-@onready var _spray_sound: AudioStreamPlayer = $SpraySound
+var music_controller: MusicController
+@onready var _spray_sound: AudioStreamPlayer = GameAudio.create_player($SpraySound, self)
 @onready var screen_overlay: ScreenOverlay = $ScreenOverlay
 @onready var _ambient: CanvasModulate = $Ambient
 @onready var surface_effects: SurfaceEffects = get_node_or_null("SurfaceEffects") as SurfaceEffects
@@ -84,8 +87,11 @@ var _active_shake_strength := 0.0
 var _active_shake_duration := 0.0
 var _strike_light_remaining := 0.0
 var gameplay_started := false
+## Attempts remain inactive while the app shell is showing its menu. This is
+## separate from `state`, which describes the gameplay/result presentation.
+var attempt_active := false
+var _result_signal_emitted := false
 var initial_input_source := InputController.AimSource.KEYBOARD
-var _start_prompt_shown := false
 ## A negative-zone overlap is a strike on the first committed endpoint frame.
 ## Keep this exported for scene/API compatibility, but default it to zero so
 ## even a brief touch is fully sensitive.
@@ -117,6 +123,8 @@ var remaining_strikes: int:
 
 
 func _ready() -> void:
+	if not is_instance_valid(music_controller):
+		music_controller = GameAudio.start_level_music()
 	# WettableTarget remains a reusable scene, but the tracing level has no soak
 	# objectives or rectangular target plots.
 	targets = []
@@ -148,16 +156,10 @@ func _ready() -> void:
 	line_replay.replay_finished.connect(_on_replay_finished)
 	_wire_hud()
 	_sync_water_to_piss_meter()
-	if not input_controller.input_detected.is_connected(_on_input_detected):
-		input_controller.input_detected.connect(_on_input_detected)
 	if is_instance_valid(level_1_chrome) and not level_1_chrome.volume_pointer_changed.is_connected(
 		_on_volume_pointer_changed,
 	):
 		level_1_chrome.volume_pointer_changed.connect(_on_volume_pointer_changed)
-	if not title_screen.transition_completed.is_connected(_on_title_transition_completed):
-		title_screen.transition_completed.connect(_on_title_transition_completed)
-	if not title_screen.start_requested.is_connected(_on_title_start_requested):
-		title_screen.start_requested.connect(_on_title_start_requested)
 	if not hud.game_over.raid_sequence_finished.is_connected(
 		_on_game_over_raid_sequence_finished,
 	):
@@ -180,12 +182,12 @@ func _ready() -> void:
 	_layout_world()
 	hud.set_strikes(strike_count)
 	_refresh_reticle_preview()
+	input_controller.set_gameplay_input_enabled(false)
+	input_controller.set_process_unhandled_input(false)
+	hud.set_gameplay_controls_visible(false)
+	stream.set_live_enabled(false)
 	if skip_title_screen:
 		start_gameplay_immediately()
-	else:
-		input_controller.set_gameplay_input_enabled(false)
-		hud.set_gameplay_controls_visible(false)
-		title_screen.show_title()
 	queue_redraw()
 
 
@@ -198,7 +200,7 @@ func _process(delta: float) -> void:
 		_frame_delta,
 	)
 	_advance_pulse_feedback(delta)
-	if state == PLAYING:
+	if attempt_active and state == PLAYING:
 		_elapsed += delta
 	_world_size = get_viewport().get_visible_rect().size
 	if state == PLAYING:
@@ -223,7 +225,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _debug_instant_strike() -> void:
-	if state != PLAYING:
+	if not attempt_active or state != PLAYING:
 		return
 	# Debug strikes intentionally bypass the normal safety grace period so
 	# repeated shortcut presses can exercise consecutive strike states.
@@ -232,7 +234,7 @@ func _debug_instant_strike() -> void:
 
 
 func _debug_instant_win() -> void:
-	if state != PLAYING:
+	if not attempt_active or state != PLAYING:
 		return
 	input_controller.stop_pissing()
 	while state == PLAYING and shape_trace.completed_steps < shape_trace.total_steps:
@@ -247,18 +249,18 @@ func _debug_instant_win() -> void:
 
 func _collect_negative_zones() -> void:
 	negative_zones.clear()
-	for node in get_tree().get_nodes_in_group("negative_zone"):
-		if node is NegativeZone and not negative_zones.has(node):
-			negative_zones.append(node)
-	# This fallback keeps direct script-instantiated zones useful before they have
-	# entered the scene tree group.
-	for child in get_children():
+	_collect_negative_zones_in(self)
+
+
+func _collect_negative_zones_in(parent: Node) -> void:
+	for child in parent.get_children():
 		if child is NegativeZone and not negative_zones.has(child):
 			negative_zones.append(child)
+		_collect_negative_zones_in(child)
 
 
 func _refresh_reticle_preview() -> void:
-	if not is_instance_valid(hud) or not gameplay_started or state != PLAYING:
+	if not is_instance_valid(hud) or not attempt_active or state != PLAYING:
 		return
 	var preview_state := TouchReticle.ReticleState.NEUTRAL
 	var aim_position := input_controller.get_target_position()
@@ -320,59 +322,28 @@ func _wire_hud() -> void:
 	hud.set_gameplay_controls_visible(gameplay_started)
 
 
-func _on_input_detected(source: int) -> void:
-	if gameplay_started or not title_screen.is_active():
-		return
-	if title_screen.request_start(source):
-		initial_input_source = source
-		# The input that starts the title transition is the best indication of the
-		# player's control scheme. Show its prompt while the title fades so the
-		# controls do not wait for the transition to finish.
-		hud.show_start_prompt(source)
-		_start_prompt_shown = true
-
-
-func _on_title_start_requested(_source: int) -> void:
-	music_controller.begin_gameplay()
-
-
 func _on_volume_pointer_changed(active: bool) -> void:
 	input_controller.set_pointer_input_blocked(active)
 	if is_instance_valid(hud):
 		hud.set_aim_pointer_blocked(active)
 
 
-func _on_title_transition_completed(source: int) -> void:
-	initial_input_source = source
-	# The start-request signal normally moves music off the title track before
-	# this transition. Repeat the idempotent handoff here so title completion can
-	# never leave the muted room mix playing if that signal was skipped.
-	music_controller.start_gameplay_immediately()
-	_start_gameplay(initial_input_source)
-
-
 func start_gameplay_immediately() -> void:
-	## Programmatic bypass used by direct-level startup and scene tests.
-	music_controller.start_gameplay_immediately()
-	if title_screen.is_active():
-		title_screen.skip_to_gameplay(InputController.AimSource.KEYBOARD)
-	else:
-		_start_gameplay(initial_input_source)
+	## Compatibility entry point for direct-level startup and scene tests.
+	begin_attempt(initial_input_source)
 
 
-func _start_gameplay(source: int) -> void:
-	if gameplay_started:
+func begin_attempt(source: int) -> void:
+	## Start a fresh attempt after the app shell has added this level to the tree.
+	## A start gesture is consumed by the shell; it never reaches the live stream.
+	if attempt_active:
 		return
-	gameplay_started = true
-	input_controller.reset_input()
-	input_controller.set_target_position(shape_trace.get_checkpoint_position(0))
-	input_controller.set_gameplay_input_enabled(true)
-	input_controller.set_process_unhandled_input(true)
-	input_controller.set_process(true)
-	hud.set_gameplay_controls_visible(true)
-	if not _start_prompt_shown:
-		hud.show_input_prompt(source)
-	_start_prompt_shown = false
+	if source < InputController.AimSource.KEYBOARD or source > InputController.AimSource.CONTROLLER:
+		source = InputController.AimSource.KEYBOARD
+	initial_input_source = source
+	music_controller.start_gameplay_immediately()
+	reset_level()
+	hud.show_input_prompt(initial_input_source)
 
 
 func _on_stream_pulse(amplitude: float) -> void:
@@ -401,7 +372,7 @@ func _begin_screen_shake(strength: float, duration: float, amplitude := 1.0) -> 
 
 
 func _on_music_beat(_beat_index: int, strength: float) -> void:
-	if not gameplay_started or state != PLAYING:
+	if not attempt_active or state != PLAYING:
 		return
 	# LiquidStream owns the beat pulse so its ribbon and the camera shake are
 	# driven by the same event. It emits pulse_triggered even while idle, which
@@ -499,7 +470,7 @@ func _set_effect_lights_enabled(enabled: bool) -> void:
 
 
 func _on_drawing_point_updated(position: Vector2, active: bool) -> void:
-	if state != PLAYING:
+	if not attempt_active or state != PLAYING:
 		return
 	# InputController latches the stream after the first start, so this active
 	# state remains true when the player releases the start control.
@@ -521,7 +492,7 @@ func _on_stream_hold_changed(active: bool) -> void:
 	if is_instance_valid(surface_effects):
 		surface_effects.observe_stream_endpoint(Vector2.ZERO, false)
 	_has_stream_endpoint = false
-	if state == PLAYING:
+	if attempt_active and state == PLAYING:
 		shape_trace.observe_drawing_point(Vector2.ZERO, false, 0.0)
 		stream.cancel_stream()
 
@@ -533,7 +504,7 @@ func evaluate_stream_endpoint(
 ) -> void:
 	## Evaluate the committed stream endpoint. The requested aim position is only
 	## used by _refresh_reticle_preview; it cannot cause gameplay contact here.
-	if state != PLAYING:
+	if not attempt_active or state != PLAYING:
 		return
 	var contact_delta := _frame_delta if delta < 0.0 else maxf(delta, 0.0)
 	_last_stream_endpoint = position
@@ -626,21 +597,16 @@ func _negative_zone_at(position: Vector2) -> NegativeZone:
 func _collect_negative_zones_if_needed() -> void:
 	if not enable_negative_zones:
 		return
-	for node in get_tree().get_nodes_in_group("negative_zone"):
-		if node is NegativeZone and not negative_zones.has(node):
-			negative_zones.append(node)
-	for child in get_children():
-		if child is NegativeZone and not negative_zones.has(child):
-			negative_zones.append(child)
+	_collect_negative_zones_in(self)
 
 
 func _disable_negative_zones() -> void:
 	negative_zones.clear()
-	for node in get_tree().get_nodes_in_group("negative_zone"):
-		if node is NegativeZone:
-			node.show_zone = false
-			node.visible = false
-			node.set_process(false)
+	_collect_negative_zones_in(self)
+	for zone in negative_zones:
+		zone.show_zone = false
+		zone.visible = false
+		zone.set_process(false)
 
 
 func _reset_negative_contact() -> void:
@@ -650,7 +616,8 @@ func _reset_negative_contact() -> void:
 
 func _take_strike() -> void:
 	if (
-			state != PLAYING
+			not attempt_active
+			or state != PLAYING
 			or _strike_cooldown_remaining > 0.0
 			or _final_strike_pending
 	):
@@ -730,7 +697,7 @@ func _show_game_over() -> void:
 
 
 func _on_trace_completed() -> void:
-	if state != PLAYING:
+	if not attempt_active or state != PLAYING:
 		return
 	_reset_pulse_feedback()
 	_set_state(REPLAYING)
@@ -753,6 +720,11 @@ func _on_replay_finished() -> void:
 	if state != REPLAYING:
 		return
 	_set_state(COMPLETE)
+	if _result_signal_emitted:
+		return
+	_result_signal_emitted = true
+	attempt_active = false
+	level_completed.emit()
 
 
 func _on_play_again_pressed() -> void:
@@ -780,14 +752,25 @@ func _sync_water_to_piss_meter() -> void:
 func _on_game_over_raid_sequence_finished() -> void:
 	if state != FAILED:
 		return
+	hud.game_over.play_door_kick()
+	if not failure_presentation_ready.get_connections().is_empty():
+		failure_presentation_ready.emit()
+		return
 	_launch_failed_level()
 
 
 func _launch_failed_level() -> void:
 	if _failure_transition_active:
 		return
+	# A standalone gameplay scene keeps its retry affordance in view. The app
+	# shell listens for the result and owns navigation, so only shell launches
+	# the level out after the authored failure sequence.
+	if level_failed.get_connections().is_empty():
+		_emit_level_failed()
+		return
 	var viewport_size := get_viewport().get_visible_rect().size
 	if viewport_size.x <= 1.0 or viewport_size.y <= 1.0:
+		_emit_level_failed()
 		return
 	_failure_transition_active = true
 	if is_instance_valid(screen_overlay):
@@ -799,7 +782,6 @@ func _launch_failed_level() -> void:
 	# the transform around the viewport center keeps the whole composition
 	# together while it accelerates upward through several full rotations.
 	_apply_failure_launch(0.0)
-	hud.game_over.play_door_kick()
 	_failure_exit_tween = create_tween()
 	_failure_exit_tween.tween_method(
 		_apply_failure_launch,
@@ -807,6 +789,20 @@ func _launch_failed_level() -> void:
 		1.0,
 		failure_exit_duration,
 	).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
+	_failure_exit_tween.finished.connect(_on_failure_exit_finished)
+
+
+func _on_failure_exit_finished() -> void:
+	_failure_exit_tween = null
+	_emit_level_failed()
+
+
+func _emit_level_failed() -> void:
+	if _result_signal_emitted:
+		return
+	_result_signal_emitted = true
+	attempt_active = false
+	level_failed.emit()
 
 
 func _apply_failure_launch(progress: float) -> void:
@@ -832,6 +828,9 @@ func reset_level() -> void:
 		_failure_exit_tween = null
 	_failure_transition_active = false
 	_set_state(PLAYING)
+	attempt_active = true
+	_result_signal_emitted = false
+	gameplay_started = true
 	_final_strike_pending = false
 	_stop_spray_sound()
 	_reset_pulse_feedback()
@@ -937,7 +936,7 @@ func _on_wet_target_hit(
 
 
 func _on_checkpoint_completed(_index: int) -> void:
-	if state != PLAYING:
+	if not attempt_active or state != PLAYING:
 		return
 	hud.play_target_sound()
 	hud.play_success_burst()

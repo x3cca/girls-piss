@@ -132,13 +132,19 @@ func test_level_1_target_slots_are_spaced_and_edge_weighted() -> void:
 	assert_eq(edge_slot_count, level.target_offsets.size() - 1)
 
 
-func test_web_export_uses_level_1_as_the_main_scene() -> void:
+func test_web_export_includes_the_app_and_level_1() -> void:
 	var export_presets := FileAccess.get_file_as_string("res://export_presets.cfg")
-	assert_true(
-		export_presets.contains(
-			'export_files=PackedStringArray("res://scenes/level_1.tscn")',
-		),
-	)
+	assert_true(export_presets.contains('"res://scenes/app.tscn"'))
+	assert_true(export_presets.contains('"res://scenes/level_1.tscn"'))
+	assert_true(export_presets.contains('"res://scenes/credits.tscn"'))
+	assert_true(export_presets.contains('"res://scenes/failure_screen.tscn"'))
+	assert_true(export_presets.contains('"res://scenes/failure_transition.tscn"'))
+	assert_true(export_presets.contains("resources/level_1_definition.tres"))
+	assert_true(export_presets.contains("scripts/stream_ribbon_layer_builder.gd"))
+	assert_eq(ProjectSettings.get_setting("application/run/main_scene"), "res://scenes/app.tscn")
+	var direct_level := load("res://scenes/level_1.tscn").instantiate() as Level1
+	assert_true(direct_level.skip_title_screen)
+	direct_level.free()
 	assert_true(export_presets.contains("resources/materials/item_outline.tres"))
 	assert_true(export_presets.contains("shaders/item_outline.gdshader"))
 	assert_true(export_presets.contains("assets/audio/zombie_disko_oomph.ogg"))
@@ -146,6 +152,31 @@ func test_web_export_uses_level_1_as_the_main_scene() -> void:
 	assert_true(export_presets.contains("assets/art/drive/Pisstank.png"))
 	assert_eq(ProjectSettings.get_setting("display/window/size/viewport_width"), 540)
 	assert_eq(ProjectSettings.get_setting("display/window/size/viewport_height"), 960)
+
+
+func test_run_project_level_starts_with_live_controls() -> void:
+	var level := load("res://scenes/level_1.tscn").instantiate() as Level1
+	add_child_autofree(level)
+	assert_true(level.attempt_active)
+	assert_true(level.gameplay_started)
+	assert_true(level.input_controller.is_gameplay_input_enabled())
+	assert_true(level.hud.input_prompt.is_showing())
+	assert_false(level.has_node("TitleLayer"))
+
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = Vector2(300.0, 350.0)
+	level.input_controller.handle_input_event(click)
+	assert_eq(level.input_controller.get_target_position(), click.position)
+	assert_true(level.input_controller.is_pissing())
+
+	var move_right := InputEventKey.new()
+	move_right.physical_keycode = KEY_D
+	move_right.pressed = true
+	level.input_controller.handle_input_event(move_right)
+	level.input_controller.process_frame(0.1)
+	assert_gt(level.input_controller.get_target_position().x, click.position.x)
 
 
 func test_level_1_floor_and_seat_are_bad_but_wall_and_tank_are_neutral() -> void:
@@ -188,15 +219,15 @@ func test_crosshair_uses_x_face_when_aiming_at_toilet_seat() -> void:
 	)
 
 
-func test_title_composition_keeps_level_1_visible_underneath() -> void:
-	var level := LEVEL_SCENE.instantiate() as Level1
-	add_child_autofree(level)
-
-	var title := level.get_node("TitleLayer/TitleScreen") as TitleScreen
+func test_title_composition_uses_a_presentation_backdrop() -> void:
+	var app := preload("res://scenes/app.tscn").instantiate() as App
+	add_child_autofree(app)
+	var title := app._title_screen as TitleScreen
 	var composition := title.get_node("Overlay/TitleComposition") as TitleComposition
 	assert_true(title.is_active())
 	assert_true(composition.visible)
-	assert_true(level.get_node("Level1Background").visible)
+	assert_true(app.get_node("BackdropWorld").visible)
+	assert_null(app._active_level)
 	assert_eq(title.layer, 20)
 
 
@@ -265,8 +296,8 @@ func test_completion_card_shows_the_kenney_cursor() -> void:
 	assert_true(completion.visible)
 	assert_eq(Input.get_mouse_mode(), Input.MOUSE_MODE_VISIBLE)
 	assert_eq(play_again_button.mouse_default_cursor_shape, Control.CURSOR_ARROW)
-	assert_eq(completion.get_node("WinSound").stream, WIN_SOUND)
-	assert_true(completion.get_node("WinSound").playing)
+	assert_eq(completion._win_sound.stream, WIN_SOUND)
+	assert_true(completion._win_sound.playing)
 
 
 func test_completion_card_plays_the_star_landing_sound() -> void:
@@ -278,7 +309,7 @@ func test_completion_card_plays_the_star_landing_sound() -> void:
 	completion.star_entry_delay = 0.01
 	completion.show_card()
 
-	var star_sound := completion.get_node("StarSound") as AudioStreamPlayer
+	var star_sound := completion._star_sound as AudioStreamPlayer
 	var observed_playing := false
 	for _frame in 30:
 		await get_tree().process_frame

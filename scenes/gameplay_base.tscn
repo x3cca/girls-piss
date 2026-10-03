@@ -1,0 +1,76 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://dij0pqyiaityo" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/liquid_stream.tscn" id="2_stream"]
+[ext_resource type="PackedScene" path="res://scenes/stream_hud.tscn" id="4_hud"]
+[ext_resource type="Script" uid="uid://buquefbu7hq45" path="res://scripts/input_controller.gd" id="5_input"]
+[ext_resource type="PackedScene" path="res://scenes/screen_overlay.tscn" id="7_overlay"]
+[ext_resource type="PackedScene" path="res://scenes/shape_trace.tscn" id="8_trace"]
+[ext_resource type="PackedScene" path="res://scenes/piss_line_recorder.tscn" id="9_recorder"]
+[ext_resource type="PackedScene" path="res://scenes/piss_line_replay.tscn" id="10_replay"]
+[ext_resource type="Script" uid="uid://7hyf0kirxip1" path="res://scripts/depth_map.gd" id="12_depth_map"]
+[ext_resource type="Texture2D" uid="uid://m44oqg56v0ay" path="res://resources/depth_map_baked.png" id="13_depth_texture"]
+[ext_resource type="PackedScene" path="res://scenes/depth_environment.tscn" id="14_depth_environment"]
+[ext_resource type="Script" uid="uid://b4l6kjhnky0xc" path="res://scripts/surface_effects.gd" id="17_surface_effects"]
+[ext_resource type="AudioStream" uid="uid://b55eofxdnymxw" path="res://assets/audio/spray_loop.ogg" id="19_spray_sound"]
+
+[sub_resource type="Gradient" id="Gradient_light"]
+colors = PackedColorArray(1, 1, 1, 0.95, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture_light"]
+gradient = SubResource("Gradient_light")
+width = 256
+height = 256
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[node name="GameplayBase" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="InputController" type="Node" parent="." unique_id=2026477760]
+script = ExtResource("5_input")
+
+[node name="DepthMap" type="Node2D" parent="." unique_id=1742420001]
+z_index = -20
+script = ExtResource("12_depth_map")
+depth_texture = ExtResource("13_depth_texture")
+debug_visualization = true
+
+[node name="DepthEnvironment" parent="." unique_id=1742420002 instance=ExtResource("14_depth_environment")]
+
+[node name="LiquidStream" parent="." unique_id=1204969384 instance=ExtResource("2_stream")]
+source_position = Vector2(270, 1008)
+
+[node name="SurfaceEffects" type="Node" parent="." unique_id=1992168420]
+script = ExtResource("17_surface_effects")
+
+[node name="ShapeTrace" parent="." unique_id=136454311 instance=ExtResource("8_trace")]
+normalized_points = PackedVector2Array(0.5, 0.78, 0.69, 0.71, 0.79, 0.54, 0.74, 0.37, 0.58, 0.27, 0.39, 0.28, 0.25, 0.4, 0.23, 0.58, 0.34, 0.71, 0.52, 0.68, 0.65, 0.57, 0.61, 0.43, 0.49, 0.37, 0.38, 0.45, 0.4, 0.57, 0.52, 0.6, 0.59, 0.51, 0.53, 0.44, 0.48, 0.49)
+closed_path = false
+checkpoint_look_ahead = 3
+target_size = 144.0
+
+[node name="PissLineRecorder" parent="." unique_id=1552256490 instance=ExtResource("9_recorder")]
+
+[node name="PissLineReplay" parent="." unique_id=1262491738 instance=ExtResource("10_replay")]
+
+[node name="Ambient" type="CanvasModulate" parent="." unique_id=1496793359]
+
+[node name="BroadMoonLight" type="PointLight2D" parent="." unique_id=687514520]
+position = Vector2(270, 428)
+enabled = false
+color = Color(1, 0.95, 0.9, 1)
+texture = SubResource("GradientTexture_light")
+texture_scale = 2.85
+
+[node name="ScreenOverlay" parent="." unique_id=125728605 instance=ExtResource("7_overlay")]
+
+[node name="HUDLayer" type="CanvasLayer" parent="." unique_id=341283502]
+
+[node name="HUD" parent="HUDLayer" unique_id=759194984 instance=ExtResource("4_hud")]
+
+[node name="SpraySound" type="AudioStreamPlayer" parent="." unique_id=265636619]
+stream = ExtResource("19_spray_sound")
+bus = &"Master"
+pitch_scale = 1.122462

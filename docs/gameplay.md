@@ -1,32 +1,33 @@
 # Gameplay reference
 
-`scenes/level_1.tscn` is the project's main scene. It shares the startup and
-gameplay controller with `scenes/smoke_test.tscn`, which remains available as a
-debug scene with authored negative zones.
+`scenes/app.tscn` is the project's main scene. It shows the title, then starts
+Level 1 directly. `scenes/level_1.tscn` also starts gameplay when run alone.
+`scenes/gameplay_base.tscn` contains
+shared gameplay systems; Level 1 and the smoke-test fixture inherit it.
 
 ## Startup flow
 
-`Main` starts with `skip_title_screen = false`. The level is already visible
-behind the high-layer `TitleScreen` CanvasLayer, but gameplay input and the
-gameplay HUD are disabled until the title transition finishes.
+Run Project opens the title over a bathroom backdrop. Starting it creates
+Level 1 and calls `begin_attempt(source)` without a placeholder menu. The start
+gesture is consumed before gameplay input activates. Running Level 1 directly
+uses its enabled `skip_title_screen` property and starts immediately.
 
-The title uses the transparent `TitleComposition` scene over the Level 1
-scene. It layers `GirlsTitle.png` and `PissTitle.png` over the three title
+The title uses the transparent `TitleComposition` scene. It layers
+`GirlsTitle.png` and `PissTitle.png` over the three title
 flares, then swaps the matching `StartBacker1`/`Start1` and
 `StartBacker2`/`Start2` pairs as a small press-start treatment. The authored
 layers retain their 1080x1920 reference positions and receive the shared boil
 material. `StartMenuExample.png` remains a visual reference only. The title
 composition fades out on the first recognized input.
 
-The first input is handled by `InputController`, starts the title exit, and is
-consumed. Its source-specific controls prompt appears immediately while the
-title fades. Duplicate requests are ignored while the exit tween is running.
-Once the transition completes, `Main` resets held input state and enables
-gameplay.
+The app consumes the first recognized input and opens Level 1 after the
+title exit. It creates a fresh level and calls `Main.begin_attempt(source)`.
+The level resets held input, shows that source's controls prompt, and enables
+gameplay. Duplicate route requests are ignored during transitions.
 
-To bypass the title in the editor, enable `skip_title_screen` on the root
-`Main` node. Code-driven startup should call `start_gameplay_immediately()`;
-both paths leave the scene in the same playable state.
+For another directly runnable level, enable `skip_title_screen` on its root
+`Main` node. Code-driven startup can call `begin_attempt(source)` after adding
+the level to the tree.
 
 ## Controls and source detection
 
@@ -44,10 +45,8 @@ controller stick/trigger movement are recognized. On Web, mouse motion also
 claims the mouse scheme because pointer movement is the primary aiming gesture;
 on desktop, motion continues to move the target without changing the prompt.
 
-While the title is active, input is still detected for startup, but
-`gameplay_input_enabled` prevents aiming, touch reticle updates, and stream
-state changes. This keeps the start gesture from leaking into the first frame
-of play.
+While the title is active, no gameplay level is running. The app passes the
+selected input source to Level 1 after the start gesture has been consumed.
 
 ## Contextual prompts
 
@@ -70,6 +69,16 @@ The player follows the authored `ShapeTrace` path with an inertial stream whose
 emitted parcels preserve their launch velocity while the visible ribbon eases
 toward the current target. Completing the path stops live input, shows the
 completion card, and replays the recorded line as a time-lapse behind it.
+
+When replay finishes, Level 1 keeps its authored completion card on screen.
+A failed attempt completes its warning and raid presentation. The app captures
+the last gameplay frame, opens a dedicated game-over screen, and spins that
+frame upward to reveal the authored card and retry button. Retry creates a
+fresh Level 1. Music continues through game over and restarts on retry.
+A directly run Level 1 keeps its in-place game-over flow.
+The original completion credits and retry animation remain in Level 1.
+The menu opens separate credits; Esc or controller B returns to the menu.
+The separate results screen is reserved for future progression.
 
 Level 1 uses the small bathroom-object sprites as its ordered checkpoint
 targets. The authored floor and toilet seat are bad surfaces, while the wall

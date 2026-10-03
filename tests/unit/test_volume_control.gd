@@ -113,7 +113,7 @@ func test_volume_cycle_plays_pitch_rising_orchestra_cue() -> void:
 	level.skip_title_screen = true
 	add_child_autofree(level)
 	var chrome := level.get_node("Level1Chrome") as Level1Chrome
-	var cue := chrome.get_node("VolumeSound") as AudioStreamPlayer
+	var cue := chrome._volume_sound as AudioStreamPlayer
 	var master_bus := AudioServer.get_bus_index(&"Master")
 	var original_volume_db := AudioServer.get_bus_volume_db(master_bus)
 	var original_muted := AudioServer.is_bus_mute(master_bus)

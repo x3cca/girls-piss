@@ -13,6 +13,7 @@ const STRIKE_FLASH_DURATION := 0.24
 const TARGET_HIT := COLLISION_TARGET_HIT
 const IN_BOUNDS_MISS := COLLISION_IN_BOUNDS_MISS
 const OUT_OF_BOUNDS_MISS := COLLISION_OUT_OF_BOUNDS_MISS
+const RibbonLayerBuilder = preload("res://scripts/stream_ribbon_layer_builder.gd")
 
 @export var source_position := Vector2(360.0, 1320.0)
 @export var stream_speed := 920.0
@@ -81,6 +82,7 @@ var _double_edge_mesh_resource := ArrayMesh.new()
 var _double_body_mesh_resource := ArrayMesh.new()
 var _double_highlight_mesh_resource := ArrayMesh.new()
 var _double_beat_bloom_mesh_resource := ArrayMesh.new()
+var _ribbon_layer_builder := RibbonLayerBuilder.new()
 var _parcels: Array[Dictionary] = []
 var _double_parcels: Array[Dictionary] = []
 var _emission_accumulator := 0.0
@@ -1413,11 +1415,24 @@ func _update_double_stream_meshes(
 		_double_highlight_mesh_resource.clear_surfaces()
 		_hide_depth_band_group("double_")
 		return
+	_ribbon_layer_builder.build_ribbon_set(
+		[
+			_double_beat_bloom_mesh_resource,
+			_double_edge_mesh_resource,
+			_double_body_mesh_resource,
+			_double_highlight_mesh_resource,
+		],
+		points,
+		depth_length,
+		ribbon_alpha,
+		hit_target,
+		point_ages,
+		point_depths,
+		beat_bloom_width,
+		depth_map != null,
+		Callable(self, "_set_ribbon_mesh"),
+	)
 	if depth_map != null:
-		_set_ribbon_mesh(_double_beat_bloom_mesh_resource, points, beat_bloom_width, 0.0, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths, true)
-		_set_ribbon_mesh(_double_edge_mesh_resource, points, 36.0, 0.0, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
-		_set_ribbon_mesh(_double_body_mesh_resource, points, 32.0, 0.0, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
-		_set_ribbon_mesh(_double_highlight_mesh_resource, points, 8.0, 1.7, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
 		_update_depth_banded_ribbons(
 			"double_",
 			points,
@@ -1427,53 +1442,6 @@ func _update_double_stream_meshes(
 			point_ages,
 			point_depths,
 		)
-		return
-
-	_set_ribbon_mesh(
-		_double_beat_bloom_mesh_resource,
-		points,
-		beat_bloom_width,
-		0.0,
-		depth_length,
-		ribbon_alpha,
-		hit_target,
-		point_ages,
-		0.0,
-		-1.0,
-		-1.0,
-		PackedFloat32Array(),
-		true,
-	)
-	_set_ribbon_mesh(
-		_double_edge_mesh_resource,
-		points,
-		36.0,
-		0.0,
-		depth_length,
-		ribbon_alpha,
-		hit_target,
-		point_ages,
-	)
-	_set_ribbon_mesh(
-		_double_body_mesh_resource,
-		points,
-		32.0,
-		0.0,
-		depth_length,
-		ribbon_alpha,
-		hit_target,
-		point_ages,
-	)
-	_set_ribbon_mesh(
-		_double_highlight_mesh_resource,
-		points,
-		8.0,
-		1.7,
-		depth_length,
-		ribbon_alpha,
-		hit_target,
-		point_ages,
-	)
 
 
 func update_ribbon_meshes(
@@ -1484,11 +1452,24 @@ func update_ribbon_meshes(
 		point_ages := PackedFloat32Array(),
 		point_depths := PackedFloat32Array(),
 ) -> void:
+	_ribbon_layer_builder.build_ribbon_set(
+		[
+			_beat_bloom_mesh_resource,
+			_edge_mesh_resource,
+			_body_mesh_resource,
+			_highlight_mesh_resource,
+		],
+		points,
+		depth_length,
+		ribbon_alpha,
+		hit_target,
+		point_ages,
+		point_depths,
+		beat_bloom_width,
+		depth_map != null,
+		Callable(self, "_set_ribbon_mesh"),
+	)
 	if depth_map != null:
-		_set_ribbon_mesh(_beat_bloom_mesh_resource, points, beat_bloom_width, 0.0, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths, true)
-		_set_ribbon_mesh(_edge_mesh_resource, points, 36.0, 0.0, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
-		_set_ribbon_mesh(_body_mesh_resource, points, 32.0, 0.0, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
-		_set_ribbon_mesh(_highlight_mesh_resource, points, 8.0, 1.7, depth_length, ribbon_alpha, hit_target, point_ages, 0.0, -1.0, -1.0, point_depths)
 		_update_depth_banded_ribbons(
 			"",
 			points,
@@ -1498,52 +1479,6 @@ func update_ribbon_meshes(
 			point_ages,
 			point_depths,
 		)
-		return
-	_set_ribbon_mesh(
-		_beat_bloom_mesh_resource,
-		points,
-		beat_bloom_width,
-		0.0,
-		depth_length,
-		ribbon_alpha,
-		hit_target,
-		point_ages,
-		0.0,
-		-1.0,
-		-1.0,
-		PackedFloat32Array(),
-		true,
-	)
-	_set_ribbon_mesh(
-		_edge_mesh_resource,
-		points,
-		36.0,
-		0.0,
-		depth_length,
-		ribbon_alpha,
-		hit_target,
-		point_ages,
-	)
-	_set_ribbon_mesh(
-		_body_mesh_resource,
-		points,
-		32.0,
-		0.0,
-		depth_length,
-		ribbon_alpha,
-		hit_target,
-		point_ages,
-	)
-	_set_ribbon_mesh(
-		_highlight_mesh_resource,
-		points,
-		8.0,
-		1.7,
-		depth_length,
-		ribbon_alpha,
-		hit_target,
-		point_ages,
-	)
 
 
 func _set_ribbon_mesh(

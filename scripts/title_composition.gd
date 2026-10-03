@@ -3,7 +3,7 @@ extends Node2D
 class_name TitleComposition
 
 ## The title artwork is authored as transparent layers on a 1080x1920 canvas.
-## Keeping the layers separate lets the first level remain visible underneath
+## Keeping the layers separate lets the presentation backdrop remain visible
 ## the title and leaves the small start animation easy to replace later.
 
 signal start_flash_completed
@@ -27,7 +27,7 @@ const REFERENCE_SIZE := Vector2(1080.0, 1920.0)
 var _frame := 0
 var _frame_elapsed := 0.0
 var _title_active := false
-var _layout_signature := Vector2(540.0, 960.0)
+var _layout_signature := Vector2.ZERO
 var _intro_id := 0
 var _title_entry_tween: Tween
 var _start_entry_tween: Tween

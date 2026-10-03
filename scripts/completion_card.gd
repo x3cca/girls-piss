@@ -46,8 +46,8 @@ const RETRY_FINAL_POSITION := Vector2(167.0, 1494.0)
 @onready var _piss_again_text_two: TextureRect = (
 		$Presentation/Art/PissAgainGroup/PissAgainText2
 )
-@onready var _win_sound: AudioStreamPlayer = $WinSound
-@onready var _star_sound: AudioStreamPlayer = $StarSound
+@onready var _win_sound: AudioStreamPlayer = GameAudio.create_player($WinSound, self)
+@onready var _star_sound: AudioStreamPlayer = GameAudio.create_player($StarSound, self)
 @onready var _credit_chunks: Array[CanvasItem] = [
 	$Presentation/Art/Credits/PissListQuote,
 	$Presentation/Art/Credits/DottyCredit,

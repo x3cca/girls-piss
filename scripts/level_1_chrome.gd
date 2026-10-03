@@ -27,7 +27,7 @@ signal volume_pointer_changed(active: bool)
 	$VolumeIcons/Volume3,
 ]
 @onready var _mute_volume: Sprite2D = $VolumeIcons/MuteVolume
-@onready var _volume_sound: AudioStreamPlayer = $VolumeSound
+@onready var _volume_sound: AudioStreamPlayer = GameAudio.create_player($VolumeSound, self)
 @onready var _back_shadow: Sprite2D = $BackShadow
 @onready var _back: Sprite2D = $Back
 @onready var _volume_hitbox: Control = $VolumeHitbox

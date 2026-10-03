@@ -71,7 +71,7 @@ python3 -m unittest tests.test_sync_drive_assets
 ## Checks and tests
 
 `gdchecks.yml` runs the Godot headless project check and a separate `GUT unit
-tests` job on every pull request and push to `main`/`master`. The test job
+tests` job on every pull request and push to `main`. The test job
 executes `./tools/run-tests.sh` in the same Godot CI container used by the
 project checks and uploads the JUnit report as `godot-test-results`, including
 when tests fail.
@@ -106,8 +106,10 @@ Actions unless a separate workflow explicitly needs it.
 
 ## Export notes
 
-The Web preset exports the main scene and its dependencies instead of every
-project resource. Runtime-loaded scripts, trace/feedback scenes, target art,
+The Web preset exports the app, title, menu, results, credits, failure screen,
+failure snapshot transition, and Level 1 scenes
+and their dependencies instead of every project resource. Add each new level
+scene to its `export_files` list. Runtime-loaded scripts, trace/feedback scenes, target art,
 volume controls, and the cursor are explicitly included because Godot's scenes
 filter cannot discover every preload used by the generated Level 1 script. The
 nine prompt icons used by `InputPrompt` are also explicitly included so they
@@ -115,4 +117,11 @@ remain available at runtime while the rest of the Kenney pack stays out of the
 PCK. The MCP and GUT addons, tests, and development scripts are excluded in
 `export_presets.cfg`; the MCP plugin also skips its editor-only runtime autoload
 while an export command is running. CI checks the resulting PCK stays below 12
-MB and contains Level 1's critical runtime resources without test or MCP files.
+MB and contains the navigation scenes and Level 1's critical runtime resources
+without test or MCP files.
+
+Audio startup uses the `AudioResources` preload registry and silent sample
+warmup, including the spray loop. All current runtime sounds are available in
+the Web PCK before gameplay. CI checks the persistent audio manager, preloader,
+music mixes, and raid/spray clips are included. `GameAudio` keeps active music
+and one-shot playback alive when navigation frees a scene.

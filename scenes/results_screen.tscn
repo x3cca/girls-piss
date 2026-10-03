@@ -1,0 +1,90 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/results_screen.gd" id="1_results"]
+
+[node name="ResultsScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_results")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.055, 0.035, 0.075, 0.94)
+
+[node name="Accent" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 5.0
+grow_horizontal = 2
+mouse_filter = 2
+color = Color(0.95, 0.47, 0.66, 0.9)
+
+[node name="Content" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+
+[node name="Column" type="VBoxContainer" parent="Content"]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="Eyebrow" type="Label" parent="Content/Column"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.76, 0.61, 0.83, 1)
+theme_override_font_sizes/font_size = 16
+text = "THE NIGHT'S SCORE"
+horizontal_alignment = 1
+
+[node name="Headline" type="Label" parent="Content/Column"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.73, 0.34, 1)
+theme_override_font_sizes/font_size = 43
+text = "NICE AIM!"
+horizontal_alignment = 1
+
+[node name="Detail" type="Label" parent="Content/Column"]
+custom_minimum_size = Vector2(410, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.77, 0.88, 1)
+theme_override_font_sizes/font_size = 18
+text = "Level complete. The night is still young."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="Gap" type="Control" parent="Content/Column"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+
+[node name="RetryButton" type="Button" parent="Content/Column"]
+custom_minimum_size = Vector2(410, 72)
+layout_mode = 2
+focus_mode = 2
+text = "RETRY"
+
+[node name="NextButton" type="Button" parent="Content/Column"]
+custom_minimum_size = Vector2(410, 72)
+layout_mode = 2
+focus_mode = 2
+text = "CREDITS"
+
+[node name="MenuButton" type="Button" parent="Content/Column"]
+custom_minimum_size = Vector2(410, 72)
+layout_mode = 2
+focus_mode = 2
+text = "MAIN MENU"

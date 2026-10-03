@@ -266,8 +266,8 @@ func test_checkpoint_completion_plays_success_crosshair_burst() -> void:
 		level.hud.aim_reticle.get_node("Sprite").texture,
 		TouchReticle.CROSSHAIR_SUCCESS,
 	)
-	assert_eq(level.hud.get_node("TargetSound").stream, TARGET_SOUND)
-	assert_true(level.hud.get_node("TargetSound").playing)
+	assert_eq(level.hud._target_sound.stream, TARGET_SOUND)
+	assert_true(level.hud._target_sound.playing)
 
 
 func test_reticle_is_double_sized_and_uses_the_boil_material() -> void:

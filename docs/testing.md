@@ -32,7 +32,7 @@ introduced.
 ## CI workflow
 
 The `GUT unit tests` job in `.github/workflows/gdchecks.yml` runs the same
-wrapper on every pull request and push to `main`/`master`. A JUnit XML report
+wrapper on every pull request and push to `main`. A JUnit XML report
 is uploaded as the `godot-test-results` artifact even when a test fails, so a
 failed run can be inspected from the Actions page.
 

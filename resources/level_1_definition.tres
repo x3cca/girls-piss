@@ -1,0 +1,11 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/level_definition.gd" id="1_definition"]
+[ext_resource type="PackedScene" path="res://scenes/level_1.tscn" id="2_level"]
+
+[resource]
+script = ExtResource("1_definition")
+level_id = &"level_1"
+display_name = "Level 1"
+scene = ExtResource("2_level")
+progression_order = 0

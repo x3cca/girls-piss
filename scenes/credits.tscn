@@ -1,0 +1,222 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://scripts/credits.gd" id="1_credits"]
+[ext_resource type="Material" path="res://resources/materials/boil_effect.tres" id="2_boil"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/Dread vignette2.png" id="3_dread"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/DottyCreditQuote.png" id="4_dotty_quote"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/DottyCredit.png" id="5_dotty_credit"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/SleepyCreditQuote.png" id="6_sleepy_quote"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/SleepCredit.png" id="7_sleep_credit"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/RayCreditQuote.png" id="8_ray_quote"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/Ray credit.png" id="9_ray_credit"]
+[ext_resource type="Texture2D" path="res://assets/art/drive/MusicCredit.png" id="10_music_credit"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_back_normal"]
+bg_color = Color(0.12, 0.08, 0.15, 0.96)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.84, 0.57, 0.76, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_back_hover"]
+bg_color = Color(0.27, 0.15, 0.29, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.78, 0.88, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_back_pressed"]
+bg_color = Color(0.09, 0.055, 0.12, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.78, 0.88, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_back_focus"]
+bg_color = Color(0.17, 0.1, 0.2, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(1, 0.91, 0.45, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[node name="Credits" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+script = ExtResource("1_credits")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.06, 0.045, 0.075, 0.68)
+
+[node name="DreadFrame" type="TextureRect" parent="."]
+texture_filter = 1
+material = ExtResource("2_boil")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+modulate = Color(1, 1, 1, 0.34)
+texture = ExtResource("3_dread")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Presentation" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Art" type="Control" parent="Presentation"]
+layout_mode = 0
+offset_right = 1080.0
+offset_bottom = 1920.0
+mouse_filter = 2
+
+[node name="Credits" type="Control" parent="Presentation/Art"]
+layout_mode = 0
+offset_right = 1080.0
+offset_bottom = 1510.0
+mouse_filter = 2
+
+[node name="PissListQuote" type="TextureRect" parent="Presentation/Art/Credits"]
+texture_filter = 1
+material = ExtResource("2_boil")
+layout_mode = 0
+offset_left = 80.0
+offset_top = 784.0
+offset_right = 997.0
+offset_bottom = 870.0
+mouse_filter = 2
+texture = ExtResource("4_dotty_quote")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="DottyCredit" type="TextureRect" parent="Presentation/Art/Credits"]
+texture_filter = 1
+material = ExtResource("2_boil")
+layout_mode = 0
+offset_left = 205.0
+offset_top = 882.0
+offset_right = 870.0
+offset_bottom = 947.0
+mouse_filter = 2
+texture = ExtResource("5_dotty_credit")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="PissingAloneQuote" type="TextureRect" parent="Presentation/Art/Credits"]
+texture_filter = 1
+material = ExtResource("2_boil")
+layout_mode = 0
+offset_left = 58.0
+offset_top = 975.0
+offset_right = 1017.0
+offset_bottom = 1058.0
+mouse_filter = 2
+texture = ExtResource("6_sleepy_quote")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="SleepyStarDropsCredit" type="TextureRect" parent="Presentation/Art/Credits"]
+texture_filter = 1
+material = ExtResource("2_boil")
+layout_mode = 0
+offset_left = 127.0
+offset_top = 1065.0
+offset_right = 948.0
+offset_bottom = 1126.0
+mouse_filter = 2
+texture = ExtResource("7_sleep_credit")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="GirlPissGirlBossQuote" type="TextureRect" parent="Presentation/Art/Credits"]
+texture_filter = 1
+material = ExtResource("2_boil")
+layout_mode = 0
+offset_left = 224.0
+offset_top = 1172.0
+offset_right = 850.0
+offset_bottom = 1248.0
+mouse_filter = 2
+texture = ExtResource("8_ray_quote")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="RayCredit" type="TextureRect" parent="Presentation/Art/Credits"]
+texture_filter = 1
+material = ExtResource("2_boil")
+layout_mode = 0
+offset_left = 122.0
+offset_top = 1251.0
+offset_right = 952.0
+offset_bottom = 1316.0
+mouse_filter = 2
+texture = ExtResource("9_ray_credit")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="MusicCredit" type="TextureRect" parent="Presentation/Art/Credits"]
+texture_filter = 1
+material = ExtResource("2_boil")
+layout_mode = 0
+offset_left = 78.0
+offset_top = 1343.0
+offset_right = 982.0
+offset_bottom = 1463.0
+mouse_filter = 2
+texture = ExtResource("10_music_credit")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="BackButton" type="Button" parent="."]
+z_index = 10
+layout_mode = 0
+mouse_default_cursor_shape = 2
+focus_mode = 2
+text = "Back"
+tooltip_text = "Return to the previous screen"
+theme_override_colors/font_color = Color(1, 0.92, 0.96, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("StyleBox_back_normal")
+theme_override_styles/hover = SubResource("StyleBox_back_hover")
+theme_override_styles/pressed = SubResource("StyleBox_back_pressed")
+theme_override_styles/focus = SubResource("StyleBox_back_focus")

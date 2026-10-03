@@ -21,9 +21,16 @@ const STREAMS: Array[AudioStream] = [
 	preload("res://assets/audio/zombie_disko_bass_boosted.ogg"),
 	preload("res://assets/audio/zombie_disko_oomph.ogg"),
 	preload("res://assets/audio/zombie_disko_room.ogg"),
+	preload("res://assets/audio/spray_loop.ogg"),
 ]
 
 const SILENT_VOLUME_DB := -80.0
+const LOOPING_STREAM_PATHS := [
+	"res://assets/audio/zombie_disko_room.ogg",
+	"res://assets/audio/zombie_disko_oomph.ogg",
+	"res://assets/audio/zombie_disko_bass_boosted.ogg",
+	"res://assets/audio/spray_loop.ogg",
+]
 
 var _warmup_players: Array[AudioStreamPlayer] = []
 var _warmed_stream_keys: Dictionary = { }
@@ -32,6 +39,10 @@ var _warmed_stream_keys: Dictionary = { }
 func _ready() -> void:
 	get_tree().node_added.connect(_on_tree_node_added)
 	for stream in STREAMS:
+		# Configure shared loop resources before warming them, independently of
+		# the first gameplay scene's _ready.
+		if stream is AudioStreamOggVorbis and stream.resource_path in LOOPING_STREAM_PATHS:
+			(stream as AudioStreamOggVorbis).loop = true
 		warm_stream(stream)
 	# The main scene is loaded after autoloads enter the tree. This catches its
 	# audio players as well as players created later by another scene or system.

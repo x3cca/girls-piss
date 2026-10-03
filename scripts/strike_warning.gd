@@ -36,10 +36,10 @@ signal warning_finished(strike: int)
 @onready var yellow_warning: Control = $YellowWarning
 @onready var orange_warning: Control = $OrangeWarning
 @onready var red_warning: Control = $RedWarning
-@onready var _light_pounds: AudioStreamPlayer = $LightPounds
-@onready var _medium_pounds: AudioStreamPlayer = $MediumPounds
-@onready var _heavy_pounds: AudioStreamPlayer = $HeavyPounds
-@onready var _warning_sound: AudioStreamPlayer = $WarningSound
+@onready var _light_pounds: AudioStreamPlayer = GameAudio.create_player($LightPounds, self)
+@onready var _medium_pounds: AudioStreamPlayer = GameAudio.create_player($MediumPounds, self)
+@onready var _heavy_pounds: AudioStreamPlayer = GameAudio.create_player($HeavyPounds, self)
+@onready var _warning_sound: AudioStreamPlayer = GameAudio.create_player($WarningSound, self)
 
 var _active_warning := 0
 var _remaining := 0.0
@@ -70,7 +70,9 @@ func _process(delta: float) -> void:
 func process_frame(delta: float) -> void:
 	_advance_entrance_shake(maxf(delta, 0.0))
 	_advance_pound_timing(maxf(delta, 0.0))
-	if _active_warning != 0 and get_viewport_rect().size != _warning_layout_size:
+	# The shake updates its offset every frame, so apply it even when the
+	# viewport size has not changed.
+	if _active_warning != 0:
 		_layout_warnings()
 	if _active_warning == 0:
 		return

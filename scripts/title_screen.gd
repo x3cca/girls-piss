@@ -2,9 +2,9 @@ extends CanvasLayer
 
 class_name TitleScreen
 
-## A transparent title treatment that lets the first level remain visible behind
-## it. Input is intentionally handled by InputController so the same title works
-## with keyboard, mouse, touch, and controllers.
+## A transparent title treatment over the app's presentation backdrop.
+## The app passes a recognized input source to this scene and consumes that
+## gesture before opening the main menu.
 
 signal start_requested(source: int)
 signal transition_completed(source: int)
@@ -26,7 +26,7 @@ const CURSOR_TEXTURE: Texture2D = preload(
 @onready var _overlay: Control = $Overlay
 @onready var _backdrop: ColorRect = $Backdrop
 @onready var _composition: TitleComposition = $Overlay/TitleComposition
-@onready var _start_sound: AudioStreamPlayer = $StartSound
+@onready var _start_sound: AudioStreamPlayer = GameAudio.create_player($StartSound, self)
 
 var active := false
 var start_locked := false

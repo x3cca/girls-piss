@@ -43,12 +43,9 @@ var _toilet_layout_size := Vector2(540.0, 960.0)
 
 func _ready() -> void:
 	# Configure generated target nodes before Main starts input and chooses the
-	# first checkpoint. Level 1 uses the authored floor zone; the two inherited
-	# smoke-test zones are cleared below so they remain available to that test
-	# scene without affecting the real level.
+	# first checkpoint. Level 1 uses its own authored floor zone.
 	draw_neutral_canvas = false
 	enable_negative_zones = true
-	_clear_inherited_test_zones()
 	_randomize_targets()
 	_layout_level1()
 	shape_trace.normalized_points = target_points
@@ -78,16 +75,6 @@ func _ready() -> void:
 		depth_environment.visible = false
 	super._ready()
 	_layout_level1()
-
-
-func _clear_inherited_test_zones() -> void:
-	for zone_name in [&"NegativeZone01", &"NegativeZone02"]:
-		var test_zone := get_node_or_null(NodePath(String(zone_name))) as NegativeZone
-		if not test_zone:
-			continue
-		test_zone.normalized_points = PackedVector2Array()
-		test_zone.show_zone = false
-		test_zone.visible = false
 
 
 func _process(delta: float) -> void:

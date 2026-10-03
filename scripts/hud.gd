@@ -14,7 +14,7 @@ var show_touch_controls := false
 @onready var strike_warning: StrikeWarning = $StrikeWarning
 @onready var piss_meter: PissMeter = $PissMeter
 @onready var game_over: GameOver = $GameOver
-@onready var _target_sound: AudioStreamPlayer = $TargetSound
+@onready var _target_sound: AudioStreamPlayer = GameAudio.create_player($TargetSound, self)
 var _wired_input_controller: InputController
 var gameplay_controls_visible := true
 var aim_pointer_blocked := false

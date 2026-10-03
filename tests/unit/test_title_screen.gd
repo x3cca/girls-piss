@@ -47,8 +47,14 @@ func test_title_uses_the_authored_transparent_layer_composition() -> void:
 		var layer := composition.get_node(layer_name) as Sprite2D
 		assert_eq(layer.offset, Vector2.ZERO)
 		assert_eq(layer.rotation, 0.0)
-	assert_almost_eq(composition.get_node("StartFrame1").position.y, 152.5, 0.001)
-	assert_almost_eq(composition.get_node("StartFrame2").position.y, 157.5, 0.001)
+	var title_bottom: float = composition._sprite_vertical_bounds(
+		composition.get_node("PissTitle"),
+	).y
+	var gap_center := (title_bottom + TitleComposition.REFERENCE_SIZE.y) * 0.5
+	for frame_name in ["StartFrame1", "StartFrame2"]:
+		var frame := composition.get_node(frame_name) as Node2D
+		var bounds: Vector2 = composition._frame_vertical_bounds(frame)
+		assert_almost_eq(frame.position.y + (bounds.x + bounds.y) * 0.5, gap_center, 0.001)
 
 	composition._process(composition.frame_duration)
 	assert_eq(composition.get_frame(), 1)
@@ -84,7 +90,7 @@ func test_request_start_locks_duplicate_requests_until_exit_completes() -> void:
 	assert_true(title.request_start(InputController.AimSource.MOUSE))
 	assert_false(title.request_start(InputController.AimSource.KEYBOARD))
 	assert_true(title.is_start_locked())
-	await get_tree().create_timer(0.2).timeout
+	await get_tree().create_timer(0.5).timeout
 
 	assert_false(title.is_active())
 	assert_false(title.is_start_locked())
@@ -123,7 +129,7 @@ func test_request_start_plays_the_beer_sound() -> void:
 	add_child_autofree(title)
 	title.show_title()
 
-	var start_sound := title.get_node("StartSound") as AudioStreamPlayer
+	var start_sound := title._start_sound as AudioStreamPlayer
 	assert_eq(
 		start_sound.stream.resource_path,
 		"res://assets/audio/beer_can_open_and_drink.ogg",

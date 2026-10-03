@@ -24,7 +24,8 @@ whose names start with test_ and end in .gd.
 
 The tests verify that the prototype scene builds and that direct crosshair
 targeting and inertial parcel behavior remain deterministic as systems are
-added. They also cover the title gate and skip path, input-source detection,
+added. They also cover title, menu, results, and credits routing, direct-level
+startup, input-source detection,
 contextual prompt mappings and animation, baked depth sampling, stream pulse
 feedback, and replay behavior.
 

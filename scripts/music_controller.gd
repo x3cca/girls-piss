@@ -199,7 +199,7 @@ func _crossfade_to(target: AudioStreamPlayer) -> void:
 	_active_shake_scale = _shake_scale_for(target)
 
 	var players: Array[AudioStreamPlayer] = [oomph_player, gameplay_player]
-	var start_gains: Dictionary = {}
+	var start_gains: Dictionary = { }
 	for player in players:
 		start_gains[player] = db_to_linear(player.volume_db) if player.playing else 0.0
 

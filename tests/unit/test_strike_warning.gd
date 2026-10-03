@@ -210,8 +210,12 @@ func test_each_warning_plays_its_three_pound_variant() -> void:
 
 	for strike in variants:
 		warning.show_warning(strike, 4.0)
-		var player := warning.get_node(variants[strike][0]) as AudioStreamPlayer
-		var warning_sound := warning.get_node("WarningSound") as AudioStreamPlayer
+		var player: AudioStreamPlayer = {
+			StrikeWarning.YELLOW_WARNING: warning._light_pounds,
+			StrikeWarning.ORANGE_WARNING: warning._medium_pounds,
+			StrikeWarning.RED_WARNING: warning._heavy_pounds,
+		}[strike]
+		var warning_sound := warning._warning_sound as AudioStreamPlayer
 		assert_eq(player.stream.resource_path, variants[strike][1])
 		assert_almost_eq(player.stream.get_length(), 0.6, 0.01)
 		assert_true(player.playing)

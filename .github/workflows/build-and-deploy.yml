@@ -46,11 +46,26 @@ jobs:
           PCK_SIZE="$(stat -c '%s' build/web/index.pck)"
           echo "Web PCK size: ${PCK_SIZE} bytes"
           test "$PCK_SIZE" -lt 12000000
+          grep -aFq 'res://scenes/app.tscn' build/web/index.pck
+          grep -aFq 'scenes/main_menu.tscn.remap' build/web/index.pck
+          grep -aFq 'scenes/results_screen.tscn.remap' build/web/index.pck
+          grep -aFq 'scenes/failure_screen.tscn.remap' build/web/index.pck
+          grep -aFq 'scenes/failure_transition.tscn.remap' build/web/index.pck
+          grep -aFq 'scenes/credits.tscn.remap' build/web/index.pck
+          grep -aFq 'resources/level_1_definition.tres.remap' build/web/index.pck
+          grep -aFq 'scripts/stream_ribbon_layer_builder.gd.remap' build/web/index.pck
           grep -aFq 'res://scenes/level_1.tscn' build/web/index.pck
           grep -aFq 'res://scripts/level_1.gdc' build/web/index.pck
           grep -aFq 'res://scripts/trace_target.gdc' build/web/index.pck
           grep -aFq 'res://assets/art/drive/Pissbowl.png' build/web/index.pck
           grep -aFq 'res://assets/art/drive/Pisstank.png' build/web/index.pck
+          grep -aFq 'scripts/game_audio.gd.remap' build/web/index.pck
+          grep -aFq 'scenes/music_controller.tscn.remap' build/web/index.pck
+          grep -aFq 'scripts/audio_preloader.gd.remap' build/web/index.pck
+          grep -aFq 'assets/placeholders/input_prompts/Keyboard & Mouse/Default/mouse_left.png' build/web/index.pck
+          for AUDIO_PATH in spray_loop.ogg fbi_open_up_voice.ogg fbi_door_smash.ogg door_kick.ogg zombie_disko_room.ogg zombie_disko_oomph.ogg zombie_disko_bass_boosted.ogg; do
+            grep -aFq "res://assets/audio/${AUDIO_PATH}" build/web/index.pck
+          done
           ! grep -aFq 'res://tests/' build/web/index.pck
           ! grep -aFq 'res://addons/godot_mcp/mcp/' build/web/index.pck
 

@@ -41,7 +41,7 @@ func test_smoke_test_places_the_toilet_in_the_play_scene() -> void:
 	add_child_autofree(smoke_test)
 
 	var toilet := smoke_test.get_node("PissToilet") as Node2D
-	assert_eq(toilet.position, Vector2(360, 640))
+	assert_eq(toilet.position, Vector2(270, 480))
 	assert_eq(toilet.scale, Vector2(0.5625, 0.5625))
 	assert_not_null(smoke_test.get_node_or_null("NegativeZone01"))
 	assert_not_null(smoke_test.get_node_or_null("NegativeZone02"))
@@ -54,8 +54,8 @@ func test_level_1_starts_with_the_toilet_without_test_zone_gameplay() -> void:
 	assert_true(level.enable_negative_zones)
 	assert_gt(level.negative_zones.size(), 0)
 	assert_not_null(level.get_node_or_null("PissToilet"))
-	assert_false(level.get_node("NegativeZone01").visible)
-	assert_false(level.get_node("NegativeZone02").visible)
+	assert_null(level.get_node_or_null("NegativeZone01"))
+	assert_null(level.get_node_or_null("NegativeZone02"))
 	assert_not_null(level.get_node_or_null("FloorNegativeZone"))
 
 
